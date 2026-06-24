@@ -352,6 +352,13 @@ class _AppointmentGroup extends StatelessWidget {
       final edges = separationFor(i);
       children.add(
         AppointmentTile(
+          // Key estable por id: evita que Flutter reuse el State del
+          // SwipeRevealActions entre slots al borrar o re-sortear la
+          // lista (al cambiar dateTime o al marcar como hecho, los
+          // tiles cambian de posición). Sin key, el AnimationController
+          // "revelado" se quedaba pegado al slot y saltaba al item
+          // equivocado.
+          key: ValueKey(appt.id),
           appointment: appt,
           completionEnabled: completionEnabled,
           groupIndex: i,
