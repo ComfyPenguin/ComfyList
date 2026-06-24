@@ -8,6 +8,7 @@ import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/ui/lists/swipe_reveal_actions.dart';
+import '../../../../shared/ui/pencil_edit_icon.dart';
 import '../../../../shared/ui/recycle_bin_icon.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../../settings/presentation/providers/settings_state.dart';
@@ -70,8 +71,17 @@ class AppointmentTile extends ConsumerStatefulWidget {
 }
 
 class _AppointmentTileState extends ConsumerState<AppointmentTile> {
+  double _lastLeftReveal = 0;
+  int _leftRevealCount = 0;
   double _lastRightReveal = 0;
   int _rightRevealCount = 0;
+
+  void _onLeftReveal(double progress) {
+    if (_lastLeftReveal < 0.6 && progress >= 0.6) {
+      setState(() => _leftRevealCount++);
+    }
+    _lastLeftReveal = progress;
+  }
 
   void _onRightReveal(double progress) {
     if (_lastRightReveal > -0.6 && progress <= -0.6) {
@@ -159,11 +169,12 @@ class _AppointmentTileState extends ConsumerState<AppointmentTile> {
       clipBehavior: Clip.none,
       child: SwipeRevealActions(
         onRevealProgressChanged: widget.onRevealProgressChanged,
+        onLeftRevealProgressChanged: _onLeftReveal,
         onRightRevealProgressChanged: _onRightReveal,
         actionOverlap: AppointmentTile._outerRadius,
         actionBorderRadius: cardRadius,
         leftAction: SwipeRevealAction(
-          icon: const Icon(Icons.edit_outlined),
+          icon: PencilEditIcon(key: ValueKey(_leftRevealCount)),
           label: 'Editar cita',
           background: colors.surfacePressed,
           foreground: colors.ink,
