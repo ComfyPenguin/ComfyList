@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:lottie/lottie.dart';
 
 import '../../../../routing/routes.dart';
+import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
@@ -223,6 +225,7 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
       listChildren.add(
         _AppointmentGroup(
           dateLabel: _formatDateHeader(date),
+          isToday: _isToday(date),
           dateHeaderStyle: dateHeaderStyle,
           appointments: appts,
           completionEnabled: completionEnabled,
@@ -272,16 +275,25 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
     final today = DateTime(now.year, now.month, now.day);
     final tomorrow = today.add(const Duration(days: 1));
 
-    if (date == today) return 'HOY';
+    if (date == today) return 'CITAS DE HOY';
     if (date == tomorrow) return 'MAÑANA';
 
     return DateFormat('EEEE, d MMM', 'es_ES').format(date).toUpperCase();
+  }
+
+  /// ¿Es la fecha pasada el día de hoy? Usado para diferenciar la
+  /// cabecera de "hoy" (píldora negra) del resto (texto plano).
+  bool _isToday(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    return date == today;
   }
 }
 
 class _AppointmentGroup extends StatelessWidget {
   const _AppointmentGroup({
     required this.dateLabel,
+    required this.isToday,
     required this.dateHeaderStyle,
     required this.appointments,
     required this.completionEnabled,
@@ -296,6 +308,7 @@ class _AppointmentGroup extends StatelessWidget {
   static const double _joinedGap = 2;
 
   final String dateLabel;
+  final bool isToday;
   final TextStyle dateHeaderStyle;
   final List<Appointment> appointments;
   final bool completionEnabled;
@@ -316,13 +329,21 @@ class _AppointmentGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final children = <Widget>[
       Padding(
         padding: const EdgeInsets.only(
           left: AppSpacing.xl,
           bottom: AppSpacing.md,
         ),
-        child: Text(dateLabel, style: dateHeaderStyle),
+        // Align evita que el Column con `stretch` estire la pill a
+        // todo el ancho — la deja en su tamaño intrínseco.
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: isToday
+              ? _TodayPill(label: dateLabel, colors: colors)
+              : Text(dateLabel, style: dateHeaderStyle),
+        ),
       ),
     ];
 
@@ -355,6 +376,134 @@ class _AppointmentGroup extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: children,
+    );
+  }
+}
+
+/// Píldora de "HOY" para la cabecera del grupo de citas del día
+/// actual. Reutiliza el par `primary` / `onPrimary` que ya usa el FAB
+/// del BottomBar: está auto-invertido entre temas (negro/blanco en
+/// light, blanco/negro en dark), así el badge destaca sobre el
+/// canvas en ambos temas. El sombreado es el mismo que el FAB
+/// (glow luminoso en dark, sombra proyectada en light) escalado al
+/// tamaño compacto de la pill para mantener la estética.
+class _TodayPill extends StatelessWidget {
+  const _TodayPill({required this.label, required this.colors});
+
+  final String label;
+  final AppColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = colors.canvas.computeLuminance() < 0.05;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: colors.primary,
+        borderRadius: AppRadius.brPill,
+        boxShadow: isDark
+            ? [
+                // Modo oscuro: glow luminoso doble alrededor del FAB blanco
+                BoxShadow(
+                  color: colors.primary.withValues(alpha: 0.35),
+                  blurRadius: 14,
+                  offset: Offset.zero,
+                ),
+                BoxShadow(
+                  color: colors.shadowDark,
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ]
+            : [
+                // Modo claro: sombra oscura pronunciada
+                BoxShadow(
+                  color: colors.shadowDark,
+                  blurRadius: 10,
+                  offset: const Offset(2, 5),
+                ),
+              ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _LivePulse(color: colors.onPrimary),
+          const SizedBox(width: AppSpacing.xs),
+          Text(
+            label,
+            style: AppTypography.caption.copyWith(
+              color: colors.onPrimary,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Indicador "en vivo" basado en el Lottie `assets/lottie/live-pulse.json`.
+/// El Lottie trae un fill rojo hardcodeado que tintamos con [color] para
+/// que herede el color del tema (en este caso `onDark`, mismo que el
+/// texto de la pill). El loop es continuo, sin intervención.
+class _LivePulse extends StatefulWidget {
+  const _LivePulse({required this.color});
+
+  final Color color;
+
+  @override
+  State<_LivePulse> createState() => _LivePulseState();
+}
+
+class _LivePulseState extends State<_LivePulse>
+    with SingleTickerProviderStateMixin {
+  static const double _size = 12;
+
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: _size,
+      height: _size,
+      child: Lottie.asset(
+        'assets/lottie/live-pulse.json',
+        controller: _controller,
+        fit: BoxFit.contain,
+        repeat: true,
+        onLoaded: (composition) {
+          _controller
+            ..duration = composition.duration
+            ..repeat();
+        },
+        delegates: LottieDelegates(
+          values: [
+            // Los fills del Lottie están en `**/Fill 1` (capa "circle 2"
+            // y "circle"). El wildcard pilla ambos para que el punto
+            // sólido y el anillo pulsante adopten el color del tema.
+            ValueDelegate.color(
+              const ['**', 'Fill 1'],
+              value: widget.color,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
