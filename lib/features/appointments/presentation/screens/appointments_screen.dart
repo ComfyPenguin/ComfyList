@@ -82,6 +82,9 @@ class _AppointmentsList extends ConsumerStatefulWidget {
 class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
   final _tileRevealProgressByDate = <DateTime, Map<String, double>>{};
 
+  /// Máximo progreso del grupo — usado solo como trigger de `setState`
+  /// (detectar transiciones de reposo a activo). La separación visual
+  /// por tile se calcula con [_effectiveSeparationFor].
   double _groupRevealProgress(DateTime date) {
     final tileProgress = _tileRevealProgressByDate[date];
     if (tileProgress == null || tileProgress.isEmpty) return 0;
@@ -91,6 +94,49 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
       if (progress > maxProgress) maxProgress = progress;
     }
     return maxProgress;
+  }
+
+  /// Progreso de separación por borde (top/bottom) de un tile.
+  /// - `top` se ve afectado por el progreso del propio tile y del vecino
+  ///   ANTERIOR (si existe): si el vecino de arriba se desliza, este
+  ///   borde debe redondearse.
+  /// - `bottom` se ve afectado por el progreso del propio tile y del
+  ///   vecino SIGUIENTE: si el vecino de abajo se desliza, este borde
+  ///   debe redondearse.
+  /// Así, al deslizar un tile solo se redondean las esquinas del tile
+  /// movido y las que están pegadas a él en su(s) vecino(s).
+  ({double top, double bottom}) _effectiveSeparationFor({
+    required DateTime date,
+    required int tileIndex,
+    required List<Appointment> appointments,
+  }) {
+    final tileProgress = _tileRevealProgressByDate[date];
+    if (tileProgress == null || tileProgress.isEmpty) {
+      return (top: 0.0, bottom: 0.0);
+    }
+
+    final myId = appointments[tileIndex].id;
+    final myProgress = tileProgress[myId] ?? 0.0;
+
+    final prevId = tileIndex > 0
+        ? appointments[tileIndex - 1].id
+        : null;
+    final nextId = tileIndex < appointments.length - 1
+        ? appointments[tileIndex + 1].id
+        : null;
+    final prevProgress =
+        prevId != null ? (tileProgress[prevId] ?? 0.0) : 0.0;
+    final nextProgress =
+        nextId != null ? (tileProgress[nextId] ?? 0.0) : 0.0;
+
+    // El borde top del tile[i] se despega si se mueve el propio tile[i]
+    // o el vecino anterior (tile[i-1]).
+    final top = myProgress > prevProgress ? myProgress : prevProgress;
+    // El borde bottom del tile[i] se despega si se mueve el propio
+    // tile[i] o el vecino siguiente (tile[i+1]).
+    final bottom = myProgress > nextProgress ? myProgress : nextProgress;
+
+    return (top: top, bottom: bottom);
   }
 
   void _setTileRevealProgress({
@@ -194,7 +240,11 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
           dateHeaderStyle: dateHeaderStyle,
           appointments: appts,
           completionEnabled: completionEnabled,
-          separationTarget: _groupRevealProgress(date),
+          separationFor: (i) => _effectiveSeparationFor(
+            date: date,
+            tileIndex: i,
+            appointments: appts,
+          ),
           onToggle: (appt, value) => notifier.toggleDone(appt.id, value),
           onTap: (appt) => context.push(Routes.appointmentDetail(appt.id)),
           onEdit: (appt) => context.push(Routes.appointmentEdit(appt.id)),
@@ -249,7 +299,7 @@ class _AppointmentGroup extends StatelessWidget {
     required this.dateHeaderStyle,
     required this.appointments,
     required this.completionEnabled,
-    required this.separationTarget,
+    required this.separationFor,
     required this.onToggle,
     required this.onTap,
     required this.onEdit,
@@ -263,7 +313,14 @@ class _AppointmentGroup extends StatelessWidget {
   final TextStyle dateHeaderStyle;
   final List<Appointment> appointments;
   final bool completionEnabled;
-  final double separationTarget;
+
+  /// Progreso de separación por borde (top/bottom) para el tile en
+  /// `appointments[i]`. El `top` se ve afectado por el progreso del
+  /// propio tile y del vecino ANTERIOR; el `bottom` por el del propio
+  /// tile y del vecino SIGUIENTE. Así, al deslizar un tile solo se
+  /// redondean las esquinas pegadas a él en su(s) vecino(s).
+  final ({double top, double bottom}) Function(int tileIndex) separationFor;
+
   final void Function(Appointment appointment, bool value) onToggle;
   final void Function(Appointment appointment) onTap;
   final void Function(Appointment appointment) onEdit;
@@ -273,111 +330,45 @@ class _AppointmentGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final disableAnimations = MediaQuery.of(context).disableAnimations;
+    final children = <Widget>[
+      Padding(
+        padding: const EdgeInsets.only(
+          left: AppSpacing.xl,
+          bottom: AppSpacing.md,
+        ),
+        child: Text(dateLabel, style: dateHeaderStyle),
+      ),
+    ];
 
-    return _SpringyProgressBuilder(
-      target: separationTarget,
-      enabled: !disableAnimations,
-      builder: (context, progress) {
-        final children = <Widget>[
-          Padding(
-            padding: const EdgeInsets.only(
-              left: AppSpacing.xl,
-              bottom: AppSpacing.md,
-            ),
-            child: Text(dateLabel, style: dateHeaderStyle),
-          ),
-        ];
+    for (var i = 0; i < appointments.length; i++) {
+      final appt = appointments[i];
+      final edges = separationFor(i);
+      children.add(
+        AppointmentTile(
+          appointment: appt,
+          completionEnabled: completionEnabled,
+          groupIndex: i,
+          groupSize: appointments.length,
+          topSeparationProgress: edges.top,
+          bottomSeparationProgress: edges.bottom,
+          onToggle: (v) => onToggle(appt, v),
+          onTap: () => onTap(appt),
+          onEdit: () => onEdit(appt),
+          onDelete: () => onDelete(appt),
+          onRevealProgressChanged: (value) {
+            onRevealProgressChanged(appt, value);
+          },
+        ),
+      );
 
-        for (var i = 0; i < appointments.length; i++) {
-          final appt = appointments[i];
-          children.add(
-            AppointmentTile(
-              appointment: appt,
-              completionEnabled: completionEnabled,
-              groupIndex: i,
-              groupSize: appointments.length,
-              separationProgress: progress,
-              onToggle: (v) => onToggle(appt, v),
-              onTap: () => onTap(appt),
-              onEdit: () => onEdit(appt),
-              onDelete: () => onDelete(appt),
-              onRevealProgressChanged: (value) {
-                onRevealProgressChanged(appt, value);
-              },
-            ),
-          );
-
-          if (i < appointments.length - 1) {
-            children.add(const SizedBox(height: _joinedGap));
-          }
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: children,
-        );
-      },
-    );
-  }
-}
-
-class _SpringyProgressBuilder extends StatefulWidget {
-  const _SpringyProgressBuilder({
-    required this.target,
-    required this.enabled,
-    required this.builder,
-  });
-
-  final double target;
-  final bool enabled;
-  final Widget Function(BuildContext context, double progress) builder;
-
-  @override
-  State<_SpringyProgressBuilder> createState() =>
-      _SpringyProgressBuilderState();
-}
-
-class _SpringyProgressBuilderState extends State<_SpringyProgressBuilder>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  double get _target => widget.target.clamp(0.0, 1.0).toDouble();
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController.unbounded(vsync: this, value: _target);
-  }
-
-  @override
-  void didUpdateWidget(covariant _SpringyProgressBuilder oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if ((_target - _controller.value).abs() < 0.001) return;
-
-    _controller
-      ..stop()
-      ..value = _target;
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!widget.enabled) {
-      return widget.builder(context, _target);
+      if (i < appointments.length - 1) {
+        children.add(const SizedBox(height: _joinedGap));
+      }
     }
 
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, _) {
-        final progress = _controller.value.clamp(0.0, 1.0).toDouble();
-        return widget.builder(context, progress);
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: children,
     );
   }
 }
