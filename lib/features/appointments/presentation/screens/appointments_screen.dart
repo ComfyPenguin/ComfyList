@@ -84,6 +84,54 @@ class _AppointmentsList extends ConsumerStatefulWidget {
 class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
   final _tileRevealProgressByDate = <DateTime, Map<String, double>>{};
 
+  /// Controller del ListView — se usa para reposicionar el scroll
+  /// inicial a la altura del grupo de HOY en el primer frame.
+  final _scrollController = ScrollController();
+
+  /// Key anclada al grupo de HOY. Permite que [Scrollable.ensureVisible]
+  /// salte a la posición de HOY al montar la pantalla. Si HOY no
+  /// tiene citas, esta key nunca se asigna a un widget y el scroll se
+  /// queda en la posición natural (top del contenido).
+  final _todayKey = GlobalKey();
+
+  /// Evita re-scrollear a HOY en rebuilds posteriores al montaje
+  /// (p. ej. al añadir o eliminar una cita). Se resetea solo cuando
+  /// el widget se re-monta, que es exactamente cuando queremos
+  /// reposicionar (al volver a la pestaña tras un cambio de tab, ya
+  /// que el `ShellRoute` simple destruye el child del shell).
+  bool _didScrollToToday = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _scrollToToday();
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  /// Posiciona el scroll del ListView para que el grupo de HOY quede
+  /// visible en la parte superior del área de contenido. Instantáneo
+  /// (sin animación) para que al entrar a la pantalla la vista
+  /// predeterminada sea "HOY arriba" sin ceremonia.
+  void _scrollToToday() {
+    if (_didScrollToToday) return;
+    final context = _todayKey.currentContext;
+    if (context == null) return;
+    Scrollable.ensureVisible(
+      context,
+      duration: Duration.zero,
+      alignment: 0.0,
+    );
+    _didScrollToToday = true;
+  }
+
   /// Progreso de separación por borde (top/bottom) de un tile.
   /// - `top` se ve afectado por el progreso del propio tile y del vecino
   ///   ANTERIOR (si existe): si el vecino de arriba se desliza, este
@@ -205,6 +253,12 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
       final dateOnly = DateTime(d.year, d.month, d.day);
       grouped.putIfAbsent(dateOnly, () => []).add(appt);
     }
+    // Orden de fechas ascendente (cronológico natural):
+    // pasadas → HOY → futuras. HOY queda en su posición natural dentro
+    // de la secuencia de días. Al montar la pantalla se hace scroll
+    // a la posición de HOY (ver `_scrollToToday`) para que el
+    // "predeterminado" sea tener HOY visible arriba. Scroll up =
+    // ver pasadas, scroll down = ver futuras.
     final sortedDates = grouped.keys.toList()..sort();
     final visibleDates = sortedDates.toSet();
     _tileRevealProgressByDate.removeWhere(
@@ -224,6 +278,10 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
 
       listChildren.add(
         _AppointmentGroup(
+          // Key estable para que [_scrollToToday] pueda saltar al
+          // grupo de HOY en el primer frame. Se aplica solo al grupo
+          // del día actual; el resto de grupos no llevan key.
+          groupKey: _isToday(date) ? _todayKey : null,
           dateLabel: _formatDateHeader(date),
           isToday: _isToday(date),
           dateHeaderStyle: dateHeaderStyle,
@@ -257,14 +315,27 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
       );
     }
 
-    return ListView(
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        widget.topPadding,
-        AppSpacing.lg,
-        widget.bottomPadding,
+    // El `topPadding` se aplica al Padding wrapper (no al padding
+    // interno del ListView) para que el viewport del Scrollable
+    // empiece justo donde el contenido debe verse (debajo del AppBar).
+    // Esto permite que `Scrollable.ensureVisible(alignment: 0.0)` en
+    // [_scrollToToday] coloque el grupo de HOY exactamente en la
+    // parte superior del área visible, sin que quede tapado por el
+    // padding superior. El `bottomPadding` se mantiene en el padding
+    // interno del ListView para preservar el espacio scrollable bajo
+    // el último item.
+    return Padding(
+      padding: EdgeInsets.only(top: widget.topPadding),
+      child: ListView(
+        controller: _scrollController,
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          0,
+          AppSpacing.lg,
+          widget.bottomPadding,
+        ),
+        children: listChildren,
       ),
-      children: listChildren,
     );
   }
 
@@ -292,6 +363,7 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
 
 class _AppointmentGroup extends StatelessWidget {
   const _AppointmentGroup({
+    this.groupKey,
     required this.dateLabel,
     required this.isToday,
     required this.dateHeaderStyle,
@@ -306,6 +378,14 @@ class _AppointmentGroup extends StatelessWidget {
   });
 
   static const double _joinedGap = 2;
+
+  /// Key opcional que se aplica al [Column] raíz del grupo. Lo usa
+  /// [_AppointmentsListState] para anclar el grupo de HOY con un
+  /// [GlobalKey] y poder reposicionar el scroll inicial a su altura
+  /// con `Scrollable.ensureVisible`. El resto de grupos no llevan
+  /// key (null), así no interferimos con la reconciliación normal
+  /// de Flutter ni añadimos coste innecesario.
+  final Key? groupKey;
 
   final String dateLabel;
   final bool isToday;
@@ -381,6 +461,7 @@ class _AppointmentGroup extends StatelessWidget {
     }
 
     return Column(
+      key: groupKey,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: children,
     );
