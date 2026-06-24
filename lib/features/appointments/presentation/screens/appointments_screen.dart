@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -117,18 +118,37 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
   }
 
   /// Posiciona el scroll del ListView para que el grupo de HOY quede
-  /// visible en la parte superior del área de contenido. Instantáneo
-  /// (sin animación) para que al entrar a la pantalla la vista
+  /// visible en la parte superior del área de contenido (justo
+  /// debajo del AppBar translúcido del shell). Instantáneo (sin
+  /// animación) para que al entrar a la pantalla la vista
   /// predeterminada sea "HOY arriba" sin ceremonia.
+  ///
+  /// **Por qué offset manual y no `Scrollable.ensureVisible`**: el
+  /// `topPadding` se aplica como padding INTERNO del ListView para
+  /// preservar el efecto "las listas pasan por debajo del topbar".
+  /// El viewport del `Scrollable` no incluye ese padding, así que
+  /// `ensureVisible(alignment: 0.0)` alinearía el target con el
+  /// top=0 de la pantalla (detrás del AppBar translúcido). Para
+  /// colocar el target DEBAJO del AppBar, usamos
+  /// `RenderAbstractViewport.getOffsetToReveal(target, 0.0).offset`
+  /// (que da la posición del target en el contenido) y restamos
+  /// `widget.topPadding` (el offset que el padding interno añade al
+  /// inicio del contenido scrolleable).
   void _scrollToToday() {
     if (_didScrollToToday) return;
     final context = _todayKey.currentContext;
     if (context == null) return;
-    Scrollable.ensureVisible(
-      context,
-      duration: Duration.zero,
-      alignment: 0.0,
-    );
+    final renderObject = context.findRenderObject();
+    if (renderObject is! RenderBox) return;
+    final viewport = RenderAbstractViewport.maybeOf(renderObject);
+    if (viewport == null) return;
+    final rawOffset = viewport.getOffsetToReveal(renderObject, 0.0).offset;
+    final adjustedOffset =
+        (rawOffset - widget.topPadding).clamp(
+          0.0,
+          _scrollController.position.maxScrollExtent,
+        );
+    _scrollController.jumpTo(adjustedOffset);
     _didScrollToToday = true;
   }
 
@@ -315,27 +335,28 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
       );
     }
 
-    // El `topPadding` se aplica al Padding wrapper (no al padding
-    // interno del ListView) para que el viewport del Scrollable
-    // empiece justo donde el contenido debe verse (debajo del AppBar).
-    // Esto permite que `Scrollable.ensureVisible(alignment: 0.0)` en
-    // [_scrollToToday] coloque el grupo de HOY exactamente en la
-    // parte superior del área visible, sin que quede tapado por el
-    // padding superior. El `bottomPadding` se mantiene en el padding
-    // interno del ListView para preservar el espacio scrollable bajo
-    // el último item.
-    return Padding(
-      padding: EdgeInsets.only(top: widget.topPadding),
-      child: ListView(
-        controller: _scrollController,
-        padding: EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          0,
-          AppSpacing.lg,
-          widget.bottomPadding,
-        ),
-        children: listChildren,
+    // El `topPadding` se aplica como padding INTERNO del ListView
+    // (no como Padding wrapper exterior) para que el ListView se
+    // extienda hasta el top de la pantalla, pasando POR DETRÁS del
+    // AppBar translúcido del shell (que es un `Positioned` con
+    // `BackdropFilter` en `AppShell`). Ese es el efecto "las listas
+    // pasan por debajo del topbar" que la app busca.
+    //
+    // El `_scrollToToday()` compensa manualmente el offset para
+    // colocar el grupo de HOY debajo del AppBar (no detrás), porque
+    // el viewport del `Scrollable` no incluye el padding interno y
+    // `Scrollable.ensureVisible(alignment: 0.0)` alinearía con el
+    // top=0 de la pantalla (detrás del AppBar). Ver el comentario
+    // de `_scrollToToday` para el detalle del cálculo.
+    return ListView(
+      controller: _scrollController,
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        widget.topPadding,
+        AppSpacing.lg,
+        widget.bottomPadding,
       ),
+      children: listChildren,
     );
   }
 
