@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "49265233072",
+    "project_id": "comfy-list",
+    "storage_bucket": "comfy-list.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:49265233072:android:665562ca7b34898634bf75",
+        "android_client_info": {
+          "package_name": "andypr.comfylist"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "49265233072-sftl0ijkm71o34ic9pu103p1hhlifn7e.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "andypr.comfylist",
+            "certificate_hash": "d6e778706bfa44f726125d25c283f19f070c1efe"
+          }
+        },
+        {
+          "client_id": "49265233072-ubk0m1nsashs18f8fdi4krai0o9be5bn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-y9qLbk5IUqS6cyGFAp2O94KAtxvulfI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "49265233072-ubk0m1nsashs18f8fdi4krai0o9be5bn.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,31 @@
+import 'package:drift/drift.dart';
+
+/// Tabla singleton (id=1) con la configuración local de la app.
+@DataClassName('SettingsRow')
+class SettingsTable extends Table {
+  IntColumn get id => integer().withDefault(const Constant(1))();
+
+  /// 'system' | 'light' | 'dark'
+  TextColumn get themeMode =>
+      text().withDefault(const Constant('system')).withLength(min: 4, max: 8)();
+
+  BoolColumn get notificationsEnabled =>
+      boolean().withDefault(const Constant(true))();
+
+  BoolColumn get appointmentsCompletionEnabled =>
+      boolean().withDefault(const Constant(false))();
+
+  /// Si `true`, las tareas completadas van al final de la lista.
+  BoolColumn get completedToBottom =>
+      boolean().withDefault(const Constant(true))();
+
+  /// Si `true`, las horas de las citas se muestran en formato 24H.
+  /// Si `false`, se muestran en formato 12H con AM/PM.
+  BoolColumn get use24HourFormat =>
+      boolean().withDefault(const Constant(true))();
+
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

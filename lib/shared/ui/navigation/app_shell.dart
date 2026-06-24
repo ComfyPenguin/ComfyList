@@ -1,0 +1,239 @@
+import 'dart:ui';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../features/auth/presentation/providers/auth_provider.dart';
+import '../../../features/todo_lists/domain/entities/todo_list.dart';
+import '../../../features/todo_lists/presentation/providers/todo_lists_provider.dart';
+import '../../../features/todo_lists/presentation/providers/todo_lists_state.dart';
+import '../../../routing/routes.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/theme/app_typography.dart';
+import 'app_bottom_bar.dart';
+
+/// Notifier que gestiona si un bottom sheet de detalle está abierto.
+/// Cuando está activo, el AppShell oculta el FAB y la BottomBar para
+/// que no se superpongan al contenido del sheet.
+class DetailSheetOpenNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void open() => state = true;
+  void close() => state = false;
+}
+
+final detailSheetOpenProvider =
+    NotifierProvider<DetailSheetOpenNotifier, bool>(DetailSheetOpenNotifier.new);
+
+/// Shell persistente de la app: AppBar, BottomBar y FAB compartidos.
+///
+/// Las rutas hijas se renderizan en el [body] del Scaffold. El AppBar muestra
+/// el botón de cerrar sesión a la izquierda y el botón de ajustes a la derecha.
+///
+/// `routerState` viene del builder del `ShellRoute` y representa la ruta hija
+/// activa (no la del shell), así el FAB sabe si estamos en
+/// `/lists`, `/lists/:id` o `/appointments`.
+class AppShell extends ConsumerWidget {
+  const AppShell({super.key, required this.routerState, required this.child});
+
+  final GoRouterState routerState;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // `uri.path` siempre refleja la URL completa actual; `matchedLocation`
+    // dentro de un ShellRoute representa solo el segmento de la propia shell,
+    // por lo que detectar `/lists/:id` requiere mirar el path real.
+    final location = routerState.uri.path;
+    final colors = context.colors;
+    final isDark = colors.canvas.computeLuminance() < 0.05;
+
+    final isLists = location == Routes.todoLists || location == Routes.home;
+    final isListDetail = RegExp(r'^/lists/[^/]+$').hasMatch(location);
+    final isAppointments = location == Routes.appointments;
+
+    // ── Rutas anidadas: ocultar chrome del shell ──
+    // Cuando el usuario está en una pantalla de detalle o edición de tarea
+    // (p. ej. /lists/:id/todos/new), la pantalla hija proporciona su propia
+    // AppBar con botón de volver. Ocultamos la AppBar del shell para evitar
+    // AppBars anidadas y la BottomBar para dar una experiencia full-screen.
+    final isNestedRoute = RegExp(r'^/lists/[^/]+/.+').hasMatch(location);
+
+    // ── Sheet de detalle abierto: ocultar FAB y BottomBar ──
+    // Evita que el FAB (80 px) y la barra de navegación se superpongan
+    // al contenido del bottom sheet modal.
+    final isDetailSheetOpen = ref.watch(detailSheetOpenProvider);
+
+    // ── FAB: solo en listas y tareas (integrado en la bottom bar) ──
+    VoidCallback? onFabTap;
+    String? fabTooltip;
+    if (isLists) {
+      fabTooltip = 'Nueva lista';
+      onFabTap = () => context.push(Routes.todoListNew);
+    } else if (isListDetail) {
+      final listId = location.split('/').last;
+      fabTooltip = 'Nueva tarea';
+      onFabTap = () => context.push(Routes.todoNew(listId));
+    } else if (isAppointments) {
+      fabTooltip = 'Nueva cita';
+      onFabTap = () => context.push(Routes.appointmentNew);
+    }
+
+    // ── Título del AppBar ──
+    // Si estamos dentro de una lista concreta (/lists/:id), mostramos
+    // el nombre de la lista. En caso contrario, el nombre de la app.
+    String appBarTitle = 'ComfyList';
+    if (isListDetail) {
+      final listId = location.split('/').last;
+      final listsState = ref.watch(todoListsProvider);
+      if (listsState is TodoListsData) {
+        final list = listsState.items
+            .cast<TodoList?>()
+            .firstWhere((l) => l?.id == listId, orElse: () => null);
+        if (list != null) {
+          appBarTitle = list.name;
+        }
+      }
+    }
+
+    // ── BottomBar: pestaña activa según la ruta ──
+    final activeTab =
+        isAppointments ? AppBottomTab.appointments : AppBottomTab.tasks;
+
+    final hideChrome = isNestedRoute || isDetailSheetOpen;
+
+    return Scaffold(
+      appBar: null,
+      body: Stack(
+        children: [
+          child,
+          // ── AppBar superior anclado ──
+          if (!hideChrome)
+            Positioned(
+              left: 0,
+              right: 0,
+              top: 0,
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(24),
+                ),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  child: Container(
+                    padding: EdgeInsets.only(
+                      top: MediaQuery.of(context).padding.top,
+                      bottom: AppSpacing.sm,
+                      left: AppSpacing.lg,
+                      right: AppSpacing.lg,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colors.canvas.withValues(alpha: 0.7),
+                      borderRadius: const BorderRadius.vertical(
+                        bottom: Radius.circular(24),
+                      ),
+                      border: Border(
+                        left: BorderSide(
+                          color: isDark
+                              ? colors.ink.withValues(alpha: 0.18)
+                              : colors.ink.withValues(alpha: 0.12),
+                          width: 1.2,
+                        ),
+                        right: BorderSide(
+                          color: isDark
+                              ? colors.ink.withValues(alpha: 0.18)
+                              : colors.ink.withValues(alpha: 0.12),
+                          width: 1.2,
+                        ),
+                        bottom: BorderSide(
+                          color: isDark
+                              ? colors.ink.withValues(alpha: 0.18)
+                              : colors.ink.withValues(alpha: 0.12),
+                          width: 1.2,
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        if (isListDetail)
+                          IconButton(
+                            icon: Icon(
+                              Icons.arrow_back_rounded,
+                              color: colors.ink,
+                              size: 22,
+                            ),
+                            tooltip: 'Volver',
+                            onPressed: () => context.go(Routes.todoLists),
+                          )
+                        else
+                          IconButton(
+                            icon: Icon(
+                              Icons.logout_outlined,
+                              color: colors.error,
+                              size: 22,
+                            ),
+                            tooltip: 'Cerrar sesión',
+                            onPressed: () => ref.read(authProvider.notifier).signOut(),
+                          ),
+                        Expanded(
+                          child: Center(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Image.asset(
+                                  'assets/logo-no-text-background.png',
+                                  width: 24,
+                                  height: 24,
+                                ),
+                                const SizedBox(width: AppSpacing.xs),
+                                Text(
+                                  appBarTitle,
+                                  style: AppTypography.displaySm.copyWith(
+                                    color: colors.ink,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            Icons.settings_outlined,
+                            color: colors.ink,
+                            size: 22,
+                          ),
+                          tooltip: 'Ajustes',
+                          onPressed: () => context.push(Routes.settings),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          // ── BottomBar flotante inferior ──
+          if (!hideChrome)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: AppBottomBar(
+                activeTab: activeTab,
+                onTasksTap: () {
+                  if (!isLists) context.go(Routes.todoLists);
+                },
+                onAppointmentsTap: () {
+                  if (!isAppointments) context.go(Routes.appointments);
+                },
+                onFabTap: onFabTap,
+                fabTooltip: fabTooltip,
+                visible: !hideChrome,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
