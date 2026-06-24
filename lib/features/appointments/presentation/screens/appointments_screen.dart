@@ -82,20 +82,6 @@ class _AppointmentsList extends ConsumerStatefulWidget {
 class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
   final _tileRevealProgressByDate = <DateTime, Map<String, double>>{};
 
-  /// Máximo progreso del grupo — usado solo como trigger de `setState`
-  /// (detectar transiciones de reposo a activo). La separación visual
-  /// por tile se calcula con [_effectiveSeparationFor].
-  double _groupRevealProgress(DateTime date) {
-    final tileProgress = _tileRevealProgressByDate[date];
-    if (tileProgress == null || tileProgress.isEmpty) return 0;
-
-    var maxProgress = 0.0;
-    for (final progress in tileProgress.values) {
-      if (progress > maxProgress) maxProgress = progress;
-    }
-    return maxProgress;
-  }
-
   /// Progreso de separación por borde (top/bottom) de un tile.
   /// - `top` se ve afectado por el progreso del propio tile y del vecino
   ///   ANTERIOR (si existe): si el vecino de arriba se desliza, este
@@ -144,7 +130,6 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
     required String appointmentId,
     required double progress,
   }) {
-    final previous = _groupRevealProgress(date);
     final nextTileProgress = progress.clamp(0.0, 1.0).toDouble();
     final tileProgress = _tileRevealProgressByDate.putIfAbsent(
       date,
@@ -160,11 +145,12 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
       tileProgress[appointmentId] = nextTileProgress;
     }
 
-    final next = _groupRevealProgress(date);
-    final crossedRestState = (previous == 0) != (next == 0);
-    if ((next - previous).abs() > 0.01 || crossedRestState) {
-      setState(() {});
-    }
+    // setState en cada callback (limitado por el dedup interno de
+    // SwipeRevealActions, ~100 por reveal). Sin dedup aquí porque el
+    // progreso del adyacente depende de la entrada del tile swipado
+    // en el mapa, y cualquier cambio de ese mapa debe reflejarse en
+    // el build para que el borde del vecino se actualice al instante.
+    setState(() {});
   }
 
   void _removeStaleRevealProgress(
