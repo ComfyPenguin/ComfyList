@@ -70,7 +70,7 @@ flutter analyze             # Análisis estático
 
 - Copy visible al usuario: **español de España**, usando "tú"
 - Código (clases, vars, archivos): **inglés**, snake_case archivos, PascalCase clases
-- Comentarios: español de España
+- Comentarios: español de España, **solo para explicar brevemente una función o código muy complejo** — no ensuciar el código con comentarios obvios o redundantes
 
 ## Do
 
@@ -79,6 +79,7 @@ flutter analyze             # Análisis estático
 - Usar Result<T> sealed class (Ok | Err) en repositorios — nunca lanzar excepciones
 - Usar mocktail para mocks
 - Usar tematización del proyecto (app_colors, app_typography, app_spacing, app_radius)
+- Si encuentras comentarios redundantes u obvios en el código (explicando lo que el código ya dice), rectifícalos: bórralos o déjalos en una sola línea breve solo si aportan contexto no obvio
 - Conventional commits (sin Co-Authored-By)
 
 ## Do NOT
@@ -89,6 +90,7 @@ flutter analyze             # Análisis estático
 - Añadir otros state managers
 - Mezclar lógica de negocio en UI
 - Crear archivos .md salvo que se pida explícitamente
+- Añadir comentarios redundantes u obvios en el código
 
 ## Gotchas
 
