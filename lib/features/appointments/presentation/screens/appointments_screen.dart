@@ -95,6 +95,14 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
   /// queda en la posición natural (top del contenido).
   final _todayKey = GlobalKey();
 
+  /// Altura del spacer vacío que añadimos al final del ListView cuando
+  /// el contenido total es más bajo que lo necesario para colocar HOY
+  /// en la parte superior visible. Lo calcula [_scrollToToday] en el
+  /// primer post-frame y se queda fijo hasta el siguiente montaje del
+  /// widget (cambio de pestaña), que es exactamente cuando queremos
+  /// re-medir.
+  double _bottomSpacerHeight = 0;
+
   /// Evita re-scrollear a HOY en rebuilds posteriores al montaje
   /// (p. ej. al añadir o eliminar una cita). Se resetea solo cuando
   /// el widget se re-monta, que es exactamente cuando queremos
@@ -143,12 +151,29 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
     final viewport = RenderAbstractViewport.maybeOf(renderObject);
     if (viewport == null) return;
     final rawOffset = viewport.getOffsetToReveal(renderObject, 0.0).offset;
-    final adjustedOffset =
-        (rawOffset - widget.topPadding).clamp(
-          0.0,
-          _scrollController.position.maxScrollExtent,
-        );
-    _scrollController.jumpTo(adjustedOffset);
+    final adjustedOffset = rawOffset - widget.topPadding;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+
+    // Si adjustedOffset supera el scroll máximo disponible, el contenido
+    // total no es lo bastante alto para colocar HOY en la parte superior
+    // del área visible. Añadimos un spacer al final con la altura que
+    // falta y reintentamos en el siguiente frame; el spacer extiende el
+    // contenido lo justo para que HOY pueda subir al top, dejando un
+    // hueco vacío visible en la parte inferior de la pantalla.
+    if (adjustedOffset > maxScroll + 0.5) {
+      setState(() {
+        _bottomSpacerHeight += adjustedOffset - maxScroll;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _scrollToToday();
+      });
+      return;
+    }
+
+    if (adjustedOffset > 0) {
+      _scrollController.jumpTo(adjustedOffset);
+    }
     _didScrollToToday = true;
   }
 
@@ -333,6 +358,15 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
           },
         ),
       );
+    }
+
+    // Si el contenido total no es lo bastante alto para colocar HOY
+    // arriba, [_scrollToToday] reserva aquí un spacer con la altura que
+    // falta. Al extender la lista por debajo, el viewport puede hacer
+    // scroll hasta la posición de HOY y queda un hueco vacío visible en
+    // la parte inferior (sin cita, sin shimmer — solo canvas).
+    if (_bottomSpacerHeight > 0) {
+      listChildren.add(SizedBox(height: _bottomSpacerHeight));
     }
 
     // El `topPadding` se aplica como padding INTERNO del ListView
