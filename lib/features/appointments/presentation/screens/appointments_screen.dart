@@ -110,6 +110,15 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
   /// que el `ShellRoute` simple destruye el child del shell).
   bool _didScrollToToday = false;
 
+  /// Indica si la lista ya está lista para pintarse visible. Permanece
+  /// `false` durante el primer frame (y los frames de ajuste del spacer
+  /// si el contenido no era lo bastante alto) para que el usuario NO
+  /// vea el contenido en su posición natural (top de la lista = citas
+  /// pasadas) antes del `jumpTo` a HOY. Cuando vale `true`, el scroll
+  /// ya está colocado y se revela la lista de un solo golpe, sin el
+  /// "salto" perceptible de antes.
+  bool _isPositioned = false;
+
   @override
   void initState() {
     super.initState();
@@ -145,11 +154,31 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
   void _scrollToToday() {
     if (_didScrollToToday) return;
     final context = _todayKey.currentContext;
-    if (context == null) return;
+    if (context == null) {
+      // No hay grupo de HOY (no hay citas hoy): nada que posicionar.
+      // Revelamos la lista en su posición natural (top) directamente.
+      setState(() {
+        _didScrollToToday = true;
+        _isPositioned = true;
+      });
+      return;
+    }
     final renderObject = context.findRenderObject();
-    if (renderObject is! RenderBox) return;
+    if (renderObject is! RenderBox) {
+      setState(() {
+        _didScrollToToday = true;
+        _isPositioned = true;
+      });
+      return;
+    }
     final viewport = RenderAbstractViewport.maybeOf(renderObject);
-    if (viewport == null) return;
+    if (viewport == null) {
+      setState(() {
+        _didScrollToToday = true;
+        _isPositioned = true;
+      });
+      return;
+    }
     final rawOffset = viewport.getOffsetToReveal(renderObject, 0.0).offset;
     final adjustedOffset = rawOffset - widget.topPadding;
     final maxScroll = _scrollController.position.maxScrollExtent;
@@ -160,6 +189,11 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
     // falta y reintentamos en el siguiente frame; el spacer extiende el
     // contenido lo justo para que HOY pueda subir al top, dejando un
     // hueco vacío visible en la parte inferior de la pantalla.
+    //
+    // En esta rama NO marcamos `_isPositioned = true`: la lista sigue
+    // invisible mientras se ajusta el spacer para que, cuando por fin
+    // saltemos a HOY, el usuario vea directamente el resultado final
+    // sin parpadeos intermedios.
     if (adjustedOffset > maxScroll + 0.5) {
       setState(() {
         _bottomSpacerHeight += adjustedOffset - maxScroll;
@@ -174,7 +208,10 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
     if (adjustedOffset > 0) {
       _scrollController.jumpTo(adjustedOffset);
     }
-    _didScrollToToday = true;
+    setState(() {
+      _didScrollToToday = true;
+      _isPositioned = true;
+    });
   }
 
   /// Progreso de separación por borde (top/bottom) de un tile.
@@ -382,7 +419,7 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
     // `Scrollable.ensureVisible(alignment: 0.0)` alinearía con el
     // top=0 de la pantalla (detrás del AppBar). Ver el comentario
     // de `_scrollToToday` para el detalle del cálculo.
-    return ListView(
+    final listView = ListView(
       controller: _scrollController,
       padding: EdgeInsets.fromLTRB(
         AppSpacing.lg,
@@ -391,6 +428,27 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
         widget.bottomPadding,
       ),
       children: listChildren,
+    );
+
+    // Mientras `_scrollToToday` no haya terminado de colocar el
+    // scroll, mantenemos la lista invisible. Esto evita que el
+    // usuario vea el contenido en su posición natural (top de la
+    // lista) durante el frame o dos que dura el cálculo del spacer
+    // y el `jumpTo` a HOY.
+    //
+    // Usamos `AnimatedOpacity` (no `Opacity`) para que el revelado
+    // sea una transición suave en lugar de un salto binario. Sin
+    // la animación, el cambio 0→1 es instantáneo y el ojo lo
+    // registra como un parpadeo del lienzo de fondo. Con una
+    // curva `easeOut` de 180ms, el cerebro percibe la aparición
+    // como una transición deliberada (el mismo patrón que iOS
+    // usa al presentar modales o Android al lanzar activities),
+    // no como un fallo visual.
+    return AnimatedOpacity(
+      opacity: _isPositioned ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      child: listView,
     );
   }
 
