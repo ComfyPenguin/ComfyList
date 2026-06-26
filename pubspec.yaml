@@ -43,7 +43,6 @@ dependencies:
 
   # Animaciones / assets
   flutter_animate: ^4.5.2
-  rive: ^0.14.6
   lottie: ^3.3.3
   flutter_svg: ^2.3.0
 
