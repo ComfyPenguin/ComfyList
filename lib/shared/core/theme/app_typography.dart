@@ -1,13 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Tokens tipográficos del sistema (DESIGN.md — Uber-inspired).
-///
-/// Dos familias, dos roles:
-///   - displayFamily → cabeceras (UberMove). Peso 700 siempre, sentence-case.
-///   - bodyFamily    → texto/botones/links (UberMoveText). Pesos 400/500.
-///
-/// UberMove no es público; usamos `PlusJakartaSans` como fuente canónica
-/// del producto (declarada en `pubspec.yaml`).
+/// Tokens tipográficos del sistema.
 class AppTypography {
   AppTypography._();
 

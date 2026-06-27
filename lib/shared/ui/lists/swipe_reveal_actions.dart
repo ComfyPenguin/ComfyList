@@ -38,6 +38,7 @@ class SwipeRevealActions extends StatefulWidget {
     this.rightAction,
     this.onRevealProgressChanged,
     this.onRightRevealProgressChanged,
+    this.onLeftRevealProgressChanged,
     this.actionOverlap = 24,
     this.actionBorderRadius,
   });
@@ -59,6 +60,11 @@ class SwipeRevealActions extends StatefulWidget {
   /// según se revela el atajo. Útil para disparar efectos solo cuando se abre
   /// la acción derecha (p. ej. reproducir un Lottie una sola vez por reveal).
   final ValueChanged<double>? onRightRevealProgressChanged;
+
+  /// Progreso signed del lado izquierdo: 0 cerrado, valores positivos de 0 a 1
+  /// según se revela el atajo. Simétrico al derecho, para efectos asociados a
+  /// la acción izquierda.
+  final ValueChanged<double>? onLeftRevealProgressChanged;
 
   @override
   State<SwipeRevealActions> createState() => _SwipeRevealActionsState();
@@ -127,6 +133,10 @@ class _SwipeRevealActionsState extends State<SwipeRevealActions>
     // el lado izquierdo, para que el listener solo vea el lado que le importa.
     widget.onRightRevealProgressChanged
         ?.call(value < 0 ? value.clamp(-1.0, 0.0) : 0.0);
+    // Progreso izquierdo normalizado a 0..1; 0 si está cerrado o se revela
+    // el lado derecho.
+    widget.onLeftRevealProgressChanged
+        ?.call(value > 0 ? value.clamp(0.0, 1.0) : 0.0);
   }
 
   int _directionFor(double value) {

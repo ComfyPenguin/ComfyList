@@ -8,6 +8,7 @@ import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/ui/lists/swipe_reveal_actions.dart';
+import '../../../../shared/ui/pencil_edit_icon.dart';
 import '../../../../shared/ui/recycle_bin_icon.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../../settings/presentation/providers/settings_state.dart';
@@ -28,12 +29,14 @@ class AppointmentTile extends ConsumerStatefulWidget {
     this.completionEnabled = false,
     this.groupIndex = 0,
     this.groupSize = 1,
-    this.separationProgress = 1,
+    this.topSeparationProgress = 1,
+    this.bottomSeparationProgress = 1,
     this.onRevealProgressChanged,
   }) : assert(groupIndex >= 0),
        assert(groupSize > 0),
        assert(groupIndex < groupSize),
-       assert(separationProgress >= 0 && separationProgress <= 1);
+       assert(topSeparationProgress >= 0 && topSeparationProgress <= 1),
+       assert(bottomSeparationProgress >= 0 && bottomSeparationProgress <= 1);
 
   final Appointment appointment;
   final ValueChanged<bool> onToggle;
@@ -48,8 +51,14 @@ class AppointmentTile extends ConsumerStatefulWidget {
   /// Número total de cards dentro del grupo visual.
   final int groupSize;
 
-  /// 0 = cards unidas, 1 = cards completamente despegadas.
-  final double separationProgress;
+  /// Separación del borde superior: 0 = pegado al vecino de arriba,
+  /// 1 = despegado. Solo se aplica si no es el primer tile del grupo
+  /// (en ese caso el borde es "outer" y siempre redondeado).
+  final double topSeparationProgress;
+
+  /// Separación del borde inferior: 0 = pegado al vecino de abajo,
+  /// 1 = despegado. Solo se aplica si no es el último tile del grupo.
+  final double bottomSeparationProgress;
 
   /// Progreso absoluto del swipe horizontal para revelar editar/borrar.
   final ValueChanged<double>? onRevealProgressChanged;
@@ -62,8 +71,17 @@ class AppointmentTile extends ConsumerStatefulWidget {
 }
 
 class _AppointmentTileState extends ConsumerState<AppointmentTile> {
+  double _lastLeftReveal = 0;
+  int _leftRevealCount = 0;
   double _lastRightReveal = 0;
   int _rightRevealCount = 0;
+
+  void _onLeftReveal(double progress) {
+    if (_lastLeftReveal < 0.6 && progress >= 0.6) {
+      setState(() => _leftRevealCount++);
+    }
+    _lastLeftReveal = progress;
+  }
 
   void _onRightReveal(double progress) {
     if (_lastRightReveal > -0.6 && progress <= -0.6) {
@@ -75,18 +93,32 @@ class _AppointmentTileState extends ConsumerState<AppointmentTile> {
   BorderRadius _borderRadiusForPosition() {
     final isFirst = widget.groupIndex == 0;
     final isLast = widget.groupIndex == widget.groupSize - 1;
-    final t = widget.separationProgress.clamp(0.0, 1.0).toDouble();
-    final innerRadius = lerpDouble(
+    final tTop = widget.topSeparationProgress.clamp(0.0, 1.0).toDouble();
+    final tBottom = widget.bottomSeparationProgress.clamp(0.0, 1.0).toDouble();
+    final innerRadiusTop = lerpDouble(
       AppointmentTile._joinedRadius,
       AppointmentTile._outerRadius,
-      t,
+      tTop,
+    )!;
+    final innerRadiusBottom = lerpDouble(
+      AppointmentTile._joinedRadius,
+      AppointmentTile._outerRadius,
+      tBottom,
     )!;
 
     return BorderRadius.only(
-      topLeft: Radius.circular(isFirst ? AppointmentTile._outerRadius : innerRadius),
-      topRight: Radius.circular(isFirst ? AppointmentTile._outerRadius : innerRadius),
-      bottomLeft: Radius.circular(isLast ? AppointmentTile._outerRadius : innerRadius),
-      bottomRight: Radius.circular(isLast ? AppointmentTile._outerRadius : innerRadius),
+      topLeft: Radius.circular(
+        isFirst ? AppointmentTile._outerRadius : innerRadiusTop,
+      ),
+      topRight: Radius.circular(
+        isFirst ? AppointmentTile._outerRadius : innerRadiusTop,
+      ),
+      bottomLeft: Radius.circular(
+        isLast ? AppointmentTile._outerRadius : innerRadiusBottom,
+      ),
+      bottomRight: Radius.circular(
+        isLast ? AppointmentTile._outerRadius : innerRadiusBottom,
+      ),
     );
   }
 
@@ -137,11 +169,12 @@ class _AppointmentTileState extends ConsumerState<AppointmentTile> {
       clipBehavior: Clip.none,
       child: SwipeRevealActions(
         onRevealProgressChanged: widget.onRevealProgressChanged,
+        onLeftRevealProgressChanged: _onLeftReveal,
         onRightRevealProgressChanged: _onRightReveal,
         actionOverlap: AppointmentTile._outerRadius,
         actionBorderRadius: cardRadius,
         leftAction: SwipeRevealAction(
-          icon: const Icon(Icons.edit_outlined),
+          icon: PencilEditIcon(key: ValueKey(_leftRevealCount)),
           label: 'Editar cita',
           background: colors.surfacePressed,
           foreground: colors.ink,

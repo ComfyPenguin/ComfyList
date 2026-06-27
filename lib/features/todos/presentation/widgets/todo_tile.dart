@@ -5,6 +5,7 @@ import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/ui/lists/swipe_reveal_actions.dart';
+import '../../../../shared/ui/pencil_edit_icon.dart';
 import '../../../../shared/ui/recycle_bin_icon.dart';
 import '../../domain/entities/todo.dart';
 
@@ -32,8 +33,17 @@ class TodoTile extends StatefulWidget {
 }
 
 class _TodoTileState extends State<TodoTile> {
+  double _lastLeftReveal = 0;
+  int _leftRevealCount = 0;
   double _lastRightReveal = 0;
   int _rightRevealCount = 0;
+
+  void _onLeftReveal(double progress) {
+    if (_lastLeftReveal < 0.6 && progress >= 0.6) {
+      setState(() => _leftRevealCount++);
+    }
+    _lastLeftReveal = progress;
+  }
 
   void _onRightReveal(double progress) {
     // Dispara al cruzar el umbral de apertura (~-0.6, igual que el
@@ -60,9 +70,10 @@ class _TodoTileState extends State<TodoTile> {
       shape: const RoundedRectangleBorder(borderRadius: AppRadius.brXl),
       clipBehavior: Clip.antiAlias,
       child: SwipeRevealActions(
+        onLeftRevealProgressChanged: _onLeftReveal,
         onRightRevealProgressChanged: _onRightReveal,
         leftAction: SwipeRevealAction(
-          icon: const Icon(Icons.edit_outlined),
+          icon: PencilEditIcon(key: ValueKey(_leftRevealCount)),
           label: 'Editar tarea',
           background: colors.surfacePressed,
           foreground: colors.ink,

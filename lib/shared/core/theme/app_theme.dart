@@ -6,8 +6,6 @@ import 'app_radius.dart';
 import 'app_spacing.dart';
 import 'app_typography.dart';
 
-/// Construye los `ThemeData` claro/oscuro a partir de los tokens del DS
-/// (DESIGN.md — Uber-inspired: duet blanco/negro, geometría pill).
 class AppTheme {
   AppTheme._();
 

@@ -110,6 +110,20 @@ class TodoListsRepositoryImpl implements TodoListsRepository {
     }
   }
 
+  @override
+  void pauseAll() {
+    for (final w in _watchers.values) {
+      w.pause();
+    }
+  }
+
+  @override
+  void resumeAll() {
+    for (final w in _watchers.values) {
+      w.resume();
+    }
+  }
+
   void dispose() {
     for (final w in _watchers.values) {
       w.dispose();
@@ -166,6 +180,22 @@ class _Watcher {
     _timer?.cancel();
     _timer = null;
     _running = false;
+  }
+
+  // Pausa el polling en background: el OS mata los sockets y el primer tick
+  // tras resume lanzaría errores de red/auth contra token/conexión caducados.
+  void pause() {
+    _timer?.cancel();
+    _timer = null;
+  }
+
+  // Reanuda el polling al volver a foreground; refreshNow fuerza un fetch
+  // inmediato para no esperar al siguiente tick del Timer.periodic.
+  void resume() {
+    if (_running && _timer == null && _controller.hasListener) {
+      refreshNow();
+      _timer = Timer.periodic(_interval, (_) => refreshNow());
+    }
   }
 
   Future<void> refreshNow() async {

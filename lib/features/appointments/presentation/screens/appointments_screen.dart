@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:lottie/lottie.dart';
 
 import '../../../../routing/routes.dart';
+import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
@@ -28,11 +31,7 @@ class AppointmentsScreen extends ConsumerWidget {
   }
 
   Widget _buildBody(BuildContext context, AppointmentsState state) {
-    // Offset para no tapar el contenido bajo el AppBar anclado.
     final topOffset = MediaQuery.of(context).padding.top + 56 + AppSpacing.md;
-    // Offset inferior: 72 (alto de la píldora del BottomBar) + margen + la
-    // barra de navegación del sistema, para que el último tile no quede
-    // tapado por el chrome inferior.
     final bottomOffset =
         72 + AppSpacing.lg + MediaQuery.of(context).padding.bottom;
 
@@ -82,15 +81,122 @@ class _AppointmentsList extends ConsumerStatefulWidget {
 class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
   final _tileRevealProgressByDate = <DateTime, Map<String, double>>{};
 
-  double _groupRevealProgress(DateTime date) {
-    final tileProgress = _tileRevealProgressByDate[date];
-    if (tileProgress == null || tileProgress.isEmpty) return 0;
+  /// Controller del ListView — se usa para reposicionar el scroll
+  /// inicial a la altura del grupo de HOY en el primer frame.
+  final _scrollController = ScrollController();
 
-    var maxProgress = 0.0;
-    for (final progress in tileProgress.values) {
-      if (progress > maxProgress) maxProgress = progress;
+  /// Key anclada al grupo de HOY. Permite que [Scrollable.ensureVisible]
+  /// salte a la posición de HOY al montar la pantalla. Si HOY no
+  /// tiene citas, esta key nunca se asigna a un widget y el scroll se
+  /// queda en la posición natural (top del contenido).
+  final _todayKey = GlobalKey();
+
+  /// Altura del spacer vacío que añadimos al final del ListView cuando
+  /// el contenido total es más bajo que lo necesario para colocar HOY
+  /// en la parte superior visible.
+  double _bottomSpacerHeight = 0;
+
+  /// Evita re-scrollear a HOY en rebuilds posteriores al montaje
+
+  bool _didScrollToToday = false;
+
+  /// Indica si la lista ya está lista para pintarse visible.
+  bool _isPositioned = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _scrollToToday();
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToToday() {
+    if (_didScrollToToday) return;
+    final context = _todayKey.currentContext;
+    if (context == null) {
+      setState(() {
+        _didScrollToToday = true;
+        _isPositioned = true;
+      });
+      return;
     }
-    return maxProgress;
+    final renderObject = context.findRenderObject();
+    if (renderObject is! RenderBox) {
+      setState(() {
+        _didScrollToToday = true;
+        _isPositioned = true;
+      });
+      return;
+    }
+    final viewport = RenderAbstractViewport.maybeOf(renderObject);
+    if (viewport == null) {
+      setState(() {
+        _didScrollToToday = true;
+        _isPositioned = true;
+      });
+      return;
+    }
+    final rawOffset = viewport.getOffsetToReveal(renderObject, 0.0).offset;
+    final adjustedOffset = rawOffset - widget.topPadding;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+
+
+    if (adjustedOffset > maxScroll + 0.5) {
+      setState(() {
+        _bottomSpacerHeight += adjustedOffset - maxScroll;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _scrollToToday();
+      });
+      return;
+    }
+
+    if (adjustedOffset > 0) {
+      _scrollController.jumpTo(adjustedOffset);
+    }
+    setState(() {
+      _didScrollToToday = true;
+      _isPositioned = true;
+    });
+  }
+
+  ({double top, double bottom}) _effectiveSeparationFor({
+    required DateTime date,
+    required int tileIndex,
+    required List<Appointment> appointments,
+  }) {
+    final tileProgress = _tileRevealProgressByDate[date];
+    if (tileProgress == null || tileProgress.isEmpty) {
+      return (top: 0.0, bottom: 0.0);
+    }
+
+    final myId = appointments[tileIndex].id;
+    final myProgress = tileProgress[myId] ?? 0.0;
+
+    final prevId = tileIndex > 0
+        ? appointments[tileIndex - 1].id
+        : null;
+    final nextId = tileIndex < appointments.length - 1
+        ? appointments[tileIndex + 1].id
+        : null;
+    final prevProgress =
+        prevId != null ? (tileProgress[prevId] ?? 0.0) : 0.0;
+    final nextProgress =
+        nextId != null ? (tileProgress[nextId] ?? 0.0) : 0.0;
+
+    final top = myProgress > prevProgress ? myProgress : prevProgress;
+    final bottom = myProgress > nextProgress ? myProgress : nextProgress;
+
+    return (top: top, bottom: bottom);
   }
 
   void _setTileRevealProgress({
@@ -98,7 +204,6 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
     required String appointmentId,
     required double progress,
   }) {
-    final previous = _groupRevealProgress(date);
     final nextTileProgress = progress.clamp(0.0, 1.0).toDouble();
     final tileProgress = _tileRevealProgressByDate.putIfAbsent(
       date,
@@ -114,11 +219,7 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
       tileProgress[appointmentId] = nextTileProgress;
     }
 
-    final next = _groupRevealProgress(date);
-    final crossedRestState = (previous == 0) != (next == 0);
-    if ((next - previous).abs() > 0.01 || crossedRestState) {
-      setState(() {});
-    }
+    setState(() {});
   }
 
   void _removeStaleRevealProgress(
@@ -171,6 +272,7 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
       final dateOnly = DateTime(d.year, d.month, d.day);
       grouped.putIfAbsent(dateOnly, () => []).add(appt);
     }
+
     final sortedDates = grouped.keys.toList()..sort();
     final visibleDates = sortedDates.toSet();
     _tileRevealProgressByDate.removeWhere(
@@ -190,11 +292,17 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
 
       listChildren.add(
         _AppointmentGroup(
+          groupKey: _isToday(date) ? _todayKey : null,
           dateLabel: _formatDateHeader(date),
+          isToday: _isToday(date),
           dateHeaderStyle: dateHeaderStyle,
           appointments: appts,
           completionEnabled: completionEnabled,
-          separationTarget: _groupRevealProgress(date),
+          separationFor: (i) => _effectiveSeparationFor(
+            date: date,
+            tileIndex: i,
+            appointments: appts,
+          ),
           onToggle: (appt, value) => notifier.toggleDone(appt.id, value),
           onTap: (appt) => context.push(Routes.appointmentDetail(appt.id)),
           onEdit: (appt) => context.push(Routes.appointmentEdit(appt.id)),
@@ -218,7 +326,12 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
       );
     }
 
-    return ListView(
+    if (_bottomSpacerHeight > 0) {
+      listChildren.add(SizedBox(height: _bottomSpacerHeight));
+    }
+
+    final listView = ListView(
+      controller: _scrollController,
       padding: EdgeInsets.fromLTRB(
         AppSpacing.lg,
         widget.topPadding,
@@ -226,6 +339,13 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
         widget.bottomPadding,
       ),
       children: listChildren,
+    );
+
+    return AnimatedOpacity(
+      opacity: _isPositioned ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      child: listView,
     );
   }
 
@@ -236,20 +356,29 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
     final today = DateTime(now.year, now.month, now.day);
     final tomorrow = today.add(const Duration(days: 1));
 
-    if (date == today) return 'HOY';
+    if (date == today) return 'CITAS DE HOY';
     if (date == tomorrow) return 'MAÑANA';
 
     return DateFormat('EEEE, d MMM', 'es_ES').format(date).toUpperCase();
+  }
+
+  /// Usado para diferenciar la cabecera de "hoy" (píldora negra) del resto (texto plano).
+  bool _isToday(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    return date == today;
   }
 }
 
 class _AppointmentGroup extends StatelessWidget {
   const _AppointmentGroup({
+    this.groupKey,
     required this.dateLabel,
+    required this.isToday,
     required this.dateHeaderStyle,
     required this.appointments,
     required this.completionEnabled,
-    required this.separationTarget,
+    required this.separationFor,
     required this.onToggle,
     required this.onTap,
     required this.onEdit,
@@ -259,11 +388,22 @@ class _AppointmentGroup extends StatelessWidget {
 
   static const double _joinedGap = 2;
 
+  /// Key opcional que se aplica al [Column] raíz del grupo. Lo usa
+  /// [_AppointmentsListState] para anclar el grupo de HOY con un
+  /// [GlobalKey] y poder reposicionar el scroll inicial a su altura
+  /// con `Scrollable.ensureVisible`. 
+  final Key? groupKey;
+
   final String dateLabel;
+  final bool isToday;
   final TextStyle dateHeaderStyle;
   final List<Appointment> appointments;
   final bool completionEnabled;
-  final double separationTarget;
+
+  /// Progreso de separación por borde (top/bottom) para el tile en
+  /// `appointments[i]`.
+  final ({double top, double bottom}) Function(int tileIndex) separationFor;
+
   final void Function(Appointment appointment, bool value) onToggle;
   final void Function(Appointment appointment) onTap;
   final void Function(Appointment appointment) onEdit;
@@ -273,91 +413,136 @@ class _AppointmentGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final disableAnimations = MediaQuery.of(context).disableAnimations;
+    final colors = context.colors;
+    final children = <Widget>[
+      Padding(
+        padding: const EdgeInsets.only(
+          left: AppSpacing.xl,
+          bottom: AppSpacing.md,
+        ),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: isToday
+              ? _TodayPill(label: dateLabel, colors: colors)
+              : Text(dateLabel, style: dateHeaderStyle),
+        ),
+      ),
+    ];
 
-    return _SpringyProgressBuilder(
-      target: separationTarget,
-      enabled: !disableAnimations,
-      builder: (context, progress) {
-        final children = <Widget>[
-          Padding(
-            padding: const EdgeInsets.only(
-              left: AppSpacing.xl,
-              bottom: AppSpacing.md,
-            ),
-            child: Text(dateLabel, style: dateHeaderStyle),
-          ),
-        ];
+    for (var i = 0; i < appointments.length; i++) {
+      final appt = appointments[i];
+      final edges = separationFor(i);
+      children.add(
+        AppointmentTile(
+          key: ValueKey(appt.id),
+          appointment: appt,
+          completionEnabled: completionEnabled,
+          groupIndex: i,
+          groupSize: appointments.length,
+          topSeparationProgress: edges.top,
+          bottomSeparationProgress: edges.bottom,
+          onToggle: (v) => onToggle(appt, v),
+          onTap: () => onTap(appt),
+          onEdit: () => onEdit(appt),
+          onDelete: () => onDelete(appt),
+          onRevealProgressChanged: (value) {
+            onRevealProgressChanged(appt, value);
+          },
+        ),
+      );
 
-        for (var i = 0; i < appointments.length; i++) {
-          final appt = appointments[i];
-          children.add(
-            AppointmentTile(
-              appointment: appt,
-              completionEnabled: completionEnabled,
-              groupIndex: i,
-              groupSize: appointments.length,
-              separationProgress: progress,
-              onToggle: (v) => onToggle(appt, v),
-              onTap: () => onTap(appt),
-              onEdit: () => onEdit(appt),
-              onDelete: () => onDelete(appt),
-              onRevealProgressChanged: (value) {
-                onRevealProgressChanged(appt, value);
-              },
-            ),
-          );
+      if (i < appointments.length - 1) {
+        children.add(const SizedBox(height: _joinedGap));
+      }
+    }
 
-          if (i < appointments.length - 1) {
-            children.add(const SizedBox(height: _joinedGap));
-          }
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: children,
-        );
-      },
+    return Column(
+      key: groupKey,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: children,
     );
   }
 }
 
-class _SpringyProgressBuilder extends StatefulWidget {
-  const _SpringyProgressBuilder({
-    required this.target,
-    required this.enabled,
-    required this.builder,
-  });
+/// Píldora de "HOY" para la cabecera del grupo de citas del día actual.
+class _TodayPill extends StatelessWidget {
+  const _TodayPill({required this.label, required this.colors});
 
-  final double target;
-  final bool enabled;
-  final Widget Function(BuildContext context, double progress) builder;
+  final String label;
+  final AppColors colors;
 
   @override
-  State<_SpringyProgressBuilder> createState() =>
-      _SpringyProgressBuilderState();
+  Widget build(BuildContext context) {
+    final isDark = colors.canvas.computeLuminance() < 0.05;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: colors.primary,
+        borderRadius: AppRadius.brPill,
+        boxShadow: isDark
+            ? [
+                // Modo oscuro: glow luminoso doble alrededor del FAB blanco
+                BoxShadow(
+                  color: colors.primary.withValues(alpha: 0.35),
+                  blurRadius: 14,
+                  offset: Offset.zero,
+                ),
+                BoxShadow(
+                  color: colors.shadowDark,
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ]
+            : [
+                // Modo claro: sombra oscura pronunciada
+                BoxShadow(
+                  color: colors.shadowDark,
+                  blurRadius: 10,
+                  offset: const Offset(2, 5),
+                ),
+              ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _LivePulse(color: colors.onPrimary),
+          const SizedBox(width: AppSpacing.xs),
+          Text(
+            label,
+            style: AppTypography.caption.copyWith(
+              color: colors.onPrimary,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class _SpringyProgressBuilderState extends State<_SpringyProgressBuilder>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
+class _LivePulse extends StatefulWidget {
+  const _LivePulse({required this.color});
 
-  double get _target => widget.target.clamp(0.0, 1.0).toDouble();
+  final Color color;
+
+  @override
+  State<_LivePulse> createState() => _LivePulseState();
+}
+
+class _LivePulseState extends State<_LivePulse>
+    with SingleTickerProviderStateMixin {
+  static const double _size = 12;
+
+  late final AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController.unbounded(vsync: this, value: _target);
-  }
-
-  @override
-  void didUpdateWidget(covariant _SpringyProgressBuilder oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if ((_target - _controller.value).abs() < 0.001) return;
-
-    _controller
-      ..stop()
-      ..value = _target;
+    _controller = AnimationController(vsync: this);
   }
 
   @override
@@ -368,16 +553,28 @@ class _SpringyProgressBuilderState extends State<_SpringyProgressBuilder>
 
   @override
   Widget build(BuildContext context) {
-    if (!widget.enabled) {
-      return widget.builder(context, _target);
-    }
-
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, _) {
-        final progress = _controller.value.clamp(0.0, 1.0).toDouble();
-        return widget.builder(context, progress);
-      },
+    return SizedBox(
+      width: _size,
+      height: _size,
+      child: Lottie.asset(
+        'assets/lottie/live-pulse.json',
+        controller: _controller,
+        fit: BoxFit.contain,
+        repeat: true,
+        onLoaded: (composition) {
+          _controller
+            ..duration = composition.duration
+            ..repeat();
+        },
+        delegates: LottieDelegates(
+          values: [
+            ValueDelegate.color(
+              const ['**', 'Fill 1'],
+              value: widget.color,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

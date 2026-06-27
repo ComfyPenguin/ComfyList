@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Tokens de border-radius (DESIGN.md — Uber-inspired).
+/// Tokens de border-radius.
 ///
 /// La firma geométrica del sistema es el pill (999 px) — todo elemento
 /// interactivo se redondea ahí salvo el tab-toggle y `button-large-rounded`.
