@@ -74,12 +74,11 @@ flutter analyze             # Análisis estático
 
 ## Do
 
-- Tras cada cambio, correr `flutter analyze` (o `dart analyze` en libs puras) y `flutter test` para verificar que no hay errores ni regresiones
+- Tras cada cambio, correr `flutter analyze` (o `dart analyze` en libs puras)
 - Respetar estructura feature-first con 3 capas
 - Usar Result<T> sealed class (Ok | Err) en repositorios — nunca lanzar excepciones
 - Usar mocktail para mocks
 - Usar tematización del proyecto (app_colors, app_typography, app_spacing, app_radius)
-- Si encuentras comentarios redundantes u obvios en el código (explicando lo que el código ya dice), rectifícalos: bórralos o déjalos en una sola línea breve solo si aportan contexto no obvio
 - Conventional commits (sin Co-Authored-By)
 
 ## Do NOT
@@ -90,7 +89,7 @@ flutter analyze             # Análisis estático
 - Añadir otros state managers
 - Mezclar lógica de negocio en UI
 - Crear archivos .md salvo que se pida explícitamente
-- Añadir comentarios redundantes u obvios en el código
+- Añadir comentarios redundantes, obvios en el código o explicaciones largas de cómo funciona algo (solo breves aclaraciones de código complejo)
 
 ## Gotchas
 
