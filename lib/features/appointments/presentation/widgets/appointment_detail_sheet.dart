@@ -135,151 +135,163 @@ class AppointmentDetailSheet extends ConsumerWidget {
     final timeText = DateFormat('HH:mm').format(dt);
 
     return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.xxxl,
-          AppSpacing.sm,
-          AppSpacing.xxxl,
-          AppSpacing.xxxl,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Título.
-            Text(
-              appointment.title,
-              style: AppTypography.displayMd.copyWith(
-                color: colors.ink,
-                decoration: completionEnabled && appointment.isDone
-                    ? TextDecoration.lineThrough
-                    : null,
-              ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Sección de arriba: título, badge, fecha, hora, ubicación.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xxxl,
+              AppSpacing.sm,
+              AppSpacing.xxxl,
+              0,
             ),
-            const SizedBox(height: AppSpacing.lg),
-            // Fecha.
-            Row(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.calendar_today_outlined, size: 20, color: colors.muted),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(
-                    dateFull,
-                    style: AppTypography.bodyLg.copyWith(color: colors.ink),
+                // Título.
+                Text(
+                  appointment.title,
+                  style: AppTypography.displayMd.copyWith(
+                    color: colors.ink,
+                    decoration: completionEnabled && appointment.isDone
+                        ? TextDecoration.lineThrough
+                        : null,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            // Hora.
-            Row(
-              children: [
-                Icon(Icons.access_time_outlined, size: 20, color: colors.muted),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(
-                    timeText,
-                    style: AppTypography.bodyLg.copyWith(color: colors.ink),
-                  ),
-                ),
-              ],
-            ),
-            if (completionEnabled) ...[
-              const SizedBox(height: AppSpacing.xl),
-              _StatusBadge(isDone: appointment.isDone, colors: colors),
-            ],
-            if (appointment.location != null &&
-                appointment.location!.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.xl),
-              // Ubicación.
-              Row(
-                children: [
-                  Icon(Icons.location_on, size: 20, color: colors.muted),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Text(
-                      appointment.location!,
-                      style: AppTypography.bodyMd.copyWith(color: colors.body),
-                    ),
-                  ),
+                if (completionEnabled) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  _StatusBadge(isDone: appointment.isDone, colors: colors),
                 ],
-              ),
-            ],
-
-            if (appointment.description != null &&
-                appointment.description!.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.xl),
-              // Descripción.
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                decoration: BoxDecoration(
-                    // surfacePressed en dark para elevación cromática.
-                    color: isDark ? colors.surfacePressed : colors.canvasSoft,
-                    borderRadius: AppRadius.brXl,
-                    // Dark: halo claro (sombra oscura no se ve). Light: sombra M3.
-                    boxShadow: isDark
-                        ? [
-                            BoxShadow(
-                              color: colors.ink.withValues(alpha: 0.20),
-                              blurRadius: 12,
-                              spreadRadius: 1,
-                            ),
-                            BoxShadow(
-                              color: colors.ink.withValues(alpha: 0.12),
-                              blurRadius: 28,
-                              spreadRadius: 2,
-                            ),
-                          ]
-                        : [
-                            BoxShadow(
-                              color: colors.shadowDark.withValues(alpha: 0.30),
-                              blurRadius: 14,
-                              offset: const Offset(0, 6),
-                            ),
-                            BoxShadow(
-                              color: colors.shadowDark.withValues(alpha: 0.18),
-                              blurRadius: 28,
-                              offset: const Offset(0, 0),
-                            ),
-                          ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: AppSpacing.lg),
+                // Fecha.
+                Row(
                   children: [
-                    Text(
-                      'Notas',
-                      style: AppTypography.bodySmStrong.copyWith(
-                        color: colors.ink,
+                    Icon(Icons.calendar_today_outlined, size: 20, color: colors.muted),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        dateFull,
+                        style: AppTypography.bodyLg.copyWith(color: colors.ink),
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      appointment.description!,
-                      style: AppTypography.bodyMd.copyWith(color: colors.body),
                     ),
                   ],
                 ),
+                const SizedBox(height: AppSpacing.sm),
+                // Hora.
+                Row(
+                  children: [
+                    Icon(Icons.access_time_outlined, size: 20, color: colors.muted),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        timeText,
+                        style: AppTypography.bodyLg.copyWith(color: colors.ink),
+                      ),
+                    ),
+                  ],
+                ),
+                if (appointment.location != null &&
+                    appointment.location!.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  // Ubicación.
+                  Row(
+                    children: [
+                      Icon(Icons.location_on, size: 20, color: colors.muted),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          appointment.location!,
+                          style: AppTypography.bodyMd.copyWith(color: colors.body),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          // Nota a ancho completo del sheet.
+          if (appointment.description != null &&
+              appointment.description!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xxxl,
+                AppSpacing.lg,
+                AppSpacing.xxxl,
+                0,
               ),
-            ],
-
-            // Última edición.
-            const SizedBox(height: AppSpacing.xxxl),
-            _MetaRow(
-              label: 'Última edición',
-              value: _formatDate(appointment.updatedAt),
-              colors: colors,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                decoration: BoxDecoration(
+                  // surfacePressed en dark para elevación cromática.
+                  color: isDark ? colors.surfacePressed : colors.canvasSoft,
+                  borderRadius: AppRadius.brXl,
+                  // Dark: halo claro (sombra oscura no se ve). Light: sombra M3.
+                  boxShadow: isDark
+                      ? [
+                          BoxShadow(
+                            color: colors.ink.withValues(alpha: 0.20),
+                            blurRadius: 12,
+                            spreadRadius: 1,
+                          ),
+                          BoxShadow(
+                            color: colors.ink.withValues(alpha: 0.12),
+                            blurRadius: 28,
+                            spreadRadius: 2,
+                          ),
+                        ]
+                      : [
+                          BoxShadow(
+                            color: colors.shadowDark.withValues(alpha: 0.30),
+                            blurRadius: 14,
+                            offset: const Offset(0, 6),
+                          ),
+                          BoxShadow(
+                            color: colors.shadowDark.withValues(alpha: 0.18),
+                            blurRadius: 28,
+                            offset: const Offset(0, 0),
+                          ),
+                        ],
+                ),
+                child: Text(
+                  appointment.description!,
+                  style: AppTypography.bodyMd.copyWith(color: colors.body),
+                ),
+              ),
             ),
-
-            const SizedBox(height: AppSpacing.xxxl),
-            AppPrimaryButton(
-              label: 'Editar',
-              onPressed: onEdit,
-              expand: true,
+          // Sección de abajo: última edición + botón editar.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xxxl,
+              AppSpacing.xxxl,
+              AppSpacing.xxxl,
+              AppSpacing.xxxl,
             ),
-
-            SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
-          ],
-        ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Última edición.
+                _MetaRow(
+                  label: 'Última edición',
+                  value: _formatDate(appointment.updatedAt),
+                  colors: colors,
+                ),
+                const SizedBox(height: AppSpacing.xxxl),
+                AppPrimaryButton(
+                  label: 'Editar',
+                  onPressed: onEdit,
+                  expand: true,
+                ),
+                SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -340,23 +352,21 @@ class _MetaRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 100,
-          child: Text(
+    return Center(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
             label,
             style: AppTypography.bodySm.copyWith(color: colors.muted),
           ),
-        ),
-        const SizedBox(width: AppSpacing.lg),
-        Expanded(
-          child: Text(
+          const SizedBox(width: AppSpacing.lg),
+          Text(
             value,
             style: AppTypography.bodySm.copyWith(color: colors.body),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
