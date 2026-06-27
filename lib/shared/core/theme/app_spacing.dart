@@ -1,6 +1,5 @@
-/// Tokens de espaciado — base 4 px (DESIGN.md — Uber-inspired).
-///
-/// Mapeo a los tokens del DESIGN.md:
+/// Tokens de espaciado — base 4 px.
+/// 
 ///   xxs 4  · xs 6  · sm 8  · md 12 · lg 16 · xl 20 · xxl 24 · xxxl 32
 ///
 /// `section` se conserva para gaps verticales muy grandes

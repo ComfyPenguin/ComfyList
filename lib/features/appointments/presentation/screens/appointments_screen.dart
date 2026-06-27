@@ -31,11 +31,7 @@ class AppointmentsScreen extends ConsumerWidget {
   }
 
   Widget _buildBody(BuildContext context, AppointmentsState state) {
-    // Offset para no tapar el contenido bajo el AppBar anclado.
     final topOffset = MediaQuery.of(context).padding.top + 56 + AppSpacing.md;
-    // Offset inferior: 72 (alto de la píldora del BottomBar) + margen + la
-    // barra de navegación del sistema, para que el último tile no quede
-    // tapado por el chrome inferior.
     final bottomOffset =
         72 + AppSpacing.lg + MediaQuery.of(context).padding.bottom;
 
@@ -97,26 +93,14 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
 
   /// Altura del spacer vacío que añadimos al final del ListView cuando
   /// el contenido total es más bajo que lo necesario para colocar HOY
-  /// en la parte superior visible. Lo calcula [_scrollToToday] en el
-  /// primer post-frame y se queda fijo hasta el siguiente montaje del
-  /// widget (cambio de pestaña), que es exactamente cuando queremos
-  /// re-medir.
+  /// en la parte superior visible.
   double _bottomSpacerHeight = 0;
 
   /// Evita re-scrollear a HOY en rebuilds posteriores al montaje
-  /// (p. ej. al añadir o eliminar una cita). Se resetea solo cuando
-  /// el widget se re-monta, que es exactamente cuando queremos
-  /// reposicionar (al volver a la pestaña tras un cambio de tab, ya
-  /// que el `ShellRoute` simple destruye el child del shell).
+
   bool _didScrollToToday = false;
 
-  /// Indica si la lista ya está lista para pintarse visible. Permanece
-  /// `false` durante el primer frame (y los frames de ajuste del spacer
-  /// si el contenido no era lo bastante alto) para que el usuario NO
-  /// vea el contenido en su posición natural (top de la lista = citas
-  /// pasadas) antes del `jumpTo` a HOY. Cuando vale `true`, el scroll
-  /// ya está colocado y se revela la lista de un solo golpe, sin el
-  /// "salto" perceptible de antes.
+  /// Indica si la lista ya está lista para pintarse visible.
   bool _isPositioned = false;
 
   @override
@@ -134,29 +118,10 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
     super.dispose();
   }
 
-  /// Posiciona el scroll del ListView para que el grupo de HOY quede
-  /// visible en la parte superior del área de contenido (justo
-  /// debajo del AppBar translúcido del shell). Instantáneo (sin
-  /// animación) para que al entrar a la pantalla la vista
-  /// predeterminada sea "HOY arriba" sin ceremonia.
-  ///
-  /// **Por qué offset manual y no `Scrollable.ensureVisible`**: el
-  /// `topPadding` se aplica como padding INTERNO del ListView para
-  /// preservar el efecto "las listas pasan por debajo del topbar".
-  /// El viewport del `Scrollable` no incluye ese padding, así que
-  /// `ensureVisible(alignment: 0.0)` alinearía el target con el
-  /// top=0 de la pantalla (detrás del AppBar translúcido). Para
-  /// colocar el target DEBAJO del AppBar, usamos
-  /// `RenderAbstractViewport.getOffsetToReveal(target, 0.0).offset`
-  /// (que da la posición del target en el contenido) y restamos
-  /// `widget.topPadding` (el offset que el padding interno añade al
-  /// inicio del contenido scrolleable).
   void _scrollToToday() {
     if (_didScrollToToday) return;
     final context = _todayKey.currentContext;
     if (context == null) {
-      // No hay grupo de HOY (no hay citas hoy): nada que posicionar.
-      // Revelamos la lista en su posición natural (top) directamente.
       setState(() {
         _didScrollToToday = true;
         _isPositioned = true;
@@ -183,17 +148,7 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
     final adjustedOffset = rawOffset - widget.topPadding;
     final maxScroll = _scrollController.position.maxScrollExtent;
 
-    // Si adjustedOffset supera el scroll máximo disponible, el contenido
-    // total no es lo bastante alto para colocar HOY en la parte superior
-    // del área visible. Añadimos un spacer al final con la altura que
-    // falta y reintentamos en el siguiente frame; el spacer extiende el
-    // contenido lo justo para que HOY pueda subir al top, dejando un
-    // hueco vacío visible en la parte inferior de la pantalla.
-    //
-    // En esta rama NO marcamos `_isPositioned = true`: la lista sigue
-    // invisible mientras se ajusta el spacer para que, cuando por fin
-    // saltemos a HOY, el usuario vea directamente el resultado final
-    // sin parpadeos intermedios.
+
     if (adjustedOffset > maxScroll + 0.5) {
       setState(() {
         _bottomSpacerHeight += adjustedOffset - maxScroll;
@@ -214,15 +169,6 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
     });
   }
 
-  /// Progreso de separación por borde (top/bottom) de un tile.
-  /// - `top` se ve afectado por el progreso del propio tile y del vecino
-  ///   ANTERIOR (si existe): si el vecino de arriba se desliza, este
-  ///   borde debe redondearse.
-  /// - `bottom` se ve afectado por el progreso del propio tile y del
-  ///   vecino SIGUIENTE: si el vecino de abajo se desliza, este borde
-  ///   debe redondearse.
-  /// Así, al deslizar un tile solo se redondean las esquinas del tile
-  /// movido y las que están pegadas a él en su(s) vecino(s).
   ({double top, double bottom}) _effectiveSeparationFor({
     required DateTime date,
     required int tileIndex,
@@ -247,11 +193,7 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
     final nextProgress =
         nextId != null ? (tileProgress[nextId] ?? 0.0) : 0.0;
 
-    // El borde top del tile[i] se despega si se mueve el propio tile[i]
-    // o el vecino anterior (tile[i-1]).
     final top = myProgress > prevProgress ? myProgress : prevProgress;
-    // El borde bottom del tile[i] se despega si se mueve el propio
-    // tile[i] o el vecino siguiente (tile[i+1]).
     final bottom = myProgress > nextProgress ? myProgress : nextProgress;
 
     return (top: top, bottom: bottom);
@@ -277,11 +219,6 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
       tileProgress[appointmentId] = nextTileProgress;
     }
 
-    // setState en cada callback (limitado por el dedup interno de
-    // SwipeRevealActions, ~100 por reveal). Sin dedup aquí porque el
-    // progreso del adyacente depende de la entrada del tile swipado
-    // en el mapa, y cualquier cambio de ese mapa debe reflejarse en
-    // el build para que el borde del vecino se actualice al instante.
     setState(() {});
   }
 
@@ -335,12 +272,7 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
       final dateOnly = DateTime(d.year, d.month, d.day);
       grouped.putIfAbsent(dateOnly, () => []).add(appt);
     }
-    // Orden de fechas ascendente (cronológico natural):
-    // pasadas → HOY → futuras. HOY queda en su posición natural dentro
-    // de la secuencia de días. Al montar la pantalla se hace scroll
-    // a la posición de HOY (ver `_scrollToToday`) para que el
-    // "predeterminado" sea tener HOY visible arriba. Scroll up =
-    // ver pasadas, scroll down = ver futuras.
+
     final sortedDates = grouped.keys.toList()..sort();
     final visibleDates = sortedDates.toSet();
     _tileRevealProgressByDate.removeWhere(
@@ -360,9 +292,6 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
 
       listChildren.add(
         _AppointmentGroup(
-          // Key estable para que [_scrollToToday] pueda saltar al
-          // grupo de HOY en el primer frame. Se aplica solo al grupo
-          // del día actual; el resto de grupos no llevan key.
           groupKey: _isToday(date) ? _todayKey : null,
           dateLabel: _formatDateHeader(date),
           isToday: _isToday(date),
@@ -397,28 +326,10 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
       );
     }
 
-    // Si el contenido total no es lo bastante alto para colocar HOY
-    // arriba, [_scrollToToday] reserva aquí un spacer con la altura que
-    // falta. Al extender la lista por debajo, el viewport puede hacer
-    // scroll hasta la posición de HOY y queda un hueco vacío visible en
-    // la parte inferior (sin cita, sin shimmer — solo canvas).
     if (_bottomSpacerHeight > 0) {
       listChildren.add(SizedBox(height: _bottomSpacerHeight));
     }
 
-    // El `topPadding` se aplica como padding INTERNO del ListView
-    // (no como Padding wrapper exterior) para que el ListView se
-    // extienda hasta el top de la pantalla, pasando POR DETRÁS del
-    // AppBar translúcido del shell (que es un `Positioned` con
-    // `BackdropFilter` en `AppShell`). Ese es el efecto "las listas
-    // pasan por debajo del topbar" que la app busca.
-    //
-    // El `_scrollToToday()` compensa manualmente el offset para
-    // colocar el grupo de HOY debajo del AppBar (no detrás), porque
-    // el viewport del `Scrollable` no incluye el padding interno y
-    // `Scrollable.ensureVisible(alignment: 0.0)` alinearía con el
-    // top=0 de la pantalla (detrás del AppBar). Ver el comentario
-    // de `_scrollToToday` para el detalle del cálculo.
     final listView = ListView(
       controller: _scrollController,
       padding: EdgeInsets.fromLTRB(
@@ -430,20 +341,6 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
       children: listChildren,
     );
 
-    // Mientras `_scrollToToday` no haya terminado de colocar el
-    // scroll, mantenemos la lista invisible. Esto evita que el
-    // usuario vea el contenido en su posición natural (top de la
-    // lista) durante el frame o dos que dura el cálculo del spacer
-    // y el `jumpTo` a HOY.
-    //
-    // Usamos `AnimatedOpacity` (no `Opacity`) para que el revelado
-    // sea una transición suave en lugar de un salto binario. Sin
-    // la animación, el cambio 0→1 es instantáneo y el ojo lo
-    // registra como un parpadeo del lienzo de fondo. Con una
-    // curva `easeOut` de 180ms, el cerebro percibe la aparición
-    // como una transición deliberada (el mismo patrón que iOS
-    // usa al presentar modales o Android al lanzar activities),
-    // no como un fallo visual.
     return AnimatedOpacity(
       opacity: _isPositioned ? 1.0 : 0.0,
       duration: const Duration(milliseconds: 180),
@@ -465,8 +362,7 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
     return DateFormat('EEEE, d MMM', 'es_ES').format(date).toUpperCase();
   }
 
-  /// ¿Es la fecha pasada el día de hoy? Usado para diferenciar la
-  /// cabecera de "hoy" (píldora negra) del resto (texto plano).
+  /// Usado para diferenciar la cabecera de "hoy" (píldora negra) del resto (texto plano).
   bool _isToday(DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -495,9 +391,7 @@ class _AppointmentGroup extends StatelessWidget {
   /// Key opcional que se aplica al [Column] raíz del grupo. Lo usa
   /// [_AppointmentsListState] para anclar el grupo de HOY con un
   /// [GlobalKey] y poder reposicionar el scroll inicial a su altura
-  /// con `Scrollable.ensureVisible`. El resto de grupos no llevan
-  /// key (null), así no interferimos con la reconciliación normal
-  /// de Flutter ni añadimos coste innecesario.
+  /// con `Scrollable.ensureVisible`. 
   final Key? groupKey;
 
   final String dateLabel;
@@ -507,10 +401,7 @@ class _AppointmentGroup extends StatelessWidget {
   final bool completionEnabled;
 
   /// Progreso de separación por borde (top/bottom) para el tile en
-  /// `appointments[i]`. El `top` se ve afectado por el progreso del
-  /// propio tile y del vecino ANTERIOR; el `bottom` por el del propio
-  /// tile y del vecino SIGUIENTE. Así, al deslizar un tile solo se
-  /// redondean las esquinas pegadas a él en su(s) vecino(s).
+  /// `appointments[i]`.
   final ({double top, double bottom}) Function(int tileIndex) separationFor;
 
   final void Function(Appointment appointment, bool value) onToggle;
@@ -529,8 +420,6 @@ class _AppointmentGroup extends StatelessWidget {
           left: AppSpacing.xl,
           bottom: AppSpacing.md,
         ),
-        // Align evita que el Column con `stretch` estire la pill a
-        // todo el ancho — la deja en su tamaño intrínseco.
         child: Align(
           alignment: Alignment.centerLeft,
           child: isToday
@@ -545,12 +434,6 @@ class _AppointmentGroup extends StatelessWidget {
       final edges = separationFor(i);
       children.add(
         AppointmentTile(
-          // Key estable por id: evita que Flutter reuse el State del
-          // SwipeRevealActions entre slots al borrar o re-sortear la
-          // lista (al cambiar dateTime o al marcar como hecho, los
-          // tiles cambian de posición). Sin key, el AnimationController
-          // "revelado" se quedaba pegado al slot y saltaba al item
-          // equivocado.
           key: ValueKey(appt.id),
           appointment: appt,
           completionEnabled: completionEnabled,
@@ -581,13 +464,7 @@ class _AppointmentGroup extends StatelessWidget {
   }
 }
 
-/// Píldora de "HOY" para la cabecera del grupo de citas del día
-/// actual. Reutiliza el par `primary` / `onPrimary` que ya usa el FAB
-/// del BottomBar: está auto-invertido entre temas (negro/blanco en
-/// light, blanco/negro en dark), así el badge destaca sobre el
-/// canvas en ambos temas. El sombreado es el mismo que el FAB
-/// (glow luminoso en dark, sombra proyectada en light) escalado al
-/// tamaño compacto de la pill para mantener la estética.
+/// Píldora de "HOY" para la cabecera del grupo de citas del día actual.
 class _TodayPill extends StatelessWidget {
   const _TodayPill({required this.label, required this.colors});
 
@@ -647,10 +524,6 @@ class _TodayPill extends StatelessWidget {
   }
 }
 
-/// Indicador "en vivo" basado en el Lottie `assets/lottie/live-pulse.json`.
-/// El Lottie trae un fill rojo hardcodeado que tintamos con [color] para
-/// que herede el color del tema (en este caso `onDark`, mismo que el
-/// texto de la pill). El loop es continuo, sin intervención.
 class _LivePulse extends StatefulWidget {
   const _LivePulse({required this.color});
 
@@ -695,9 +568,6 @@ class _LivePulseState extends State<_LivePulse>
         },
         delegates: LottieDelegates(
           values: [
-            // Los fills del Lottie están en `**/Fill 1` (capa "circle 2"
-            // y "circle"). El wildcard pilla ambos para que el punto
-            // sólido y el anillo pulsante adopten el color del tema.
             ValueDelegate.color(
               const ['**', 'Fill 1'],
               value: widget.color,
