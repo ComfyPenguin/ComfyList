@@ -22,6 +22,4 @@ class Routes {
   static const String appointments = '/appointments';
   static const String appointmentNew = '/appointments/new';
   static String appointmentEdit(String id) => '/appointments/$id/edit';
-  static String appointmentDetail(String id) =>
-      '/appointments/$id/detail';
 }

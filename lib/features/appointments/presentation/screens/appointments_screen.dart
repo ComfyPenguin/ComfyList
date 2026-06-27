@@ -16,6 +16,7 @@ import '../../../settings/presentation/providers/settings_state.dart';
 import '../../domain/entities/appointment.dart';
 import '../providers/appointments_provider.dart';
 import '../providers/appointments_state.dart';
+import '../widgets/appointment_detail_sheet.dart';
 import '../widgets/appointment_tile.dart';
 import '../widgets/empty_state.dart';
 
@@ -304,7 +305,7 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
             appointments: appts,
           ),
           onToggle: (appt, value) => notifier.toggleDone(appt.id, value),
-          onTap: (appt) => context.push(Routes.appointmentDetail(appt.id)),
+          onTap: (appt) => showAppointmentDetailSheet(context: context, id: appt.id),
           onEdit: (appt) => context.push(Routes.appointmentEdit(appt.id)),
           onDelete: (appt) async {
             await notifier.delete(appt.id);
