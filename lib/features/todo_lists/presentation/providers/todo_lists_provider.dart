@@ -36,7 +36,11 @@ class TodoListsNotifier extends Notifier<TodoListsState> {
     _sub = repo.watchLists(uid).listen(
       (items) => state = TodoListsData(items),
       onError: (Object e, StackTrace st) {
-        state = TodoListsError(e is Failure ? e : const UnknownFailure());
+        if (state is! TodoListsData) {
+          state = TodoListsError(e is Failure ? e : const UnknownFailure());
+        }
+        // Si ya tenemos datos en pantalla, descartamos el error transitorio
+        // (siguiente poll lo arreglará). Evita parpadeo de error tras resume.
       },
     );
     ref.onDispose(() => _sub?.cancel());

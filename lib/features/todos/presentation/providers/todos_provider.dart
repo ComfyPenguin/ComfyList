@@ -43,7 +43,11 @@ class TodosNotifier extends Notifier<TodosState> {
     _sub = repo.watchTodos(uid: uid, listId: _listId).listen(
       (items) => state = TodosData(items),
       onError: (Object e, StackTrace st) {
-        state = TodosError(e is Failure ? e : const UnknownFailure());
+        if (state is! TodosData) {
+          state = TodosError(e is Failure ? e : const UnknownFailure());
+        }
+        // Si ya tenemos datos en pantalla, descartamos el error transitorio
+        // (siguiente poll lo arreglará). Evita parpadeo de error tras resume.
       },
     );
     ref.onDispose(() => _sub?.cancel());

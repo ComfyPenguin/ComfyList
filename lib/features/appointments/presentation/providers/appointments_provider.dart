@@ -41,7 +41,11 @@ class AppointmentsNotifier extends Notifier<AppointmentsState> {
     _sub = repo.watchAppointments(uid).listen(
       (items) => state = AppointmentsData(items),
       onError: (Object e, StackTrace st) {
-        state = AppointmentsError(e is Failure ? e : const UnknownFailure());
+        if (state is! AppointmentsData) {
+          state = AppointmentsError(e is Failure ? e : const UnknownFailure());
+        }
+        // Si ya tenemos datos en pantalla, descartamos el error transitorio
+        // (siguiente poll lo arreglará). Evita parpadeo de error tras resume.
       },
     );
     ref.onDispose(() => _sub?.cancel());
