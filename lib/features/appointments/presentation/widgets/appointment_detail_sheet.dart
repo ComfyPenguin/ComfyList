@@ -219,7 +219,7 @@ class AppointmentDetailSheet extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.xxxl,
-                AppSpacing.lg,
+                AppSpacing.xxxl,
                 AppSpacing.xxxl,
                 0,
               ),
