@@ -12,7 +12,7 @@
 .swiftpm/
 migrate_working_dir/
 .atl/
-tool/
+testing_scripts/
 
 # IntelliJ related
 *.iml
