@@ -11,7 +11,6 @@ App TODO multiplataforma con sincronización via Firebase.
 - **Local DB**: Drift (SQLite) con `build_runner` para codegen
 - **Tokens**: `flutter_secure_storage` via `SecureSessionStore`
 - **Auth**: Identity Toolkit REST API + Google Sign-In (solo Android)
-- **Testing**: mocktail para mocks, Drift `NativeDatabase.memory()` para tests de DB
 
 ## Architecture
 
@@ -39,7 +38,6 @@ Los Notifiers se suscriben al stream del repo y actualizan estado reactivamente.
 
 ```sh
 flutter run                 # Lanzar app
-flutter test                # Tests unitarios
 dart run build_runner build  # Codegen Drift (tras modificar tablas/DAOs)
 dart run build_runner watch  # Codegen en modo watch
 flutter analyze             # Análisis estático
@@ -77,7 +75,6 @@ flutter analyze             # Análisis estático
 - Tras cada cambio, correr `flutter analyze` (o `dart analyze` en libs puras)
 - Respetar estructura feature-first con 3 capas
 - Usar Result<T> sealed class (Ok | Err) en repositorios — nunca lanzar excepciones
-- Usar mocktail para mocks
 - Usar tematización del proyecto (app_colors, app_typography, app_spacing, app_radius)
 - Conventional commits (sin Co-Authored-By)
 
