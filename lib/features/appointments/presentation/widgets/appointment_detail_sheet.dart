@@ -9,6 +9,8 @@ import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/ui/buttons/app_primary_button.dart';
+import '../../../../shared/ui/completed_status_indicator.dart';
+import '../../../../shared/ui/pending_status_indicator.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../../settings/presentation/providers/settings_state.dart';
 import '../../domain/entities/appointment.dart';
@@ -152,19 +154,28 @@ class AppointmentDetailSheet extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Título.
-                Text(
-                  appointment.title,
-                  style: AppTypography.displayMd.copyWith(
-                    color: colors.ink,
-                    decoration: completionEnabled && appointment.isDone
-                        ? TextDecoration.lineThrough
-                        : null,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        appointment.title,
+                        style: AppTypography.displayMd.copyWith(
+                          color: colors.ink,
+                          decoration: completionEnabled && appointment.isDone
+                              ? TextDecoration.lineThrough
+                              : null,
+                        ),
+                      ),
+                    ),
+                    if (completionEnabled) ...[
+                      const SizedBox(width: AppSpacing.sm),
+                      appointment.isDone
+                          ? const CompletedStatusIndicator()
+                          : const PendingStatusIndicator(),
+                    ],
+                  ],
                 ),
-                if (completionEnabled) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  _StatusBadge(isDone: appointment.isDone, colors: colors),
-                ],
                 const SizedBox(height: AppSpacing.lg),
                 // Fecha.
                 Row(
@@ -296,45 +307,13 @@ class AppointmentDetailSheet extends ConsumerWidget {
     );
   }
 
-  /// Formatea una fecha en español: «18:30 · 15 may 2026».
+  /// Formatea una fecha en español: «18:30 · 27/06/2026».
   static String _formatDate(DateTime dt) {
-    const months = [
-      'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-      'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
-    ];
     final h = dt.hour.toString().padLeft(2, '0');
     final m = dt.minute.toString().padLeft(2, '0');
-    return '$h:$m · ${dt.day} ${months[dt.month - 1]} ${dt.year}';
-  }
-}
-
-/// Badge pill que indica si la cita está completada o pendiente.
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.isDone, required this.colors});
-
-  final bool isDone;
-  final AppColors colors;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: isDone
-            ? colors.success.withValues(alpha: 0.1)
-            : colors.warning.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(100),
-      ),
-      child: Text(
-        isDone ? 'Completada' : 'Pendiente',
-        style: AppTypography.bodySmStrong.copyWith(
-          color: isDone ? colors.success : colors.warning,
-        ),
-      ),
-    );
+    final d = dt.day.toString().padLeft(2, '0');
+    final mo = dt.month.toString().padLeft(2, '0');
+    return '$h:$m · $d/$mo/${dt.year}';
   }
 }
 
