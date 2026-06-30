@@ -144,4 +144,5 @@ void stubDioError(
         options: any(named: 'options'),
         cancelToken: any(named: 'cancelToken'),
       )).thenThrow(exception);
+  when(() => dio.delete<void>(any())).thenThrow(exception);
 }
