@@ -8,7 +8,6 @@ import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
-import '../../../../shared/ui/buttons/app_primary_button.dart';
 import '../../../../shared/ui/completed_status_indicator.dart';
 import '../../../../shared/ui/pending_status_indicator.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
@@ -159,7 +158,10 @@ class AppointmentDetailSheet extends ConsumerWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        appointment.title,
+                        appointment.title.isEmpty
+                            ? appointment.title
+                            : appointment.title[0].toUpperCase() +
+                                appointment.title.substring(1),
                         style: AppTypography.displayMd.copyWith(
                           color: colors.ink,
                           decoration: completionEnabled && appointment.isDone
@@ -293,10 +295,59 @@ class AppointmentDetailSheet extends ConsumerWidget {
                   colors: colors,
                 ),
                 const SizedBox(height: AppSpacing.xxxl),
-                AppPrimaryButton(
-                  label: 'Editar',
-                  onPressed: onEdit,
-                  expand: true,
+                // Botón con la estética del HOY pill / FAB: pill, primary,
+                // sombra dual (light/dark), texto onPrimary.
+                SizedBox(
+                  width: double.infinity,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: colors.primary,
+                      borderRadius: AppRadius.brPill,
+                      boxShadow: isDark
+                          ? [
+                              BoxShadow(
+                                color: colors.primary.withValues(alpha: 0.35),
+                                blurRadius: 14,
+                                offset: Offset.zero,
+                              ),
+                              BoxShadow(
+                                color: colors.shadowDark,
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ]
+                          : [
+                              BoxShadow(
+                                color: colors.shadowDark,
+                                blurRadius: 10,
+                                offset: const Offset(2, 5),
+                              ),
+                            ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: AppRadius.brPill,
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: onEdit,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.lg,
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Editar'.toUpperCase(),
+                              style: AppTypography.buttonMd.copyWith(
+                                color: colors.onPrimary,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.4,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
                 SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
               ],

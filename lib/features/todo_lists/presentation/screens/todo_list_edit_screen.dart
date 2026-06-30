@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
-import '../../../../shared/ui/buttons/app_primary_button.dart';
+import '../../../../shared/ui/buttons/primary_button.dart';
 import '../../../../shared/ui/inputs/app_text_field.dart';
 import '../../domain/entities/todo_list.dart';
 import '../../domain/entities/todo_list_icons.dart';
@@ -167,7 +167,7 @@ class _TodoListEditScreenState extends ConsumerState<TodoListEditScreen> {
                 onChanged: (k) => setState(() => _iconKey = k),
               ),
               const SizedBox(height: AppSpacing.xxxl),
-              AppPrimaryButton(
+              PrimaryButton(
                 label: _isEditing ? 'Guardar' : 'Crear',
                 onPressed: _submit,
                 expand: true,

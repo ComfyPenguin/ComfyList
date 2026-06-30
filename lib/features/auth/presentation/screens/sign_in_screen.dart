@@ -11,7 +11,7 @@ import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
-import '../../../../shared/ui/buttons/app_primary_button.dart';
+import '../../../../shared/ui/buttons/primary_button.dart';
 import '../../../../shared/ui/inputs/app_text_field.dart';
 import '../providers/auth_provider.dart';
 import '../providers/auth_state.dart';
@@ -276,7 +276,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
           ],
         ),
         const SizedBox(height: AppSpacing.md),
-        AppPrimaryButton(
+        PrimaryButton(
           label: 'Entrar',
           onPressed: _submit,
           isLoading: isLoading,

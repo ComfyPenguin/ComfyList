@@ -62,23 +62,6 @@ class AppTheme {
         titleTextStyle: AppTypography.displaySm.copyWith(color: c.ink),
         iconTheme: IconThemeData(color: c.ink),
       ),
-      // button-primary: pill negro, peso 500, padding md/md.
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: c.primary,
-          foregroundColor: c.onPrimary,
-          disabledBackgroundColor: c.surfacePressed,
-          disabledForegroundColor: c.muted,
-          textStyle: AppTypography.buttonMd,
-          minimumSize: const Size(0, 44),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.xl,
-            vertical: AppSpacing.md,
-          ),
-          shape: const RoundedRectangleBorder(borderRadius: AppRadius.brPill),
-          elevation: 0,
-        ),
-      ),
       // button-secondary: pill blanco con borde hairline.
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
