@@ -7,7 +7,7 @@ import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
-import '../../../../shared/ui/buttons/app_primary_button.dart';
+import '../../../../shared/ui/buttons/primary_button.dart';
 import '../../../../shared/ui/inputs/app_text_field.dart';
 import '../../domain/entities/appointment.dart';
 import '../providers/appointments_provider.dart';
@@ -233,7 +233,7 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
                 ),
               ),
               const SizedBox(height: AppSpacing.xxxl),
-              AppPrimaryButton(
+              PrimaryButton(
                 label: _isEditing ? 'Guardar' : 'Crear',
                 onPressed: _submit,
                 expand: true,

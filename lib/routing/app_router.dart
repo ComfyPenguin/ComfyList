@@ -5,7 +5,6 @@ import 'package:lottie/lottie.dart';
 
 import '../features/appointments/presentation/providers/appointments_provider.dart';
 import '../features/appointments/presentation/providers/appointments_state.dart';
-import '../features/appointments/presentation/screens/appointment_detail_screen.dart';
 import '../features/appointments/presentation/screens/appointment_edit_screen.dart';
 import '../features/appointments/presentation/screens/appointments_screen.dart';
 import '../features/auth/presentation/providers/auth_provider.dart';
@@ -122,11 +121,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: Routes.appointmentNew,
         pageBuilder: (context, state) =>
             _instantPage(const AppointmentEditScreen()),
-      ),
-      GoRoute(
-        path: '/appointments/:id/detail',
-        pageBuilder: (context, state) => _instantPage(
-            AppointmentDetailScreen(id: state.pathParameters['id']!)),
       ),
       GoRoute(
         path: '/appointments/:id/edit',

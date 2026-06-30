@@ -5,7 +5,7 @@ import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
-import '../../../../shared/ui/buttons/app_primary_button.dart';
+import '../../../../shared/ui/buttons/primary_button.dart';
 import '../../../../shared/ui/inputs/app_text_field.dart';
 import '../providers/auth_provider.dart';
 
@@ -172,10 +172,11 @@ class _InputView extends StatelessWidget {
               child: const Text('Cancelar'),
             ),
             const SizedBox(width: AppSpacing.sm),
-            AppPrimaryButton(
+            PrimaryButton(
               label: 'Enviar',
               onPressed: onSubmit,
               isLoading: isLoading,
+              expand: false,
             ),
           ],
         ),
@@ -213,7 +214,7 @@ class _SuccessView extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppSpacing.xl),
-        AppPrimaryButton(
+        PrimaryButton(
           label: 'Cerrar',
           onPressed: onClose,
           expand: true,

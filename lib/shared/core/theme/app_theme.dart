@@ -62,23 +62,6 @@ class AppTheme {
         titleTextStyle: AppTypography.displaySm.copyWith(color: c.ink),
         iconTheme: IconThemeData(color: c.ink),
       ),
-      // button-primary: pill negro, peso 500, padding md/md.
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: c.primary,
-          foregroundColor: c.onPrimary,
-          disabledBackgroundColor: c.surfacePressed,
-          disabledForegroundColor: c.muted,
-          textStyle: AppTypography.buttonMd,
-          minimumSize: const Size(0, 44),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.xl,
-            vertical: AppSpacing.md,
-          ),
-          shape: const RoundedRectangleBorder(borderRadius: AppRadius.brPill),
-          elevation: 0,
-        ),
-      ),
       // button-secondary: pill blanco con borde hairline.
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
@@ -178,10 +161,21 @@ class AppTheme {
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: c.canvas,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+        // Espejo del TopBar: mismo radio y hairline (ver app_shell.dart).
+        shape: RoundedRectangleBorder(
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(24),
+          ),
+          side: BorderSide(
+            color: brightness == Brightness.light
+                ? c.ink.withValues(alpha: 0.12)
+                : c.ink.withValues(alpha: 0.18),
+            width: 1.2,
+          ),
         ),
         showDragHandle: true,
+        // 2x el default M3 (32x4) para mayor affordance del drag.
+        dragHandleSize: const Size(64, 4),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: c.primary,

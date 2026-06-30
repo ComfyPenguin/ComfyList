@@ -6,7 +6,7 @@ import '../../../../routing/routes.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
-import '../../../../shared/ui/buttons/app_primary_button.dart';
+import '../../../../shared/ui/buttons/primary_button.dart';
 import '../../../../shared/ui/inputs/app_text_field.dart';
 import '../providers/auth_provider.dart';
 import '../providers/auth_state.dart';
@@ -119,7 +119,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     ),
                   ],
                   const SizedBox(height: AppSpacing.xxl),
-                  AppPrimaryButton(
+                  PrimaryButton(
                     label: 'Crear cuenta',
                     onPressed: _submit,
                     isLoading: isLoading,
