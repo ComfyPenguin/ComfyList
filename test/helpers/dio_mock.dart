@@ -15,14 +15,12 @@ void stubDioGet(
   required Map<String, dynamic> body,
   int statusCode = 200,
 }) {
-  when(() => dio.get<dynamic>(
+  when(() => dio.get<Map<String, dynamic>>(
         any(),
-        queryParameters: any(named: 'queryParameters'),
         options: any(named: 'options'),
         cancelToken: any(named: 'cancelToken'),
-        onReceiveProgress: any(named: 'onReceiveProgress'),
       )).thenAnswer(
-    (_) async => Response<dynamic>(
+    (_) async => Response<Map<String, dynamic>>(
       requestOptions: RequestOptions(path: path),
       data: body,
       statusCode: statusCode,
@@ -36,16 +34,13 @@ void stubDioPost(
   required Map<String, dynamic> body,
   int statusCode = 200,
 }) {
-  when(() => dio.post<dynamic>(
+  when(() => dio.post<Map<String, dynamic>>(
         any(),
         data: any(named: 'data'),
-        queryParameters: any(named: 'queryParameters'),
         options: any(named: 'options'),
         cancelToken: any(named: 'cancelToken'),
-        onSendProgress: any(named: 'onSendProgress'),
-        onReceiveProgress: any(named: 'onReceiveProgress'),
       )).thenAnswer(
-    (_) async => Response<dynamic>(
+    (_) async => Response<Map<String, dynamic>>(
       requestOptions: RequestOptions(path: path),
       data: body,
       statusCode: statusCode,
@@ -59,16 +54,14 @@ void stubDioPatch(
   required Map<String, dynamic> body,
   int statusCode = 200,
 }) {
-  when(() => dio.patch<dynamic>(
+  when(() => dio.patch<Map<String, dynamic>>(
         any(),
         data: any(named: 'data'),
         queryParameters: any(named: 'queryParameters'),
         options: any(named: 'options'),
         cancelToken: any(named: 'cancelToken'),
-        onSendProgress: any(named: 'onSendProgress'),
-        onReceiveProgress: any(named: 'onReceiveProgress'),
       )).thenAnswer(
-    (_) async => Response<dynamic>(
+    (_) async => Response<Map<String, dynamic>>(
       requestOptions: RequestOptions(path: path),
       data: body,
       statusCode: statusCode,
@@ -82,13 +75,7 @@ void stubDioDelete(
   int statusCode = 200,
   Map<String, dynamic>? body,
 }) {
-  when(() => dio.delete<dynamic>(
-        any(),
-        data: any(named: 'data'),
-        queryParameters: any(named: 'queryParameters'),
-        options: any(named: 'options'),
-        cancelToken: any(named: 'cancelToken'),
-      )).thenAnswer(
+  when(() => dio.delete<void>(any())).thenAnswer(
     (_) async => Response<dynamic>(
       requestOptions: RequestOptions(path: path),
       data: body,
@@ -134,36 +121,22 @@ void stubDioError(
     message: message,
   );
 
-  when(() => dio.get<dynamic>(
+  when(() => dio.get<Map<String, dynamic>>(
         any(),
-        queryParameters: any(named: 'queryParameters'),
         options: any(named: 'options'),
         cancelToken: any(named: 'cancelToken'),
-        onReceiveProgress: any(named: 'onReceiveProgress'),
       )).thenThrow(exception);
-  when(() => dio.post<dynamic>(
+  when(() => dio.post<Map<String, dynamic>>(
         any(),
         data: any(named: 'data'),
-        queryParameters: any(named: 'queryParameters'),
         options: any(named: 'options'),
         cancelToken: any(named: 'cancelToken'),
-        onSendProgress: any(named: 'onSendProgress'),
-        onReceiveProgress: any(named: 'onReceiveProgress'),
       )).thenThrow(exception);
-  when(() => dio.patch<dynamic>(
+  when(() => dio.patch<Map<String, dynamic>>(
         any(),
         data: any(named: 'data'),
-        queryParameters: any(named: 'queryParameters'),
-        options: any(named: 'options'),
-        cancelToken: any(named: 'cancelToken'),
-        onSendProgress: any(named: 'onSendProgress'),
-        onReceiveProgress: any(named: 'onReceiveProgress'),
-      )).thenThrow(exception);
-  when(() => dio.delete<dynamic>(
-        any(),
-        data: any(named: 'data'),
-        queryParameters: any(named: 'queryParameters'),
         options: any(named: 'options'),
         cancelToken: any(named: 'cancelToken'),
       )).thenThrow(exception);
+  when(() => dio.delete<void>(any())).thenThrow(exception);
 }
