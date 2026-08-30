@@ -16,7 +16,10 @@ import '../providers/auth_state.dart';
 /// Solo se renderiza en Android en esta fase. En otras plataformas
 /// devolvemos un widget vacío para que el resto del layout no se altere.
 class GoogleSignInSection extends ConsumerWidget {
-  const GoogleSignInSection({super.key});
+  const GoogleSignInSection({super.key, this.dividerText = 'o continuar con'});
+
+  /// Texto que acompaña al divisor "o", personalizable por pantalla.
+  final String dividerText;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,7 +34,7 @@ class GoogleSignInSection extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: AppSpacing.xl),
-        const _OrDivider(),
+        _OrDivider(text: dividerText),
         const SizedBox(height: AppSpacing.xl),
         _GoogleButton(
           isLoading: isLoading,
@@ -44,22 +47,39 @@ class GoogleSignInSection extends ConsumerWidget {
 
 /// Línea horizontal con "o continuar con" centrado.
 class _OrDivider extends StatelessWidget {
-  const _OrDivider();
+  const _OrDivider({required this.text});
+
+  final String text;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     return Row(
       children: [
-        Expanded(child: Divider(color: colors.hairline, height: 1)),
+        Expanded(
+          child: Divider(
+            color: colors.hairline,
+            thickness: 2,
+            height: 1,
+          ),
+        ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: Text(
-            'o continuar con',
-            style: AppTypography.bodySm.copyWith(color: colors.muted),
+            text.toUpperCase(),
+            style: AppTypography.bodySm.copyWith(
+              color: colors.muted,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
-        Expanded(child: Divider(color: colors.hairline, height: 1)),
+        Expanded(
+          child: Divider(
+            color: colors.hairline,
+            thickness: 2,
+            height: 1,
+          ),
+        ),
       ],
     );
   }
@@ -84,6 +104,7 @@ class _GoogleButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             SvgPicture.asset(
               'assets/svg/google_g.svg',
@@ -92,8 +113,11 @@ class _GoogleButton extends StatelessWidget {
             ),
             const SizedBox(width: AppSpacing.md),
             Text(
-              'Continuar con Google',
-              style: AppTypography.bodyMd.copyWith(color: colors.ink),
+              'Google',
+              style: AppTypography.bodyMd.copyWith(
+                color: colors.ink,
+                height: 1,
+              ),
             ),
           ],
         ),
