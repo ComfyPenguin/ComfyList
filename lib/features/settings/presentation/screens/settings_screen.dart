@@ -9,6 +9,7 @@ import '../widgets/completed_to_bottom_toggle.dart';
 import '../widgets/hour_format_toggle.dart';
 import '../widgets/notifications_toggle.dart';
 import '../widgets/theme_mode_selector.dart';
+import '../widgets/today_on_top_toggle.dart';
 
 /// Pantalla de ajustes. Pantalla independiente fuera del [AppShell].
 class SettingsScreen extends StatelessWidget {
@@ -60,6 +61,8 @@ class SettingsScreen extends StatelessWidget {
             const AppointmentsCompletionToggle(),
             const SizedBox(height: AppSpacing.md),
             const HourFormatToggle(),
+            const SizedBox(height: AppSpacing.md),
+            const TodayOnTopToggle(),
             const SizedBox(height: AppSpacing.xxxl),
             Text(
               'Tareas',
