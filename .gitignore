@@ -13,6 +13,7 @@
 migrate_working_dir/
 .atl/
 testing_scripts/
+notes.md
 
 # IntelliJ related
 *.iml
