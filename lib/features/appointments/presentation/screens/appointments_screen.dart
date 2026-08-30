@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -81,94 +80,6 @@ class _AppointmentsList extends ConsumerStatefulWidget {
 
 class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
   final _tileRevealProgressByDate = <DateTime, Map<String, double>>{};
-
-  /// Controller del ListView — se usa para reposicionar el scroll
-  /// inicial a la altura del grupo de HOY en el primer frame.
-  final _scrollController = ScrollController();
-
-  /// Key anclada al grupo de HOY. Permite que [Scrollable.ensureVisible]
-  /// salte a la posición de HOY al montar la pantalla. Si HOY no
-  /// tiene citas, esta key nunca se asigna a un widget y el scroll se
-  /// queda en la posición natural (top del contenido).
-  final _todayKey = GlobalKey();
-
-  /// Altura del spacer vacío que añadimos al final del ListView cuando
-  /// el contenido total es más bajo que lo necesario para colocar HOY
-  /// en la parte superior visible.
-  double _bottomSpacerHeight = 0;
-
-  /// Evita re-scrollear a HOY en rebuilds posteriores al montaje
-
-  bool _didScrollToToday = false;
-
-  /// Indica si la lista ya está lista para pintarse visible.
-  bool _isPositioned = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _scrollToToday();
-    });
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _scrollToToday() {
-    if (_didScrollToToday) return;
-    final context = _todayKey.currentContext;
-    if (context == null) {
-      setState(() {
-        _didScrollToToday = true;
-        _isPositioned = true;
-      });
-      return;
-    }
-    final renderObject = context.findRenderObject();
-    if (renderObject is! RenderBox) {
-      setState(() {
-        _didScrollToToday = true;
-        _isPositioned = true;
-      });
-      return;
-    }
-    final viewport = RenderAbstractViewport.maybeOf(renderObject);
-    if (viewport == null) {
-      setState(() {
-        _didScrollToToday = true;
-        _isPositioned = true;
-      });
-      return;
-    }
-    final rawOffset = viewport.getOffsetToReveal(renderObject, 0.0).offset;
-    final adjustedOffset = rawOffset - widget.topPadding;
-    final maxScroll = _scrollController.position.maxScrollExtent;
-
-
-    if (adjustedOffset > maxScroll + 0.5) {
-      setState(() {
-        _bottomSpacerHeight += adjustedOffset - maxScroll;
-      });
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        _scrollToToday();
-      });
-      return;
-    }
-
-    if (adjustedOffset > 0) {
-      _scrollController.jumpTo(adjustedOffset);
-    }
-    setState(() {
-      _didScrollToToday = true;
-      _isPositioned = true;
-    });
-  }
 
   ({double top, double bottom}) _effectiveSeparationFor({
     required DateTime date,
@@ -293,7 +204,6 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
 
       listChildren.add(
         _AppointmentGroup(
-          groupKey: _isToday(date) ? _todayKey : null,
           dateLabel: _formatDateHeader(date),
           isToday: _isToday(date),
           dateHeaderStyle: dateHeaderStyle,
@@ -327,12 +237,7 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
       );
     }
 
-    if (_bottomSpacerHeight > 0) {
-      listChildren.add(SizedBox(height: _bottomSpacerHeight));
-    }
-
-    final listView = ListView(
-      controller: _scrollController,
+    return ListView(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.lg,
         widget.topPadding,
@@ -340,13 +245,6 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
         widget.bottomPadding,
       ),
       children: listChildren,
-    );
-
-    return AnimatedOpacity(
-      opacity: _isPositioned ? 1.0 : 0.0,
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOut,
-      child: listView,
     );
   }
 
@@ -373,7 +271,6 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
 
 class _AppointmentGroup extends StatelessWidget {
   const _AppointmentGroup({
-    this.groupKey,
     required this.dateLabel,
     required this.isToday,
     required this.dateHeaderStyle,
@@ -388,12 +285,6 @@ class _AppointmentGroup extends StatelessWidget {
   });
 
   static const double _joinedGap = 2;
-
-  /// Key opcional que se aplica al [Column] raíz del grupo. Lo usa
-  /// [_AppointmentsListState] para anclar el grupo de HOY con un
-  /// [GlobalKey] y poder reposicionar el scroll inicial a su altura
-  /// con `Scrollable.ensureVisible`. 
-  final Key? groupKey;
 
   final String dateLabel;
   final bool isToday;
@@ -458,7 +349,6 @@ class _AppointmentGroup extends StatelessWidget {
     }
 
     return Column(
-      key: groupKey,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: children,
     );
