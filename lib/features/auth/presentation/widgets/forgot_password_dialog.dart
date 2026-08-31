@@ -82,10 +82,22 @@ class _ForgotPasswordDialogState extends ConsumerState<ForgotPasswordDialog> {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final isDark = colors.canvas.computeLuminance() < 0.05;
+    final borderColor = isDark
+        ? colors.ink.withValues(alpha: 0.18)
+        : colors.ink.withValues(alpha: 0.12);
+
+    // Card estilo citas: fondo canvas + borde hairline + radio grande.
     return Dialog(
-      shape: const RoundedRectangleBorder(borderRadius: AppRadius.brXl),
-      child: ConstrainedBox(
+      backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.brDialog),
+      child: Container(
         constraints: const BoxConstraints(maxWidth: 420),
+        decoration: BoxDecoration(
+          color: colors.canvas,
+          borderRadius: AppRadius.brDialog,
+          border: Border.all(color: borderColor, width: 1.2),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xxl),
           child: _status == _Status.success
@@ -139,11 +151,13 @@ class _InputView extends StatelessWidget {
         Text(
           'Restablecer contraseña',
           style: AppTypography.displaySm.copyWith(color: inkColor),
+          textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppSpacing.md),
         Text(
-          'Te enviaremos un enlace al correo para que crees una nueva contraseña.',
+          'Te enviaremos un enlace al correo',
           style: AppTypography.bodyMd.copyWith(color: bodyColor),
+          textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppSpacing.xl),
         AppTextField(
@@ -155,6 +169,7 @@ class _InputView extends StatelessWidget {
           onSubmitted: (_) => onSubmit(),
           errorText: emailError,
           enabled: !isLoading,
+          cardStyle: true,
         ),
         if (serverError != null) ...[
           const SizedBox(height: AppSpacing.md),
@@ -163,22 +178,26 @@ class _InputView extends StatelessWidget {
             style: AppTypography.bodySm.copyWith(color: errorColor),
           ),
         ],
-        const SizedBox(height: AppSpacing.xl),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            TextButton(
-              onPressed: isLoading ? null : onCancel,
-              child: const Text('Cancelar'),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            PrimaryButton(
-              label: 'Enviar',
-              onPressed: onSubmit,
-              isLoading: isLoading,
-              expand: false,
-            ),
-          ],
+        const SizedBox(height: AppSpacing.lg),
+        PrimaryButton(
+          label: 'Enviar',
+          onPressed: onSubmit,
+          isLoading: isLoading,
+          expand: true,
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        // "Cancelar" como texto secundario debajo del botón principal.
+        TextButton(
+          onPressed: isLoading ? null : onCancel,
+          style: TextButton.styleFrom(
+            minimumSize: Size.zero,
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: Text(
+            'Cancelar',
+            style: AppTypography.bodyMd.copyWith(color: bodyColor),
+          ),
         ),
       ],
     );
@@ -205,12 +224,20 @@ class _SuccessView extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppSpacing.md),
-        Text(
-          // Mensaje genérico a propósito: no confirmamos si la cuenta existe
-          // para evitar enumeración de cuentas registradas.
-          'Si ese correo está registrado, recibirás un enlace para restablecer '
-          'la contraseña. Comprueba también la carpeta de spam.',
-          style: AppTypography.bodyMd.copyWith(color: colors.body),
+        // Mensaje genérico a propósito: no confirmamos si la cuenta existe
+        // para evitar enumeración de cuentas registradas.
+        Text.rich(
+          TextSpan(
+            text: 'Si el correo está registrado, recibirás un enlace para '
+                'restablecer la contraseña. ',
+            style: AppTypography.bodyMd.copyWith(color: colors.body),
+            children: [
+              TextSpan(
+                text: 'Comprueba también la carpeta de spam.',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppSpacing.xl),

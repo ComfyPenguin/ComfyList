@@ -13,6 +13,7 @@ class AppRadius {
   static const double lg = 12;      // chrome secundario
   static const double xl = 16;      // canonical card radius
   static const double pillTab = 36; // tab-toggle (off-pill)
+  static const double dialog = pillTab; // popups / diálogos modales
   static const double pill = 999;   // pill signature
   static const double full = 9999;  // círculos (icon-button-circular)
 
@@ -21,6 +22,7 @@ class AppRadius {
   static const Radius rLg = Radius.circular(lg);
   static const Radius rXl = Radius.circular(xl);
   static const Radius rPillTab = Radius.circular(pillTab);
+  static const Radius rDialog = Radius.circular(dialog);
   static const Radius rPill = Radius.circular(pill);
   static const Radius rFull = Radius.circular(full);
 
@@ -29,6 +31,7 @@ class AppRadius {
   static const BorderRadius brLg = BorderRadius.all(rLg);
   static const BorderRadius brXl = BorderRadius.all(rXl);
   static const BorderRadius brPillTab = BorderRadius.all(rPillTab);
+  static const BorderRadius brDialog = BorderRadius.all(rDialog);
   static const BorderRadius brPill = BorderRadius.all(rPill);
   static const BorderRadius brFull = BorderRadius.all(rFull);
 }
