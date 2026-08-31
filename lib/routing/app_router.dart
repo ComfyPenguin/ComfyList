@@ -212,8 +212,8 @@ class _SplashScreen extends StatelessWidget {
                   ),
                 ),
                 Image.asset(
-                  'assets/logo-no-text-background.png',
-                  width: 200,
+                  'assets/logo-face.png',
+                  width: 140,
                 ),
               ],
             ),
