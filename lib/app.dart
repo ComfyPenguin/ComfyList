@@ -30,6 +30,16 @@ class ComfyListApp extends ConsumerWidget {
       darkTheme: AppTheme.dark(),
       themeMode: themeMode,
       routerConfig: router,
+      builder: (context, child) {
+        // Al hacer tap fuera de un campo de texto, quitamos el foco para
+        // ocultar el teclado. `translucent` deja pasar los taps de los demás
+        // widgets (botones, scroll) y solo captura los del fondo.
+        return GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+          child: child,
+        );
+      },
     );
   }
 }
