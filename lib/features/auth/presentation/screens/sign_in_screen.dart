@@ -93,6 +93,13 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Logo de la app encima del título.
+                  Image.asset(
+                    'assets/logo-face.png',
+                    width: 120,
+                    height: 120,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
                   // Título de la app en lugar del logo.
                   Text.rich(
                     TextSpan(
@@ -111,6 +118,12 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       fontFamily: 'Fredoka',
                       fontWeight: FontWeight.w600,
                     ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    'Organízate sin complicarte',
+                    style: AppTypography.bodyMd.copyWith(color: colors.muted),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: AppSpacing.xxxl),
