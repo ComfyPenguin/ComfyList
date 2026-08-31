@@ -93,14 +93,27 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Logo centrado en lugar del título textual.
-                  Center(
-                    child: Image.asset(
-                      'assets/logo-no-background.png',
-                      width: 160,
+                  // Título de la app en lugar del logo.
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: 'COMFY',
+                          style: TextStyle(color: colors.ink),
+                        ),
+                        TextSpan(
+                          text: 'LIST',
+                          style: TextStyle(color: colors.muted),
+                        ),
+                      ],
                     ),
+                    style: AppTypography.displayXl.copyWith(
+                      fontFamily: 'Fredoka',
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: AppSpacing.xxxxl),
+                  const SizedBox(height: AppSpacing.xxxl),
 
                   _buildEmailCard(auth, colors),
 
@@ -225,6 +238,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         // Botón pill con glow, igual que la píldora HOY de citas.
         PrimaryButton(
           label: 'Entrar',
+          icon: Icons.arrow_forward_rounded,
           onPressed: _submit,
           isLoading: isLoading,
           expand: true,

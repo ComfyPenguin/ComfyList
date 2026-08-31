@@ -1,5 +1,5 @@
 name: comfy_list
-description: "App de TODOs multiplataforma con sincronización vía Firebase"
+description: "App de TODOs y citas multiplataforma con sincronización vía Firebase"
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -83,6 +83,9 @@ flutter:
     - family: PlusJakartaSans
       fonts:
         - asset: "assets/fonts/PlusJakartaSans-VariableFont.ttf"
+    - family: Fredoka
+      fonts:
+        - asset: "assets/fonts/Fredoka-VariableFont.ttf"
 
 flutter_launcher_icons:
   android: true

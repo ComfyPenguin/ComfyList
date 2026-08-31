@@ -40,10 +40,6 @@ class PrimaryButton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (icon != null) ...[
-                Icon(icon, size: 18, color: colors.onPrimary),
-                const SizedBox(width: AppSpacing.sm),
-              ],
               Text(
                 label.toUpperCase(),
                 style: AppTypography.buttonMd.copyWith(
@@ -52,6 +48,10 @@ class PrimaryButton extends StatelessWidget {
                   letterSpacing: 0.4,
                 ),
               ),
+              if (icon != null) ...[
+                const SizedBox(width: AppSpacing.sm),
+                Icon(icon, size: 18, color: colors.onPrimary),
+              ],
             ],
           );
 
