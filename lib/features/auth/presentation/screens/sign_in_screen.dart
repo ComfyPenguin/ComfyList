@@ -141,7 +141,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     ),
                   ],
 
-                  const GoogleSignInSection(dividerText: 'O entra con'),
+                  const GoogleSignInSection(dividerText: 'O continúa con'),
 
                   const SizedBox(height: AppSpacing.md),
                   TextButton(

@@ -16,7 +16,7 @@ import '../providers/auth_state.dart';
 /// Solo se renderiza en Android en esta fase. En otras plataformas
 /// devolvemos un widget vacío para que el resto del layout no se altere.
 class GoogleSignInSection extends ConsumerWidget {
-  const GoogleSignInSection({super.key, this.dividerText = 'o continuar con'});
+  const GoogleSignInSection({super.key, this.dividerText = 'O continúa con'});
 
   /// Texto que acompaña al divisor "o", personalizable por pantalla.
   final String dividerText;
