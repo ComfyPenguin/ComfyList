@@ -13,6 +13,7 @@ import '../../../routing/routes.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/app_typography.dart';
+import '../dialogs/confirm_action_dialog.dart';
 import 'app_bottom_bar.dart';
 
 /// Notifier que gestiona si un bottom sheet de detalle está abierto.
@@ -176,7 +177,20 @@ class AppShell extends ConsumerWidget {
                               size: 22,
                             ),
                             tooltip: 'Cerrar sesión',
-                            onPressed: () => ref.read(authProvider.notifier).signOut(),
+                            onPressed: () async {
+                              final confirmed =
+                                  await ConfirmActionDialog.show(
+                                    context,
+                                    title: 'Cerrar sesión',
+                                    message:
+                                        '¿Seguro que quieres cerrar la sesión?',
+                                    confirmLabel: 'Cerrar sesión',
+                                    destructive: true,
+                                  );
+                              if (confirmed && context.mounted) {
+                                ref.read(authProvider.notifier).signOut();
+                              }
+                            },
                           ),
                         Expanded(
                           child: Center(

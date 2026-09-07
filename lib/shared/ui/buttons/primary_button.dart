@@ -14,6 +14,8 @@ class PrimaryButton extends StatelessWidget {
     this.icon,
     this.isLoading = false,
     this.expand = false,
+    this.backgroundColor,
+    this.foregroundColor,
   });
 
   final String label;
@@ -22,10 +24,19 @@ class PrimaryButton extends StatelessWidget {
   final bool isLoading;
   final bool expand;
 
+  /// Sobrescribe el fondo del pill (p. ej. [AppColors.error] en acciones destructivas).
+  final Color? backgroundColor;
+
+  /// Color de texto/icono sobre [backgroundColor].
+  final Color? foregroundColor;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final isDark = colors.canvas.computeLuminance() < 0.05;
+
+    final bg = backgroundColor ?? colors.primary;
+    final fg = foregroundColor ?? colors.onPrimary;
 
     final body = isLoading
         ? SizedBox(
@@ -33,7 +44,7 @@ class PrimaryButton extends StatelessWidget {
             width: 18,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(colors.onPrimary),
+              valueColor: AlwaysStoppedAnimation<Color>(fg),
             ),
           )
         : Row(
@@ -43,26 +54,26 @@ class PrimaryButton extends StatelessWidget {
               Text(
                 label.toUpperCase(),
                 style: AppTypography.buttonMd.copyWith(
-                  color: colors.onPrimary,
+                  color: fg,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.4,
                 ),
               ),
               if (icon != null) ...[
                 const SizedBox(width: AppSpacing.sm),
-                Icon(icon, size: 18, color: colors.onPrimary),
+                Icon(icon, size: 18, color: fg),
               ],
             ],
           );
 
     final box = Container(
       decoration: BoxDecoration(
-        color: colors.primary,
+        color: bg,
         borderRadius: AppRadius.brPill,
         boxShadow: isDark
             ? [
                 BoxShadow(
-                  color: colors.primary.withValues(alpha: 0.35),
+                  color: bg.withValues(alpha: 0.35),
                   blurRadius: 14,
                   offset: Offset.zero,
                 ),
