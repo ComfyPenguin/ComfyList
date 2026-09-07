@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:marquee/marquee.dart';
 
 import '../../../features/auth/presentation/providers/auth_provider.dart';
 import '../../../features/todo_lists/domain/entities/todo_list.dart';
@@ -188,10 +189,51 @@ class AppShell extends ConsumerWidget {
                                   height: 24,
                                 ),
                                 const SizedBox(width: AppSpacing.xs),
-                                Text(
-                                  appBarTitle,
-                                  style: AppTypography.displaySm.copyWith(
-                                    color: colors.ink,
+                                Flexible(
+                                  child: LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      final titleStyle = AppTypography
+                                          .displaySm
+                                          .copyWith(color: colors.ink);
+                                      // Solo animamos si el título desborda;
+                                      // con un nombre corto el marquee
+                                      // scrollaría en bucle innecesariamente.
+                                      final titleWidth = _measureTitleWidth(
+                                        appBarTitle,
+                                        titleStyle,
+                                        MediaQuery.textScalerOf(context),
+                                      );
+                                      final overflows =
+                                          titleWidth > constraints.maxWidth;
+                                      if (!overflows) {
+                                        return Text(
+                                          appBarTitle,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: titleStyle,
+                                        );
+                                      }
+                                      // El marquee es un viewport horizontal
+                                      // y necesita altura acotada; sin ella
+                                      // falla el layout y el título desaparece.
+                                      final titleLineHeight =
+                                          titleStyle.fontSize! *
+                                              (titleStyle.height ?? 1.0);
+                                      return SizedBox(
+                                        height: titleLineHeight,
+                                        child: Marquee(
+                                          text: appBarTitle,
+                                          style: titleStyle,
+                                          blankSpace: AppSpacing.xxxxl,
+                                          velocity: 30,
+                                          pauseAfterRound:
+                                              const Duration(seconds: 2),
+                                          startPadding: AppSpacing.md,
+                                          fadingEdgeStartFraction: 0.15,
+                                          fadingEdgeEndFraction: 0.15,
+                                        ),
+                                      );
+                                    },
                                   ),
                                 ),
                               ],
@@ -235,5 +277,21 @@ class AppShell extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// Mide el ancho intrínseco del título para decidir si desborda
+  /// y toca usar marquee en lugar de texto estático con ellipsis.
+  double _measureTitleWidth(
+    String text,
+    TextStyle style,
+    TextScaler textScaler,
+  ) {
+    final textPainter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      maxLines: 1,
+      textDirection: TextDirection.ltr,
+      textScaler: textScaler,
+    )..layout();
+    return textPainter.width;
   }
 }
