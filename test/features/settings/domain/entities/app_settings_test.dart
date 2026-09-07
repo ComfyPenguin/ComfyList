@@ -12,6 +12,7 @@ void main() {
       expect(defaults.appointmentsCompletionEnabled, isFalse);
       expect(defaults.completedToBottom, isTrue);
       expect(defaults.appointmentsCompletedToBottom, isTrue);
+      expect(defaults.invertSwipeActions, isFalse);
       expect(defaults.use24HourFormat, isTrue);
     });
   });
@@ -29,6 +30,7 @@ void main() {
       expect(updated.completedToBottom, baseline.completedToBottom);
       expect(updated.appointmentsCompletedToBottom,
           baseline.appointmentsCompletedToBottom);
+      expect(updated.invertSwipeActions, baseline.invertSwipeActions);
       expect(updated.use24HourFormat, baseline.use24HourFormat);
     });
 
@@ -50,12 +52,14 @@ void main() {
         use24HourFormat: false,
         completedToBottom: false,
         appointmentsCompletedToBottom: false,
+        invertSwipeActions: true,
       );
 
       expect(updated.themeMode, ThemeMode.light);
       expect(updated.use24HourFormat, isFalse);
       expect(updated.completedToBottom, isFalse);
       expect(updated.appointmentsCompletedToBottom, isFalse);
+      expect(updated.invertSwipeActions, isTrue);
       expect(updated.notificationsEnabled, baseline.notificationsEnabled);
       expect(updated.appointmentsCompletionEnabled,
           baseline.appointmentsCompletionEnabled);

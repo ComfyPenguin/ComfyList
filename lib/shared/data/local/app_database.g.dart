@@ -94,6 +94,20 @@ class $SettingsTableTable extends SettingsTable
         ),
         defaultValue: const Constant(true),
       );
+  static const VerificationMeta _invertSwipeActionsMeta =
+      const VerificationMeta('invertSwipeActions');
+  @override
+  late final GeneratedColumn<bool> invertSwipeActions = GeneratedColumn<bool>(
+    'invert_swipe_actions',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("invert_swipe_actions" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _use24HourFormatMeta = const VerificationMeta(
     'use24HourFormat',
   );
@@ -128,6 +142,7 @@ class $SettingsTableTable extends SettingsTable
     appointmentsCompletionEnabled,
     completedToBottom,
     appointmentsCompletedToBottom,
+    invertSwipeActions,
     use24HourFormat,
     updatedAt,
   ];
@@ -188,6 +203,15 @@ class $SettingsTableTable extends SettingsTable
         ),
       );
     }
+    if (data.containsKey('invert_swipe_actions')) {
+      context.handle(
+        _invertSwipeActionsMeta,
+        invertSwipeActions.isAcceptableOrUnknown(
+          data['invert_swipe_actions']!,
+          _invertSwipeActionsMeta,
+        ),
+      );
+    }
     if (data.containsKey('use24_hour_format')) {
       context.handle(
         _use24HourFormatMeta,
@@ -238,6 +262,10 @@ class $SettingsTableTable extends SettingsTable
         DriftSqlType.bool,
         data['${effectivePrefix}appointments_completed_to_bottom'],
       )!,
+      invertSwipeActions: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}invert_swipe_actions'],
+      )!,
       use24HourFormat: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}use24_hour_format'],
@@ -269,6 +297,10 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
   /// Si `true`, las citas completadas van al final de la lista de su día.
   final bool appointmentsCompletedToBottom;
 
+  /// Si `true`, las acciones del deslizamiento se invierten: eliminar queda
+  /// a la izquierda y completar a la derecha (y viceversa en `false`).
+  final bool invertSwipeActions;
+
   /// Si `true`, las horas de las citas se muestran en formato 24H.
   /// Si `false`, se muestran en formato 12H con AM/PM.
   final bool use24HourFormat;
@@ -280,6 +312,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     required this.appointmentsCompletionEnabled,
     required this.completedToBottom,
     required this.appointmentsCompletedToBottom,
+    required this.invertSwipeActions,
     required this.use24HourFormat,
     required this.updatedAt,
   });
@@ -296,6 +329,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     map['appointments_completed_to_bottom'] = Variable<bool>(
       appointmentsCompletedToBottom,
     );
+    map['invert_swipe_actions'] = Variable<bool>(invertSwipeActions);
     map['use24_hour_format'] = Variable<bool>(use24HourFormat);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -309,6 +343,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       appointmentsCompletionEnabled: Value(appointmentsCompletionEnabled),
       completedToBottom: Value(completedToBottom),
       appointmentsCompletedToBottom: Value(appointmentsCompletedToBottom),
+      invertSwipeActions: Value(invertSwipeActions),
       use24HourFormat: Value(use24HourFormat),
       updatedAt: Value(updatedAt),
     );
@@ -332,6 +367,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       appointmentsCompletedToBottom: serializer.fromJson<bool>(
         json['appointmentsCompletedToBottom'],
       ),
+      invertSwipeActions: serializer.fromJson<bool>(json['invertSwipeActions']),
       use24HourFormat: serializer.fromJson<bool>(json['use24HourFormat']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -350,6 +386,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       'appointmentsCompletedToBottom': serializer.toJson<bool>(
         appointmentsCompletedToBottom,
       ),
+      'invertSwipeActions': serializer.toJson<bool>(invertSwipeActions),
       'use24HourFormat': serializer.toJson<bool>(use24HourFormat),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -362,6 +399,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     bool? appointmentsCompletionEnabled,
     bool? completedToBottom,
     bool? appointmentsCompletedToBottom,
+    bool? invertSwipeActions,
     bool? use24HourFormat,
     DateTime? updatedAt,
   }) => SettingsRow(
@@ -373,6 +411,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     completedToBottom: completedToBottom ?? this.completedToBottom,
     appointmentsCompletedToBottom:
         appointmentsCompletedToBottom ?? this.appointmentsCompletedToBottom,
+    invertSwipeActions: invertSwipeActions ?? this.invertSwipeActions,
     use24HourFormat: use24HourFormat ?? this.use24HourFormat,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -392,6 +431,9 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       appointmentsCompletedToBottom: data.appointmentsCompletedToBottom.present
           ? data.appointmentsCompletedToBottom.value
           : this.appointmentsCompletedToBottom,
+      invertSwipeActions: data.invertSwipeActions.present
+          ? data.invertSwipeActions.value
+          : this.invertSwipeActions,
       use24HourFormat: data.use24HourFormat.present
           ? data.use24HourFormat.value
           : this.use24HourFormat,
@@ -412,6 +454,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
           ..write(
             'appointmentsCompletedToBottom: $appointmentsCompletedToBottom, ',
           )
+          ..write('invertSwipeActions: $invertSwipeActions, ')
           ..write('use24HourFormat: $use24HourFormat, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -426,6 +469,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     appointmentsCompletionEnabled,
     completedToBottom,
     appointmentsCompletedToBottom,
+    invertSwipeActions,
     use24HourFormat,
     updatedAt,
   );
@@ -441,6 +485,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
           other.completedToBottom == this.completedToBottom &&
           other.appointmentsCompletedToBottom ==
               this.appointmentsCompletedToBottom &&
+          other.invertSwipeActions == this.invertSwipeActions &&
           other.use24HourFormat == this.use24HourFormat &&
           other.updatedAt == this.updatedAt);
 }
@@ -452,6 +497,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
   final Value<bool> appointmentsCompletionEnabled;
   final Value<bool> completedToBottom;
   final Value<bool> appointmentsCompletedToBottom;
+  final Value<bool> invertSwipeActions;
   final Value<bool> use24HourFormat;
   final Value<DateTime> updatedAt;
   const SettingsTableCompanion({
@@ -461,6 +507,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     this.appointmentsCompletionEnabled = const Value.absent(),
     this.completedToBottom = const Value.absent(),
     this.appointmentsCompletedToBottom = const Value.absent(),
+    this.invertSwipeActions = const Value.absent(),
     this.use24HourFormat = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -471,6 +518,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     this.appointmentsCompletionEnabled = const Value.absent(),
     this.completedToBottom = const Value.absent(),
     this.appointmentsCompletedToBottom = const Value.absent(),
+    this.invertSwipeActions = const Value.absent(),
     this.use24HourFormat = const Value.absent(),
     required DateTime updatedAt,
   }) : updatedAt = Value(updatedAt);
@@ -481,6 +529,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     Expression<bool>? appointmentsCompletionEnabled,
     Expression<bool>? completedToBottom,
     Expression<bool>? appointmentsCompletedToBottom,
+    Expression<bool>? invertSwipeActions,
     Expression<bool>? use24HourFormat,
     Expression<DateTime>? updatedAt,
   }) {
@@ -494,6 +543,8 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
       if (completedToBottom != null) 'completed_to_bottom': completedToBottom,
       if (appointmentsCompletedToBottom != null)
         'appointments_completed_to_bottom': appointmentsCompletedToBottom,
+      if (invertSwipeActions != null)
+        'invert_swipe_actions': invertSwipeActions,
       if (use24HourFormat != null) 'use24_hour_format': use24HourFormat,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -506,6 +557,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     Value<bool>? appointmentsCompletionEnabled,
     Value<bool>? completedToBottom,
     Value<bool>? appointmentsCompletedToBottom,
+    Value<bool>? invertSwipeActions,
     Value<bool>? use24HourFormat,
     Value<DateTime>? updatedAt,
   }) {
@@ -518,6 +570,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
       completedToBottom: completedToBottom ?? this.completedToBottom,
       appointmentsCompletedToBottom:
           appointmentsCompletedToBottom ?? this.appointmentsCompletedToBottom,
+      invertSwipeActions: invertSwipeActions ?? this.invertSwipeActions,
       use24HourFormat: use24HourFormat ?? this.use24HourFormat,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -548,6 +601,9 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
         appointmentsCompletedToBottom.value,
       );
     }
+    if (invertSwipeActions.present) {
+      map['invert_swipe_actions'] = Variable<bool>(invertSwipeActions.value);
+    }
     if (use24HourFormat.present) {
       map['use24_hour_format'] = Variable<bool>(use24HourFormat.value);
     }
@@ -570,6 +626,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
           ..write(
             'appointmentsCompletedToBottom: $appointmentsCompletedToBottom, ',
           )
+          ..write('invertSwipeActions: $invertSwipeActions, ')
           ..write('use24HourFormat: $use24HourFormat, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -922,6 +979,7 @@ typedef $$SettingsTableTableCreateCompanionBuilder =
       Value<bool> appointmentsCompletionEnabled,
       Value<bool> completedToBottom,
       Value<bool> appointmentsCompletedToBottom,
+      Value<bool> invertSwipeActions,
       Value<bool> use24HourFormat,
       required DateTime updatedAt,
     });
@@ -933,6 +991,7 @@ typedef $$SettingsTableTableUpdateCompanionBuilder =
       Value<bool> appointmentsCompletionEnabled,
       Value<bool> completedToBottom,
       Value<bool> appointmentsCompletedToBottom,
+      Value<bool> invertSwipeActions,
       Value<bool> use24HourFormat,
       Value<DateTime> updatedAt,
     });
@@ -973,6 +1032,11 @@ class $$SettingsTableTableFilterComposer
 
   ColumnFilters<bool> get appointmentsCompletedToBottom => $composableBuilder(
     column: $table.appointmentsCompletedToBottom,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get invertSwipeActions => $composableBuilder(
+    column: $table.invertSwipeActions,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1026,6 +1090,11 @@ class $$SettingsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get invertSwipeActions => $composableBuilder(
+    column: $table.invertSwipeActions,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get use24HourFormat => $composableBuilder(
     column: $table.use24HourFormat,
     builder: (column) => ColumnOrderings(column),
@@ -1069,6 +1138,11 @@ class $$SettingsTableTableAnnotationComposer
 
   GeneratedColumn<bool> get appointmentsCompletedToBottom => $composableBuilder(
     column: $table.appointmentsCompletedToBottom,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get invertSwipeActions => $composableBuilder(
+    column: $table.invertSwipeActions,
     builder: (column) => column,
   );
 
@@ -1120,6 +1194,7 @@ class $$SettingsTableTableTableManager
                 Value<bool> completedToBottom = const Value.absent(),
                 Value<bool> appointmentsCompletedToBottom =
                     const Value.absent(),
+                Value<bool> invertSwipeActions = const Value.absent(),
                 Value<bool> use24HourFormat = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
               }) => SettingsTableCompanion(
@@ -1129,6 +1204,7 @@ class $$SettingsTableTableTableManager
                 appointmentsCompletionEnabled: appointmentsCompletionEnabled,
                 completedToBottom: completedToBottom,
                 appointmentsCompletedToBottom: appointmentsCompletedToBottom,
+                invertSwipeActions: invertSwipeActions,
                 use24HourFormat: use24HourFormat,
                 updatedAt: updatedAt,
               ),
@@ -1142,6 +1218,7 @@ class $$SettingsTableTableTableManager
                 Value<bool> completedToBottom = const Value.absent(),
                 Value<bool> appointmentsCompletedToBottom =
                     const Value.absent(),
+                Value<bool> invertSwipeActions = const Value.absent(),
                 Value<bool> use24HourFormat = const Value.absent(),
                 required DateTime updatedAt,
               }) => SettingsTableCompanion.insert(
@@ -1151,6 +1228,7 @@ class $$SettingsTableTableTableManager
                 appointmentsCompletionEnabled: appointmentsCompletionEnabled,
                 completedToBottom: completedToBottom,
                 appointmentsCompletedToBottom: appointmentsCompletedToBottom,
+                invertSwipeActions: invertSwipeActions,
                 use24HourFormat: use24HourFormat,
                 updatedAt: updatedAt,
               ),

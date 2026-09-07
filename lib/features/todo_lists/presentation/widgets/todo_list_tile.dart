@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/ui/lists/swipe_actions_card.dart';
+import '../../../settings/presentation/providers/settings_provider.dart';
+import '../../../settings/presentation/providers/settings_state.dart';
 import '../../domain/entities/todo_list.dart';
 import '../../domain/entities/todo_list_icons.dart';
 
 /// Item de la pantalla de listas con acción de borrar mediante swipe.
-class TodoListTile extends StatelessWidget {
+class TodoListTile extends ConsumerWidget {
   const TodoListTile({
     super.key,
     required this.list,
@@ -31,12 +34,17 @@ class TodoListTile extends StatelessWidget {
   final ValueChanged<double>? onRevealProgressChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
+    final invertActions = switch (ref.watch(settingsProvider)) {
+      SettingsData(:final settings) => settings.invertSwipeActions,
+      _ => false,
+    };
 
     return SwipeActionsCard(
       onTap: onTap,
       onDelete: onDelete,
+      invertActions: invertActions,
       groupIndex: groupIndex,
       groupSize: groupSize,
       topSeparationProgress: topSeparationProgress,

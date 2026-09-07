@@ -89,6 +89,7 @@ AppSettings buildAppSettings({
   bool? appointmentsCompletionEnabled,
   bool? completedToBottom,
   bool? appointmentsCompletedToBottom,
+  bool? invertSwipeActions,
   bool? use24HourFormat,
 }) {
   return AppSettings(
@@ -101,6 +102,8 @@ AppSettings buildAppSettings({
         completedToBottom ?? AppSettings.defaults.completedToBottom,
     appointmentsCompletedToBottom: appointmentsCompletedToBottom ??
         AppSettings.defaults.appointmentsCompletedToBottom,
+    invertSwipeActions:
+        invertSwipeActions ?? AppSettings.defaults.invertSwipeActions,
     use24HourFormat: use24HourFormat ?? AppSettings.defaults.use24HourFormat,
   );
 }
@@ -114,6 +117,7 @@ SettingsRow buildSettingsRow({
   bool appointmentsCompletionEnabled = false,
   bool completedToBottom = true,
   bool appointmentsCompletedToBottom = true,
+  bool invertSwipeActions = false,
   bool use24HourFormat = true,
   DateTime? updatedAt,
 }) {
@@ -124,6 +128,7 @@ SettingsRow buildSettingsRow({
     appointmentsCompletionEnabled: appointmentsCompletionEnabled,
     completedToBottom: completedToBottom,
     appointmentsCompletedToBottom: appointmentsCompletedToBottom,
+    invertSwipeActions: invertSwipeActions,
     use24HourFormat: use24HourFormat,
     updatedAt: updatedAt ?? DateTime.now().toUtc(),
   );

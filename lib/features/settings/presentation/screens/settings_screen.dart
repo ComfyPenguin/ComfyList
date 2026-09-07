@@ -8,6 +8,7 @@ import '../widgets/appointments_completed_to_bottom_toggle.dart';
 import '../widgets/appointments_completion_toggle.dart';
 import '../widgets/completed_to_bottom_toggle.dart';
 import '../widgets/hour_format_toggle.dart';
+import '../widgets/invert_swipe_actions_toggle.dart';
 import '../widgets/notifications_toggle.dart';
 import '../widgets/theme_mode_selector.dart';
 import '../widgets/today_on_top_toggle.dart';
@@ -46,6 +47,13 @@ class SettingsScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.md),
             const ThemeModeSelector(),
+            const SizedBox(height: AppSpacing.xxxl),
+            Text(
+              'Gestos',
+              style: AppTypography.displayMd.copyWith(color: colors.ink),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            const InvertSwipeActionsToggle(),
             const SizedBox(height: AppSpacing.xxxl),
             Text(
               'Avisos',

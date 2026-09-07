@@ -24,6 +24,7 @@ void main() {
       expect(row.appointmentsCompletionEnabled, isFalse);
       expect(row.completedToBottom, isTrue);
       expect(row.appointmentsCompletedToBottom, isTrue);
+      expect(row.invertSwipeActions, isFalse);
       expect(row.use24HourFormat, isTrue);
     });
 

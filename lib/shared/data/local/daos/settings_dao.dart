@@ -81,6 +81,16 @@ class SettingsDao extends DatabaseAccessor<AppDatabase> with _$SettingsDaoMixin 
     );
   }
 
+  Future<void> updateInvertSwipeActions(bool enabled) async {
+    await getOrCreate();
+    await (update(settingsTable)..where((t) => t.id.equals(1))).write(
+      SettingsTableCompanion(
+        invertSwipeActions: Value(enabled),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+  }
+
   Future<void> updateUse24HourFormat(bool enabled) async {
     await getOrCreate();
     await (update(settingsTable)..where((t) => t.id.equals(1))).write(

@@ -23,6 +23,11 @@ class SettingsTable extends Table {
   BoolColumn get appointmentsCompletedToBottom =>
       boolean().withDefault(const Constant(true))();
 
+  /// Si `true`, las acciones del deslizamiento se invierten: eliminar queda
+  /// a la izquierda y completar a la derecha (y viceversa en `false`).
+  BoolColumn get invertSwipeActions =>
+      boolean().withDefault(const Constant(false))();
+
   /// Si `true`, las horas de las citas se muestran en formato 24H.
   /// Si `false`, se muestran en formato 12H con AM/PM.
   BoolColumn get use24HourFormat =>

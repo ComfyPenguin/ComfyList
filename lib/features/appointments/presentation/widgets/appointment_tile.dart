@@ -49,8 +49,13 @@ class AppointmentTile extends ConsumerWidget {
     final done = completionEnabled && appointment.isDone;
     final titleStyle = AppTypography.bodyMdStrong;
 
-    final use24H = switch (ref.watch(settingsProvider)) {
+    final settingsState = ref.watch(settingsProvider);
+    final use24H = switch (settingsState) {
       SettingsData(:final settings) => settings.use24HourFormat,
+      _ => false,
+    };
+    final invertActions = switch (settingsState) {
+      SettingsData(:final settings) => settings.invertSwipeActions,
       _ => false,
     };
     final dateFormat = use24H ? 'HH:mm' : 'hh:mm';
@@ -80,6 +85,7 @@ class AppointmentTile extends ConsumerWidget {
       onDelete: onDelete,
       onComplete: completionEnabled ? onComplete : null,
       isDone: done,
+      invertActions: invertActions,
       groupIndex: groupIndex,
       groupSize: groupSize,
       topSeparationProgress: topSeparationProgress,

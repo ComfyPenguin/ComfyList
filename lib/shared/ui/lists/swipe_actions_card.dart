@@ -18,6 +18,7 @@ class SwipeActionsCard extends StatelessWidget {
     required this.onDelete,
     this.onComplete,
     this.isDone = false,
+    this.invertActions = false,
     this.groupIndex = 0,
     this.groupSize = 1,
     this.topSeparationProgress = 1,
@@ -33,13 +34,17 @@ class SwipeActionsCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onDelete;
 
-  /// Acción de la zona izquierda (deslizar a la derecha): completar o
-  /// desmarcar según [isDone].
+  /// Acción de completar o desmarcar según [isDone]. Sin invertir ocupa la
+  /// zona izquierda (deslizar a la derecha); invertida, la derecha.
   final VoidCallback? onComplete;
 
-  /// Estado completado del item: la zona izquierda pasa a naranja con el
+  /// Estado completado del item: la zona de completar pasa a naranja con el
   /// icono de pendiente para desmarcar.
   final bool isDone;
+
+  /// Si es `true`, las acciones se invierten: eliminar en la zona izquierda
+  /// y completar en la derecha (por defecto es al revés).
+  final bool invertActions;
 
   final int groupIndex;
   final int groupSize;
@@ -59,40 +64,57 @@ class SwipeActionsCard extends StatelessWidget {
         : colors.ink.withValues(alpha: 0.12);
     final cardRadius = _borderRadiusForPosition();
     final completeAction = onComplete;
+    final completeOnLeft = !invertActions;
+
+    // Zona de completar: verde (o naranja para desmarcar). Solo existe si la
+    // acción de completar está disponible.
+    Widget? completeZone(_ZoneSide side) {
+      if (completeAction == null) return null;
+      return _ActionZone(
+        color: isDone ? colors.warning : colors.success,
+        foreground: colors.onError,
+        borderRadius: cardRadius,
+        side: side,
+        contentPadding: EdgeInsets.only(
+          left: side == _ZoneSide.left ? 0 : SwipeActionsCard.outerRadius,
+          right: side == _ZoneSide.left ? SwipeActionsCard.outerRadius : 0,
+        ),
+        icon: isDone ? const PendingCircleIcon() : const CompleteCircleIcon(),
+        label: isDone ? 'Desmarcar' : 'Completar',
+      );
+    }
+
+    // Zona de eliminar: siempre presente.
+    Widget deleteZone(_ZoneSide side) {
+      return _ActionZone(
+        color: colors.error,
+        foreground: colors.onError,
+        borderRadius: cardRadius,
+        side: side,
+        contentPadding: EdgeInsets.only(
+          left: side == _ZoneSide.left ? 0 : SwipeActionsCard.outerRadius,
+          right: side == _ZoneSide.left ? SwipeActionsCard.outerRadius : 0,
+        ),
+        icon: const RecycleBinIcon(),
+        label: 'Eliminar',
+      );
+    }
 
     return Material(
       color: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: cardRadius),
       clipBehavior: Clip.none,
       child: SwipeActions(
-        onSwipeRight: onComplete,
-        onSwipeLeft: onDelete,
+        onSwipeRight: completeOnLeft ? onComplete : onDelete,
+        onSwipeLeft: completeOnLeft ? onDelete : onComplete,
         onRevealProgressChanged: onRevealProgressChanged,
         backgroundOverlap: SwipeActionsCard.outerRadius,
-        leftBackground: completeAction == null
-            ? null
-            : _ActionZone(
-                color: isDone ? colors.warning : colors.success,
-                foreground: colors.onError,
-                borderRadius: cardRadius,
-                side: _ZoneSide.left,
-                contentPadding: EdgeInsets.only(
-                  right: SwipeActionsCard.outerRadius,
-                ),
-                icon: isDone
-                    ? const PendingCircleIcon()
-                    : const CompleteCircleIcon(),
-                label: isDone ? 'Desmarcar' : 'Completar',
-              ),
-        rightBackground: _ActionZone(
-          color: colors.error,
-          foreground: colors.onError,
-          borderRadius: cardRadius,
-          side: _ZoneSide.right,
-          contentPadding: EdgeInsets.only(left: SwipeActionsCard.outerRadius),
-          icon: const RecycleBinIcon(),
-          label: 'Eliminar',
-        ),
+        leftBackground: completeOnLeft
+            ? completeZone(_ZoneSide.left)
+            : deleteZone(_ZoneSide.left),
+        rightBackground: completeOnLeft
+            ? deleteZone(_ZoneSide.right)
+            : completeZone(_ZoneSide.right),
         child: Material(
           color: colors.canvas,
           shape: RoundedRectangleBorder(

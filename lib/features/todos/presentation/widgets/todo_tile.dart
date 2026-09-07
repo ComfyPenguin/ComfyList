@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/ui/lists/swipe_actions_card.dart';
 import '../../../../shared/ui/text/animated_strikethrough_text.dart';
+import '../../../settings/presentation/providers/settings_provider.dart';
+import '../../../settings/presentation/providers/settings_state.dart';
 import '../../domain/entities/todo.dart';
 
 /// Item de la lista de tareas con acciones de completar y borrar mediante swipe.
-class TodoTile extends StatelessWidget {
+class TodoTile extends ConsumerWidget {
   const TodoTile({
     super.key,
     required this.todo,
@@ -33,16 +36,21 @@ class TodoTile extends StatelessWidget {
   final ValueChanged<double>? onRevealProgressChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
     final muted = colors.muted;
     final titleStyle = AppTypography.bodyMdStrong;
+    final invertActions = switch (ref.watch(settingsProvider)) {
+      SettingsData(:final settings) => settings.invertSwipeActions,
+      _ => false,
+    };
 
     return SwipeActionsCard(
       onTap: onTap,
       onDelete: onDelete,
       onComplete: onComplete,
       isDone: todo.isDone,
+      invertActions: invertActions,
       groupIndex: groupIndex,
       groupSize: groupSize,
       topSeparationProgress: topSeparationProgress,
