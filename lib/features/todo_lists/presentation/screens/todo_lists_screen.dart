@@ -30,55 +30,111 @@ class TodoListsScreen extends ConsumerWidget {
 
     return switch (state) {
       TodoListsInitial() ||
-      TodoListsLoading() =>
-        const Center(child: CircularProgressIndicator()),
+      TodoListsLoading() => const Center(child: CircularProgressIndicator()),
       TodoListsError(:final failure) => Center(
-          child: Padding(
-            padding: EdgeInsets.all(AppSpacing.xxxl).copyWith(top: topOffset),
-            child: Text(
-              failure.message,
-              textAlign: TextAlign.center,
-              style: AppTypography.bodyMd.copyWith(color: context.colors.body),
-            ),
+        child: Padding(
+          padding: EdgeInsets.all(AppSpacing.xxxl).copyWith(top: topOffset),
+          child: Text(
+            failure.message,
+            textAlign: TextAlign.center,
+            style: AppTypography.bodyMd.copyWith(color: context.colors.body),
           ),
         ),
-      TodoListsData(:final items) => items.isEmpty
-          ? Padding(
-              padding: EdgeInsets.only(top: topOffset),
-              child: const TodoListsEmptyState(),
-            )
-          : _Lists(items: items, topPadding: topOffset),
+      ),
+      TodoListsData(:final items) =>
+        items.isEmpty
+            ? Padding(
+                padding: EdgeInsets.only(top: topOffset),
+                child: const TodoListsEmptyState(),
+              )
+            : _Lists(items: items, topPadding: topOffset),
     };
   }
 }
 
-class _Lists extends ConsumerWidget {
+class _Lists extends ConsumerStatefulWidget {
   const _Lists({required this.items, required this.topPadding});
 
   final List<TodoList> items;
   final double topPadding;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final notifier = ref.read(todoListsProvider.notifier);
+  ConsumerState<_Lists> createState() => _ListsState();
+}
 
-    // Más recientes primero (criterio que la UX puede revisar luego).
-    final sorted = [...items]
+class _ListsState extends ConsumerState<_Lists> {
+  static const double _joinedGap = 2;
+
+  final _tileRevealProgress = <String, double>{};
+
+  ({double top, double bottom}) _effectiveSeparationFor(
+    int tileIndex,
+    List<TodoList> lists,
+  ) {
+    if (_tileRevealProgress.isEmpty) {
+      return (top: 0.0, bottom: 0.0);
+    }
+
+    final currentId = lists[tileIndex].id;
+    final currentProgress = _tileRevealProgress[currentId] ?? 0.0;
+    final previousProgress = tileIndex > 0
+        ? (_tileRevealProgress[lists[tileIndex - 1].id] ?? 0.0)
+        : 0.0;
+    final nextProgress = tileIndex < lists.length - 1
+        ? (_tileRevealProgress[lists[tileIndex + 1].id] ?? 0.0)
+        : 0.0;
+
+    return (
+      top: currentProgress > previousProgress
+          ? currentProgress
+          : previousProgress,
+      bottom: currentProgress > nextProgress ? currentProgress : nextProgress,
+    );
+  }
+
+  void _setTileRevealProgress(String listId, double progress) {
+    final value = progress.clamp(0.0, 1.0).toDouble();
+    if (value <= 0.001) {
+      _tileRevealProgress.remove(listId);
+    } else {
+      _tileRevealProgress[listId] = value;
+    }
+    setState(() {});
+  }
+
+  void _removeStaleRevealProgress(List<TodoList> lists) {
+    final visibleIds = lists.map((list) => list.id).toSet();
+    _tileRevealProgress.removeWhere((id, _) => !visibleIds.contains(id));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final notifier = ref.read(todoListsProvider.notifier);
+    final sorted = [...widget.items]
       ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    _removeStaleRevealProgress(sorted);
 
     return ListView.separated(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.lg,
-        topPadding,
+        widget.topPadding,
         AppSpacing.lg,
         AppSpacing.section,
       ),
       itemCount: sorted.length,
-      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
+      separatorBuilder: (_, _) => const SizedBox(height: _joinedGap),
       itemBuilder: (context, i) {
         final list = sorted[i];
+        final separation = _effectiveSeparationFor(i, sorted);
         return TodoListTile(
+          key: ValueKey(list.id),
           list: list,
+          groupIndex: i,
+          groupSize: sorted.length,
+          topSeparationProgress: separation.top,
+          bottomSeparationProgress: separation.bottom,
+          onRevealProgressChanged: (progress) =>
+              _setTileRevealProgress(list.id, progress),
           onTap: () => context.push(Routes.todoList(list.id)),
           onEdit: () => context.push(Routes.todoListEdit(list.id)),
           onDelete: () async {

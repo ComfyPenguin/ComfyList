@@ -36,18 +36,17 @@ class TodosScreen extends ConsumerWidget {
   Widget _buildBody(BuildContext context, WidgetRef ref, TodosState state) {
     return switch (state) {
       TodosInitial() ||
-      TodosLoading() =>
-        const Center(child: CircularProgressIndicator()),
+      TodosLoading() => const Center(child: CircularProgressIndicator()),
       TodosError(:final failure) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.xxxl),
-            child: Text(
-              failure.message,
-              textAlign: TextAlign.center,
-              style: AppTypography.bodyMd.copyWith(color: context.colors.body),
-            ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xxxl),
+          child: Text(
+            failure.message,
+            textAlign: TextAlign.center,
+            style: AppTypography.bodyMd.copyWith(color: context.colors.body),
           ),
         ),
+      ),
       TodosData(:final items) => _buildTodosData(context, ref, items),
     };
   }
@@ -60,10 +59,14 @@ class TodosScreen extends ConsumerWidget {
     final colors = context.colors;
     final isDark = colors.canvas.computeLuminance() < 0.05;
     // Altura acumulada: safe area + margen appbar + appbar + gap
-    final topOffset = MediaQuery.of(context).padding.top
-        + AppSpacing.sm   // margen del AppBar
-        + 52              // altura del AppBar
-        + AppSpacing.sm;  // gap entre AppBar y QuickAddBar
+    final topOffset =
+        MediaQuery.of(context).padding.top +
+        AppSpacing
+            .sm // margen del AppBar
+            +
+        52 // altura del AppBar
+        +
+        AppSpacing.sm; // gap entre AppBar y QuickAddBar
 
     final contentTopPadding = topOffset + 52 + AppSpacing.sm;
 
@@ -96,7 +99,9 @@ class TodosScreen extends ConsumerWidget {
                 child: Container(
                   height: 52,
                   alignment: Alignment.centerLeft,
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                  ),
                   decoration: BoxDecoration(
                     color: colors.canvas.withValues(alpha: 0.7),
                     borderRadius: AppRadius.brPill,
@@ -124,7 +129,7 @@ class TodosScreen extends ConsumerWidget {
   }
 }
 
-class _TodosList extends ConsumerWidget {
+class _TodosList extends ConsumerStatefulWidget {
   const _TodosList({
     required this.listId,
     required this.items,
@@ -136,8 +141,57 @@ class _TodosList extends ConsumerWidget {
   final double topPadding;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final notifier = ref.read(todosProvider(listId).notifier);
+  ConsumerState<_TodosList> createState() => _TodosListState();
+}
+
+class _TodosListState extends ConsumerState<_TodosList> {
+  static const double _joinedGap = 2;
+
+  final _tileRevealProgress = <String, double>{};
+
+  ({double top, double bottom}) _effectiveSeparationFor(
+    int tileIndex,
+    List<Todo> todos,
+  ) {
+    if (_tileRevealProgress.isEmpty) {
+      return (top: 0.0, bottom: 0.0);
+    }
+
+    final currentId = todos[tileIndex].id;
+    final currentProgress = _tileRevealProgress[currentId] ?? 0.0;
+    final previousProgress = tileIndex > 0
+        ? (_tileRevealProgress[todos[tileIndex - 1].id] ?? 0.0)
+        : 0.0;
+    final nextProgress = tileIndex < todos.length - 1
+        ? (_tileRevealProgress[todos[tileIndex + 1].id] ?? 0.0)
+        : 0.0;
+
+    return (
+      top: currentProgress > previousProgress
+          ? currentProgress
+          : previousProgress,
+      bottom: currentProgress > nextProgress ? currentProgress : nextProgress,
+    );
+  }
+
+  void _setTileRevealProgress(String todoId, double progress) {
+    final value = progress.clamp(0.0, 1.0).toDouble();
+    if (value <= 0.001) {
+      _tileRevealProgress.remove(todoId);
+    } else {
+      _tileRevealProgress[todoId] = value;
+    }
+    setState(() {});
+  }
+
+  void _removeStaleRevealProgress(List<Todo> todos) {
+    final visibleIds = todos.map((todo) => todo.id).toSet();
+    _tileRevealProgress.removeWhere((id, _) => !visibleIds.contains(id));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final notifier = ref.read(todosProvider(widget.listId).notifier);
     final completedToBottom = switch (ref.watch(settingsProvider)) {
       SettingsData(:final settings) => settings.completedToBottom,
       _ => true,
@@ -146,30 +200,40 @@ class _TodosList extends ConsumerWidget {
     // Ordenar según el ajuste:
     // - Activado: pendientes primero, luego por fecha de actualización desc.
     // - Desactivado: por fecha de creación asc (mantiene la posición siempre).
-    final sorted = [...items]..sort((a, b) {
+    final sorted = [...widget.items]
+      ..sort((a, b) {
         if (completedToBottom) {
           if (a.isDone != b.isDone) return a.isDone ? 1 : -1;
           return b.updatedAt.compareTo(a.updatedAt);
         }
         return a.createdAt.compareTo(b.createdAt);
       });
+    _removeStaleRevealProgress(sorted);
 
     return ListView.separated(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.lg,
-        topPadding,
+        widget.topPadding,
         AppSpacing.lg,
         AppSpacing.section,
       ),
       itemCount: sorted.length,
-      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
+      separatorBuilder: (_, _) => const SizedBox(height: _joinedGap),
       itemBuilder: (context, i) {
         final todo = sorted[i];
+        final separation = _effectiveSeparationFor(i, sorted);
         return TodoTile(
+          key: ValueKey(todo.id),
           todo: todo,
+          groupIndex: i,
+          groupSize: sorted.length,
+          topSeparationProgress: separation.top,
+          bottomSeparationProgress: separation.bottom,
+          onRevealProgressChanged: (progress) =>
+              _setTileRevealProgress(todo.id, progress),
           onToggle: (v) => notifier.toggleDone(todo.id, v),
           onTap: () => _showDetailSheet(context, ref, todo.id),
-          onEdit: () => context.push(Routes.todoEdit(listId, todo.id)),
+          onEdit: () => context.push(Routes.todoEdit(widget.listId, todo.id)),
           onDelete: () async {
             await notifier.delete(todo.id);
             if (!context.mounted) return;
@@ -193,13 +257,13 @@ class _TodosList extends ConsumerWidget {
       useSafeArea: true,
       showDragHandle: true,
       builder: (sheetContext) => TodoDetailSheet(
-        listId: listId,
+        listId: widget.listId,
         todoId: todoId,
         onEdit: () {
           Navigator.of(sheetContext).pop();
           Future.microtask(() {
             if (!context.mounted) return;
-            context.push(Routes.todoEdit(listId, todoId));
+            context.push(Routes.todoEdit(widget.listId, todoId));
           });
         },
       ),

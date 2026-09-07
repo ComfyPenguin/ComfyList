@@ -1,114 +1,69 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
-import '../../../../shared/ui/lists/swipe_reveal_actions.dart';
-import '../../../../shared/ui/pencil_edit_icon.dart';
-import '../../../../shared/ui/recycle_bin_icon.dart';
+import '../../../../shared/ui/lists/swipe_reveal_card.dart';
 import '../../domain/entities/todo_list.dart';
 import '../../domain/entities/todo_list_icons.dart';
 
-/// Item de la pantalla de listas — card plana con icono + nombre, mismo
-/// patrón visual que [TodoTile] (canvas-soft + radio xl).
-/// Swipe a la izquierda revela un botón de borrar (elimina la lista y
-/// sus tareas en cascada, sin confirmación). Swipe a la derecha revela
-/// un botón de editar que abre la pantalla de edición.
-class TodoListTile extends StatefulWidget {
+/// Item de la pantalla de listas con acciones de editar y borrar mediante swipe.
+class TodoListTile extends StatelessWidget {
   const TodoListTile({
     super.key,
     required this.list,
     required this.onTap,
     required this.onEdit,
     required this.onDelete,
+    this.groupIndex = 0,
+    this.groupSize = 1,
+    this.topSeparationProgress = 1,
+    this.bottomSeparationProgress = 1,
+    this.onRevealProgressChanged,
   });
 
   final TodoList list;
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
-
-  @override
-  State<TodoListTile> createState() => _TodoListTileState();
-}
-
-class _TodoListTileState extends State<TodoListTile> {
-  double _lastLeftReveal = 0;
-  int _leftRevealCount = 0;
-  double _lastRightReveal = 0;
-  int _rightRevealCount = 0;
-
-  void _onLeftReveal(double progress) {
-    if (_lastLeftReveal < 0.6 && progress >= 0.6) {
-      setState(() => _leftRevealCount++);
-    }
-    _lastLeftReveal = progress;
-  }
-
-  void _onRightReveal(double progress) {
-    if (_lastRightReveal > -0.6 && progress <= -0.6) {
-      setState(() => _rightRevealCount++);
-    }
-    _lastRightReveal = progress;
-  }
+  final int groupIndex;
+  final int groupSize;
+  final double topSeparationProgress;
+  final double bottomSeparationProgress;
+  final ValueChanged<double>? onRevealProgressChanged;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return Material(
-      color: Colors.transparent,
-      shape: const RoundedRectangleBorder(borderRadius: AppRadius.brXl),
-      clipBehavior: Clip.antiAlias,
-      child: SwipeRevealActions(
-        onLeftRevealProgressChanged: _onLeftReveal,
-        onRightRevealProgressChanged: _onRightReveal,
-        leftAction: SwipeRevealAction(
-          icon: PencilEditIcon(key: ValueKey(_leftRevealCount)),
-          label: 'Editar lista',
-          background: colors.surfacePressed,
-          foreground: colors.ink,
-          onTap: widget.onEdit,
-        ),
-        rightAction: SwipeRevealAction(
-          icon: RecycleBinIcon(key: ValueKey(_rightRevealCount)),
-          label: 'Eliminar lista',
-          background: colors.error,
-          foreground: colors.onError,
-          onTap: widget.onDelete,
-        ),
-        child: Material(
-          color: colors.canvasSoft,
-          child: InkWell(
-            onTap: widget.onTap,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.lg,
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    TodoListIcons.resolve(widget.list.iconKey),
-                    color: colors.ink,
-                    size: 28,
-                  ),
-                  const SizedBox(width: AppSpacing.lg),
-                  Expanded(
-                    child: Text(
-                      widget.list.name,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.bodyMdStrong.copyWith(
-                        color: colors.ink,
-                      ),
-                    ),
-                  ),
-                  Icon(Icons.chevron_right, color: colors.muted),
-                ],
-              ),
+
+    return SwipeRevealCard(
+      onTap: onTap,
+      onEdit: onEdit,
+      onDelete: onDelete,
+      editLabel: 'Editar lista',
+      deleteLabel: 'Eliminar lista',
+      groupIndex: groupIndex,
+      groupSize: groupSize,
+      topSeparationProgress: topSeparationProgress,
+      bottomSeparationProgress: bottomSeparationProgress,
+      onRevealProgressChanged: onRevealProgressChanged,
+      child: Row(
+        children: [
+          Icon(
+            TodoListIcons.resolve(list.iconKey),
+            color: colors.ink,
+            size: 28,
+          ),
+          const SizedBox(width: AppSpacing.lg),
+          Expanded(
+            child: Text(
+              list.name,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.bodyMdStrong.copyWith(color: colors.ink),
             ),
           ),
-        ),
+          Icon(Icons.chevron_right, color: colors.muted),
+        ],
       ),
     );
   }

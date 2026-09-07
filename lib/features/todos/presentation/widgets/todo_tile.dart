@@ -1,18 +1,13 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
-import '../../../../shared/ui/lists/swipe_reveal_actions.dart';
-import '../../../../shared/ui/pencil_edit_icon.dart';
-import '../../../../shared/ui/recycle_bin_icon.dart';
+import '../../../../shared/ui/lists/swipe_reveal_card.dart';
 import '../../domain/entities/todo.dart';
 
-/// Item de la lista de tareas — `card-content` plana (canvas-soft + radio xl).
-/// Swipe a la derecha revela el botón de editar; swipe a la izquierda revela
-/// el botón de borrar. El borrado es sin confirmación.
-class TodoTile extends StatefulWidget {
+/// Item de la lista de tareas con acciones de editar y borrar mediante swipe.
+class TodoTile extends StatelessWidget {
   const TodoTile({
     super.key,
     required this.todo,
@@ -20,6 +15,11 @@ class TodoTile extends StatefulWidget {
     required this.onTap,
     required this.onEdit,
     required this.onDelete,
+    this.groupIndex = 0,
+    this.groupSize = 1,
+    this.topSeparationProgress = 1,
+    this.bottomSeparationProgress = 1,
+    this.onRevealProgressChanged,
   });
 
   final Todo todo;
@@ -27,115 +27,66 @@ class TodoTile extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
-
-  @override
-  State<TodoTile> createState() => _TodoTileState();
-}
-
-class _TodoTileState extends State<TodoTile> {
-  double _lastLeftReveal = 0;
-  int _leftRevealCount = 0;
-  double _lastRightReveal = 0;
-  int _rightRevealCount = 0;
-
-  void _onLeftReveal(double progress) {
-    if (_lastLeftReveal < 0.6 && progress >= 0.6) {
-      setState(() => _leftRevealCount++);
-    }
-    _lastLeftReveal = progress;
-  }
-
-  void _onRightReveal(double progress) {
-    // Dispara al cruzar el umbral de apertura (~-0.6, igual que el
-    // openThreshold interno del swipe). Detecta la transición incluso
-    // si el drag empieza desde un valor intermedio (p. ej. drag rápido
-    // que salta de 0 a -1 en pocos frames).
-    if (_lastRightReveal > -0.6 && progress <= -0.6) {
-      setState(() => _rightRevealCount++);
-    }
-    _lastRightReveal = progress;
-  }
+  final int groupIndex;
+  final int groupSize;
+  final double topSeparationProgress;
+  final double bottomSeparationProgress;
+  final ValueChanged<double>? onRevealProgressChanged;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final muted = colors.muted;
     final titleStyle = AppTypography.bodyMdStrong.copyWith(
-      decoration: widget.todo.isDone ? TextDecoration.lineThrough : null,
-      color: widget.todo.isDone ? muted : colors.ink,
+      decoration: todo.isDone ? TextDecoration.lineThrough : null,
+      color: todo.isDone ? muted : colors.ink,
     );
 
-    return Material(
-      color: Colors.transparent,
-      shape: const RoundedRectangleBorder(borderRadius: AppRadius.brXl),
-      clipBehavior: Clip.antiAlias,
-      child: SwipeRevealActions(
-        onLeftRevealProgressChanged: _onLeftReveal,
-        onRightRevealProgressChanged: _onRightReveal,
-        leftAction: SwipeRevealAction(
-          icon: PencilEditIcon(key: ValueKey(_leftRevealCount)),
-          label: 'Editar tarea',
-          background: colors.surfacePressed,
-          foreground: colors.ink,
-          onTap: widget.onEdit,
-        ),
-        rightAction: SwipeRevealAction(
-          icon: RecycleBinIcon(key: ValueKey(_rightRevealCount)),
-          label: 'Eliminar tarea',
-          background: colors.error,
-          foreground: colors.onError,
-          onTap: widget.onDelete,
-        ),
-        child: Material(
-          color: colors.canvasSoft,
-          child: InkWell(
-            onTap: widget.onTap,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.lg,
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => widget.onToggle(!widget.todo.isDone),
-                    child: Checkbox(
-                      value: widget.todo.isDone,
-                      onChanged: (v) => widget.onToggle(v ?? false),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.lg),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(widget.todo.title, style: titleStyle),
-                        if (widget.todo.description != null &&
-                            widget.todo.description!.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: AppSpacing.xs),
-                            child: Text(
-                              widget.todo.description!,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTypography.bodySm.copyWith(
-                                color: muted,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.lg),
-                  Icon(Icons.chevron_right, color: colors.muted),
-                ],
-              ),
+    return SwipeRevealCard(
+      onTap: onTap,
+      onEdit: onEdit,
+      onDelete: onDelete,
+      editLabel: 'Editar tarea',
+      deleteLabel: 'Eliminar tarea',
+      groupIndex: groupIndex,
+      groupSize: groupSize,
+      topSeparationProgress: topSeparationProgress,
+      bottomSeparationProgress: bottomSeparationProgress,
+      onRevealProgressChanged: onRevealProgressChanged,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => onToggle(!todo.isDone),
+            child: Checkbox(
+              value: todo.isDone,
+              onChanged: (value) => onToggle(value ?? false),
             ),
           ),
-        ),
+          const SizedBox(width: AppSpacing.lg),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(todo.title, style: titleStyle),
+                if (todo.description != null && todo.description!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.xs),
+                    child: Text(
+                      todo.description!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.bodySm.copyWith(color: muted),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.lg),
+          Icon(Icons.chevron_right, color: colors.muted),
+        ],
       ),
     );
   }
