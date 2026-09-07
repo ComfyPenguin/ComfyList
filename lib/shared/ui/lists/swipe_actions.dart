@@ -7,12 +7,24 @@ class SwipeActions extends StatefulWidget {
     required this.child,
     this.onSwipeRight,
     this.onSwipeLeft,
+    this.leftBackground,
+    this.rightBackground,
+    this.backgroundOverlap = 24,
     this.onRevealProgressChanged,
   });
 
   final Widget child;
   final VoidCallback? onSwipeRight;
   final VoidCallback? onSwipeLeft;
+
+  /// Fondo que se revela al deslizar el hijo hacia la derecha (acción izquierda).
+  final Widget? leftBackground;
+
+  /// Fondo que se revela al deslizar el hijo hacia la izquierda (acción derecha).
+  final Widget? rightBackground;
+
+  /// Solape bajo la card para que el fondo quede pegado a sus bordes redondeados.
+  final double backgroundOverlap;
 
   /// Progreso absoluto del gesto: 0 cerrado, 1 umbral de swipe alcanzado.
   final ValueChanged<double>? onRevealProgressChanged;
@@ -133,16 +145,45 @@ class _SwipeActionsState extends State<SwipeActions>
         _maxWidth = constraints.maxWidth;
         return AnimatedBuilder(
           animation: _ctrl,
-          builder: (context, child) => Transform.translate(
-            offset: Offset(_ctrl.value * _swipeWidth, 0),
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onHorizontalDragStart: _onDragStart,
-              onHorizontalDragUpdate: _onDragUpdate,
-              onHorizontalDragEnd: _onDragEnd,
-              child: child,
-            ),
-          ),
+          builder: (context, child) {
+            final value = _ctrl.value;
+            final leftRevealed = value > _visibleThreshold;
+            final rightRevealed = value < -_visibleThreshold;
+            return Stack(
+              children: [
+                if (leftRevealed && widget.leftBackground != null)
+                  Positioned.fill(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: SizedBox(
+                        width: _swipeWidth + widget.backgroundOverlap,
+                        child: widget.leftBackground,
+                      ),
+                    ),
+                  ),
+                if (rightRevealed && widget.rightBackground != null)
+                  Positioned.fill(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: SizedBox(
+                        width: _swipeWidth + widget.backgroundOverlap,
+                        child: widget.rightBackground,
+                      ),
+                    ),
+                  ),
+                Transform.translate(
+                  offset: Offset(value * _swipeWidth, 0),
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onHorizontalDragStart: _onDragStart,
+                    onHorizontalDragUpdate: _onDragUpdate,
+                    onHorizontalDragEnd: _onDragEnd,
+                    child: child,
+                  ),
+                ),
+              ],
+            );
+          },
           child: widget.child,
         );
       },

@@ -7,7 +7,7 @@ import '../../../../shared/ui/lists/swipe_actions_card.dart';
 import '../../domain/entities/todo_list.dart';
 import '../../domain/entities/todo_list_icons.dart';
 
-/// Item de la pantalla de listas con acciones de editar y borrar mediante swipe.
+/// Item de la pantalla de listas con acción de borrar mediante swipe.
 class TodoListTile extends StatelessWidget {
   const TodoListTile({
     super.key,

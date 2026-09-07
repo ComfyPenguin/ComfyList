@@ -6,7 +6,7 @@ import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/ui/lists/swipe_actions_card.dart';
 import '../../domain/entities/todo.dart';
 
-/// Item de la lista de tareas con acciones de editar y borrar mediante swipe.
+/// Item de la lista de tareas con acciones de completar y borrar mediante swipe.
 class TodoTile extends StatelessWidget {
   const TodoTile({
     super.key,
@@ -44,6 +44,7 @@ class TodoTile extends StatelessWidget {
       onTap: onTap,
       onDelete: onDelete,
       onComplete: onComplete,
+      isDone: todo.isDone,
       groupIndex: groupIndex,
       groupSize: groupSize,
       topSeparationProgress: topSeparationProgress,

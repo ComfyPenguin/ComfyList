@@ -81,6 +81,7 @@ class AppointmentTile extends ConsumerWidget {
       onTap: onTap,
       onDelete: onDelete,
       onComplete: completionEnabled ? onComplete : null,
+      isDone: done,
       groupIndex: groupIndex,
       groupSize: groupSize,
       topSeparationProgress: topSeparationProgress,
