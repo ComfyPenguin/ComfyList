@@ -88,6 +88,7 @@ AppSettings buildAppSettings({
   bool? notificationsEnabled,
   bool? appointmentsCompletionEnabled,
   bool? completedToBottom,
+  bool? appointmentsCompletedToBottom,
   bool? use24HourFormat,
 }) {
   return AppSettings(
@@ -98,6 +99,8 @@ AppSettings buildAppSettings({
         AppSettings.defaults.appointmentsCompletionEnabled,
     completedToBottom:
         completedToBottom ?? AppSettings.defaults.completedToBottom,
+    appointmentsCompletedToBottom: appointmentsCompletedToBottom ??
+        AppSettings.defaults.appointmentsCompletedToBottom,
     use24HourFormat: use24HourFormat ?? AppSettings.defaults.use24HourFormat,
   );
 }
@@ -110,6 +113,7 @@ SettingsRow buildSettingsRow({
   bool notificationsEnabled = true,
   bool appointmentsCompletionEnabled = false,
   bool completedToBottom = true,
+  bool appointmentsCompletedToBottom = true,
   bool use24HourFormat = true,
   DateTime? updatedAt,
 }) {
@@ -119,6 +123,7 @@ SettingsRow buildSettingsRow({
     notificationsEnabled: notificationsEnabled,
     appointmentsCompletionEnabled: appointmentsCompletionEnabled,
     completedToBottom: completedToBottom,
+    appointmentsCompletedToBottom: appointmentsCompletedToBottom,
     use24HourFormat: use24HourFormat,
     updatedAt: updatedAt ?? DateTime.now().toUtc(),
   );

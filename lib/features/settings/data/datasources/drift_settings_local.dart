@@ -20,6 +20,9 @@ class DriftSettingsLocal {
   Future<void> updateCompletedToBottom(bool enabled) =>
       _dao.updateCompletedToBottom(enabled);
 
+  Future<void> updateAppointmentsCompletedToBottom(bool enabled) =>
+      _dao.updateAppointmentsCompletedToBottom(enabled);
+
   Future<void> updateUse24HourFormat(bool enabled) =>
       _dao.updateUse24HourFormat(enabled);
 }

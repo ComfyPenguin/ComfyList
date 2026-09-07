@@ -79,6 +79,21 @@ class $SettingsTableTable extends SettingsTable
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _appointmentsCompletedToBottomMeta =
+      const VerificationMeta('appointmentsCompletedToBottom');
+  @override
+  late final GeneratedColumn<bool> appointmentsCompletedToBottom =
+      GeneratedColumn<bool>(
+        'appointments_completed_to_bottom',
+        aliasedName,
+        false,
+        type: DriftSqlType.bool,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("appointments_completed_to_bottom" IN (0, 1))',
+        ),
+        defaultValue: const Constant(true),
+      );
   static const VerificationMeta _use24HourFormatMeta = const VerificationMeta(
     'use24HourFormat',
   );
@@ -112,6 +127,7 @@ class $SettingsTableTable extends SettingsTable
     notificationsEnabled,
     appointmentsCompletionEnabled,
     completedToBottom,
+    appointmentsCompletedToBottom,
     use24HourFormat,
     updatedAt,
   ];
@@ -163,6 +179,15 @@ class $SettingsTableTable extends SettingsTable
         ),
       );
     }
+    if (data.containsKey('appointments_completed_to_bottom')) {
+      context.handle(
+        _appointmentsCompletedToBottomMeta,
+        appointmentsCompletedToBottom.isAcceptableOrUnknown(
+          data['appointments_completed_to_bottom']!,
+          _appointmentsCompletedToBottomMeta,
+        ),
+      );
+    }
     if (data.containsKey('use24_hour_format')) {
       context.handle(
         _use24HourFormatMeta,
@@ -209,6 +234,10 @@ class $SettingsTableTable extends SettingsTable
         DriftSqlType.bool,
         data['${effectivePrefix}completed_to_bottom'],
       )!,
+      appointmentsCompletedToBottom: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}appointments_completed_to_bottom'],
+      )!,
       use24HourFormat: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}use24_hour_format'],
@@ -237,6 +266,9 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
   /// Si `true`, las tareas completadas van al final de la lista.
   final bool completedToBottom;
 
+  /// Si `true`, las citas completadas van al final de la lista de su día.
+  final bool appointmentsCompletedToBottom;
+
   /// Si `true`, las horas de las citas se muestran en formato 24H.
   /// Si `false`, se muestran en formato 12H con AM/PM.
   final bool use24HourFormat;
@@ -247,6 +279,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     required this.notificationsEnabled,
     required this.appointmentsCompletionEnabled,
     required this.completedToBottom,
+    required this.appointmentsCompletedToBottom,
     required this.use24HourFormat,
     required this.updatedAt,
   });
@@ -260,6 +293,9 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       appointmentsCompletionEnabled,
     );
     map['completed_to_bottom'] = Variable<bool>(completedToBottom);
+    map['appointments_completed_to_bottom'] = Variable<bool>(
+      appointmentsCompletedToBottom,
+    );
     map['use24_hour_format'] = Variable<bool>(use24HourFormat);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -272,6 +308,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       notificationsEnabled: Value(notificationsEnabled),
       appointmentsCompletionEnabled: Value(appointmentsCompletionEnabled),
       completedToBottom: Value(completedToBottom),
+      appointmentsCompletedToBottom: Value(appointmentsCompletedToBottom),
       use24HourFormat: Value(use24HourFormat),
       updatedAt: Value(updatedAt),
     );
@@ -292,6 +329,9 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
         json['appointmentsCompletionEnabled'],
       ),
       completedToBottom: serializer.fromJson<bool>(json['completedToBottom']),
+      appointmentsCompletedToBottom: serializer.fromJson<bool>(
+        json['appointmentsCompletedToBottom'],
+      ),
       use24HourFormat: serializer.fromJson<bool>(json['use24HourFormat']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -307,6 +347,9 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
         appointmentsCompletionEnabled,
       ),
       'completedToBottom': serializer.toJson<bool>(completedToBottom),
+      'appointmentsCompletedToBottom': serializer.toJson<bool>(
+        appointmentsCompletedToBottom,
+      ),
       'use24HourFormat': serializer.toJson<bool>(use24HourFormat),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -318,6 +361,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     bool? notificationsEnabled,
     bool? appointmentsCompletionEnabled,
     bool? completedToBottom,
+    bool? appointmentsCompletedToBottom,
     bool? use24HourFormat,
     DateTime? updatedAt,
   }) => SettingsRow(
@@ -327,6 +371,8 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     appointmentsCompletionEnabled:
         appointmentsCompletionEnabled ?? this.appointmentsCompletionEnabled,
     completedToBottom: completedToBottom ?? this.completedToBottom,
+    appointmentsCompletedToBottom:
+        appointmentsCompletedToBottom ?? this.appointmentsCompletedToBottom,
     use24HourFormat: use24HourFormat ?? this.use24HourFormat,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -343,6 +389,9 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       completedToBottom: data.completedToBottom.present
           ? data.completedToBottom.value
           : this.completedToBottom,
+      appointmentsCompletedToBottom: data.appointmentsCompletedToBottom.present
+          ? data.appointmentsCompletedToBottom.value
+          : this.appointmentsCompletedToBottom,
       use24HourFormat: data.use24HourFormat.present
           ? data.use24HourFormat.value
           : this.use24HourFormat,
@@ -360,6 +409,9 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
             'appointmentsCompletionEnabled: $appointmentsCompletionEnabled, ',
           )
           ..write('completedToBottom: $completedToBottom, ')
+          ..write(
+            'appointmentsCompletedToBottom: $appointmentsCompletedToBottom, ',
+          )
           ..write('use24HourFormat: $use24HourFormat, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -373,6 +425,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     notificationsEnabled,
     appointmentsCompletionEnabled,
     completedToBottom,
+    appointmentsCompletedToBottom,
     use24HourFormat,
     updatedAt,
   );
@@ -386,6 +439,8 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
           other.appointmentsCompletionEnabled ==
               this.appointmentsCompletionEnabled &&
           other.completedToBottom == this.completedToBottom &&
+          other.appointmentsCompletedToBottom ==
+              this.appointmentsCompletedToBottom &&
           other.use24HourFormat == this.use24HourFormat &&
           other.updatedAt == this.updatedAt);
 }
@@ -396,6 +451,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
   final Value<bool> notificationsEnabled;
   final Value<bool> appointmentsCompletionEnabled;
   final Value<bool> completedToBottom;
+  final Value<bool> appointmentsCompletedToBottom;
   final Value<bool> use24HourFormat;
   final Value<DateTime> updatedAt;
   const SettingsTableCompanion({
@@ -404,6 +460,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     this.notificationsEnabled = const Value.absent(),
     this.appointmentsCompletionEnabled = const Value.absent(),
     this.completedToBottom = const Value.absent(),
+    this.appointmentsCompletedToBottom = const Value.absent(),
     this.use24HourFormat = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -413,6 +470,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     this.notificationsEnabled = const Value.absent(),
     this.appointmentsCompletionEnabled = const Value.absent(),
     this.completedToBottom = const Value.absent(),
+    this.appointmentsCompletedToBottom = const Value.absent(),
     this.use24HourFormat = const Value.absent(),
     required DateTime updatedAt,
   }) : updatedAt = Value(updatedAt);
@@ -422,6 +480,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     Expression<bool>? notificationsEnabled,
     Expression<bool>? appointmentsCompletionEnabled,
     Expression<bool>? completedToBottom,
+    Expression<bool>? appointmentsCompletedToBottom,
     Expression<bool>? use24HourFormat,
     Expression<DateTime>? updatedAt,
   }) {
@@ -433,6 +492,8 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
       if (appointmentsCompletionEnabled != null)
         'appointments_completion_enabled': appointmentsCompletionEnabled,
       if (completedToBottom != null) 'completed_to_bottom': completedToBottom,
+      if (appointmentsCompletedToBottom != null)
+        'appointments_completed_to_bottom': appointmentsCompletedToBottom,
       if (use24HourFormat != null) 'use24_hour_format': use24HourFormat,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -444,6 +505,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     Value<bool>? notificationsEnabled,
     Value<bool>? appointmentsCompletionEnabled,
     Value<bool>? completedToBottom,
+    Value<bool>? appointmentsCompletedToBottom,
     Value<bool>? use24HourFormat,
     Value<DateTime>? updatedAt,
   }) {
@@ -454,6 +516,8 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
       appointmentsCompletionEnabled:
           appointmentsCompletionEnabled ?? this.appointmentsCompletionEnabled,
       completedToBottom: completedToBottom ?? this.completedToBottom,
+      appointmentsCompletedToBottom:
+          appointmentsCompletedToBottom ?? this.appointmentsCompletedToBottom,
       use24HourFormat: use24HourFormat ?? this.use24HourFormat,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -479,6 +543,11 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     if (completedToBottom.present) {
       map['completed_to_bottom'] = Variable<bool>(completedToBottom.value);
     }
+    if (appointmentsCompletedToBottom.present) {
+      map['appointments_completed_to_bottom'] = Variable<bool>(
+        appointmentsCompletedToBottom.value,
+      );
+    }
     if (use24HourFormat.present) {
       map['use24_hour_format'] = Variable<bool>(use24HourFormat.value);
     }
@@ -498,6 +567,9 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
             'appointmentsCompletionEnabled: $appointmentsCompletionEnabled, ',
           )
           ..write('completedToBottom: $completedToBottom, ')
+          ..write(
+            'appointmentsCompletedToBottom: $appointmentsCompletedToBottom, ',
+          )
           ..write('use24HourFormat: $use24HourFormat, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -849,6 +921,7 @@ typedef $$SettingsTableTableCreateCompanionBuilder =
       Value<bool> notificationsEnabled,
       Value<bool> appointmentsCompletionEnabled,
       Value<bool> completedToBottom,
+      Value<bool> appointmentsCompletedToBottom,
       Value<bool> use24HourFormat,
       required DateTime updatedAt,
     });
@@ -859,6 +932,7 @@ typedef $$SettingsTableTableUpdateCompanionBuilder =
       Value<bool> notificationsEnabled,
       Value<bool> appointmentsCompletionEnabled,
       Value<bool> completedToBottom,
+      Value<bool> appointmentsCompletedToBottom,
       Value<bool> use24HourFormat,
       Value<DateTime> updatedAt,
     });
@@ -894,6 +968,11 @@ class $$SettingsTableTableFilterComposer
 
   ColumnFilters<bool> get completedToBottom => $composableBuilder(
     column: $table.completedToBottom,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get appointmentsCompletedToBottom => $composableBuilder(
+    column: $table.appointmentsCompletedToBottom,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -942,6 +1021,11 @@ class $$SettingsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get appointmentsCompletedToBottom => $composableBuilder(
+    column: $table.appointmentsCompletedToBottom,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get use24HourFormat => $composableBuilder(
     column: $table.use24HourFormat,
     builder: (column) => ColumnOrderings(column),
@@ -980,6 +1064,11 @@ class $$SettingsTableTableAnnotationComposer
 
   GeneratedColumn<bool> get completedToBottom => $composableBuilder(
     column: $table.completedToBottom,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get appointmentsCompletedToBottom => $composableBuilder(
+    column: $table.appointmentsCompletedToBottom,
     builder: (column) => column,
   );
 
@@ -1029,6 +1118,8 @@ class $$SettingsTableTableTableManager
                 Value<bool> appointmentsCompletionEnabled =
                     const Value.absent(),
                 Value<bool> completedToBottom = const Value.absent(),
+                Value<bool> appointmentsCompletedToBottom =
+                    const Value.absent(),
                 Value<bool> use24HourFormat = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
               }) => SettingsTableCompanion(
@@ -1037,6 +1128,7 @@ class $$SettingsTableTableTableManager
                 notificationsEnabled: notificationsEnabled,
                 appointmentsCompletionEnabled: appointmentsCompletionEnabled,
                 completedToBottom: completedToBottom,
+                appointmentsCompletedToBottom: appointmentsCompletedToBottom,
                 use24HourFormat: use24HourFormat,
                 updatedAt: updatedAt,
               ),
@@ -1048,6 +1140,8 @@ class $$SettingsTableTableTableManager
                 Value<bool> appointmentsCompletionEnabled =
                     const Value.absent(),
                 Value<bool> completedToBottom = const Value.absent(),
+                Value<bool> appointmentsCompletedToBottom =
+                    const Value.absent(),
                 Value<bool> use24HourFormat = const Value.absent(),
                 required DateTime updatedAt,
               }) => SettingsTableCompanion.insert(
@@ -1056,6 +1150,7 @@ class $$SettingsTableTableTableManager
                 notificationsEnabled: notificationsEnabled,
                 appointmentsCompletionEnabled: appointmentsCompletionEnabled,
                 completedToBottom: completedToBottom,
+                appointmentsCompletedToBottom: appointmentsCompletedToBottom,
                 use24HourFormat: use24HourFormat,
                 updatedAt: updatedAt,
               ),

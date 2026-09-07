@@ -10,6 +10,7 @@ import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
+import '../../../../shared/ui/lists/slide_flow.dart';
 import '../../../../shared/ui/navigation/app_shell.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../../settings/presentation/providers/settings_state.dart';
@@ -147,6 +148,10 @@ class _TodosList extends ConsumerStatefulWidget {
 
 class _TodosListState extends ConsumerState<_TodosList> {
   static const double _joinedGap = 2;
+
+  /// A partir de este tamaño la lista vuelve a ser perezosa (sin animación
+  /// de deslizamiento) para no mantener todas las filas montadas.
+  static const int _maxGlideRows = 80;
 
   /// Tiempo que se mantiene el orden previo tras completar/desmarcar para
   /// que el tachado se reproduzca en el sitio donde se hizo el gesto.
@@ -310,39 +315,72 @@ class _TodosListState extends ConsumerState<_TodosList> {
     // Mantener el orden previo mientras se anima el tachado de un toggle.
     final displayItems = _resolveDisplayItems(sorted);
 
-    return ListView.separated(
+    // Listas muy largas: vuelta a la lista perezosa clásica (el tachado se
+    // anima, pero sin deslizamiento a la nueva posición).
+    if (displayItems.length > _maxGlideRows) {
+      return ListView.separated(
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          widget.topPadding,
+          AppSpacing.lg,
+          AppSpacing.section,
+        ),
+        itemCount: displayItems.length,
+        separatorBuilder: (_, _) => const SizedBox(height: _joinedGap),
+        itemBuilder: (context, i) =>
+            _buildTodoTile(context, ref, notifier, displayItems, i),
+      );
+    }
+
+    final rows = <SlideRow>[];
+    for (var i = 0; i < displayItems.length; i++) {
+      rows.add(
+        SlideRow(
+          key: ValueKey(displayItems[i].id),
+          spacingAfter: i < displayItems.length - 1 ? _joinedGap : 0,
+          child: _buildTodoTile(context, ref, notifier, displayItems, i),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.lg,
         widget.topPadding,
         AppSpacing.lg,
         AppSpacing.section,
       ),
-      itemCount: displayItems.length,
-      separatorBuilder: (_, _) => const SizedBox(height: _joinedGap),
-      itemBuilder: (context, i) {
-        final todo = displayItems[i];
-        final separation = _effectiveSeparationFor(i, displayItems);
-        return TodoTile(
-          key: ValueKey(todo.id),
-          todo: todo,
-          groupIndex: i,
-          groupSize: displayItems.length,
-          topSeparationProgress: separation.top,
-          bottomSeparationProgress: separation.bottom,
-          onRevealProgressChanged: (progress) =>
-              _setTileRevealProgress(todo.id, progress),
-          onTap: () => _showDetailSheet(context, ref, todo.id),
-          onComplete: () => notifier.toggleDone(todo.id, !todo.isDone),
-          onDelete: () async {
-            await notifier.delete(todo.id);
-            if (!context.mounted) return;
-            ScaffoldMessenger.of(context)
-              ..hideCurrentSnackBar()
-              ..showSnackBar(
-                SnackBar(content: Text('Tarea «${todo.title}» eliminada.')),
-              );
-          },
-        );
+      child: SlideFlow(rows: rows),
+    );
+  }
+
+  Widget _buildTodoTile(
+    BuildContext context,
+    WidgetRef ref,
+    TodosNotifier notifier,
+    List<Todo> displayItems,
+    int index,
+  ) {
+    final todo = displayItems[index];
+    final separation = _effectiveSeparationFor(index, displayItems);
+    return TodoTile(
+      todo: todo,
+      groupIndex: index,
+      groupSize: displayItems.length,
+      topSeparationProgress: separation.top,
+      bottomSeparationProgress: separation.bottom,
+      onRevealProgressChanged: (progress) =>
+          _setTileRevealProgress(todo.id, progress),
+      onTap: () => _showDetailSheet(context, ref, todo.id),
+      onComplete: () => notifier.toggleDone(todo.id, !todo.isDone),
+      onDelete: () async {
+        await notifier.delete(todo.id);
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(content: Text('Tarea «${todo.title}» eliminada.')),
+          );
       },
     );
   }

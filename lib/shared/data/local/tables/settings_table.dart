@@ -19,6 +19,10 @@ class SettingsTable extends Table {
   BoolColumn get completedToBottom =>
       boolean().withDefault(const Constant(true))();
 
+  /// Si `true`, las citas completadas van al final de la lista de su día.
+  BoolColumn get appointmentsCompletedToBottom =>
+      boolean().withDefault(const Constant(true))();
+
   /// Si `true`, las horas de las citas se muestran en formato 24H.
   /// Si `false`, se muestran en formato 12H con AM/PM.
   BoolColumn get use24HourFormat =>

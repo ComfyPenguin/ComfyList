@@ -8,6 +8,7 @@ class AppSettings {
     required this.notificationsEnabled,
     required this.appointmentsCompletionEnabled,
     required this.completedToBottom,
+    required this.appointmentsCompletedToBottom,
     required this.use24HourFormat,
   });
 
@@ -18,6 +19,9 @@ class AppSettings {
   /// Si es `true`, las tareas completadas se mueven al final de la lista.
   final bool completedToBottom;
 
+  /// Si es `true`, las citas completadas se mueven al final de su día.
+  final bool appointmentsCompletedToBottom;
+
   /// Si es `true`, las horas de las citas se muestran en formato 24H.
   /// Si es `false`, se muestran en formato 12H con AM/PM.
   final bool use24HourFormat;
@@ -27,6 +31,7 @@ class AppSettings {
     notificationsEnabled: true,
     appointmentsCompletionEnabled: false,
     completedToBottom: true,
+    appointmentsCompletedToBottom: true,
     use24HourFormat: true,
   );
 
@@ -35,6 +40,7 @@ class AppSettings {
     bool? notificationsEnabled,
     bool? appointmentsCompletionEnabled,
     bool? completedToBottom,
+    bool? appointmentsCompletedToBottom,
     bool? use24HourFormat,
   }) {
     return AppSettings(
@@ -43,6 +49,8 @@ class AppSettings {
       appointmentsCompletionEnabled:
           appointmentsCompletionEnabled ?? this.appointmentsCompletionEnabled,
       completedToBottom: completedToBottom ?? this.completedToBottom,
+      appointmentsCompletedToBottom:
+          appointmentsCompletedToBottom ?? this.appointmentsCompletedToBottom,
       use24HourFormat: use24HourFormat ?? this.use24HourFormat,
     );
   }

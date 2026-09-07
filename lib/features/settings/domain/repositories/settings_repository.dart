@@ -18,5 +18,7 @@ abstract class SettingsRepository {
 
   Future<void> setCompletedToBottom(bool enabled);
 
+  Future<void> setAppointmentsCompletedToBottom(bool enabled);
+
   Future<void> setUse24HourFormat(bool enabled);
 }

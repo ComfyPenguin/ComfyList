@@ -10,6 +10,7 @@ import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
+import '../../../../shared/ui/lists/slide_flow.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../../settings/presentation/providers/settings_state.dart';
 import '../../domain/entities/appointment.dart';
@@ -249,18 +250,21 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
       letterSpacing: 0.6,
     );
 
-    // Leer preferencia de completado en citas.
+    // Leer preferencias de completado en citas.
     final settingsState = ref.watch(settingsProvider);
-    final completionEnabled = switch (settingsState) {
-      SettingsData(:final settings) => settings.appointmentsCompletionEnabled,
-      _ => false,
+    final settings = switch (settingsState) {
+      SettingsData(:final settings) => settings,
+      _ => null,
     };
+    final completionEnabled = settings?.appointmentsCompletionEnabled ?? false;
+    // Si el ajuste está activado, las completadas van al final de su día.
+    final completedToBottom = settings?.appointmentsCompletedToBottom ?? true;
 
     // Ordenar por fecha ascendente (más próximas primero).
-    // Solo separar hechas al final si el completado está activado.
+    // Separar las completadas al final de su día solo con el ajuste activo.
     final sorted = [...widget.items]
       ..sort((a, b) {
-        if (completionEnabled && a.isDone != b.isDone) {
+        if (completionEnabled && completedToBottom && a.isDone != b.isDone) {
           return a.isDone ? 1 : -1;
         }
         return a.dateTime.compareTo(b.dateTime);
@@ -377,6 +381,10 @@ class _AppointmentGroup extends StatelessWidget {
 
   static const double _joinedGap = 2;
 
+  /// Días con más citas que esto se renderizan en Column simple (sin
+  /// deslizamiento) para no mantener todas las filas montadas.
+  static const int _maxGlideTiles = 60;
+
   final String dateLabel;
   final bool isToday;
   final TextStyle dateHeaderStyle;
@@ -396,50 +404,68 @@ class _AppointmentGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final children = <Widget>[
-      Padding(
-        padding: const EdgeInsets.only(
-          left: AppSpacing.xl,
-          bottom: AppSpacing.md,
-        ),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: isToday
-              ? _TodayPill(label: dateLabel, colors: colors)
-              : Text(dateLabel, style: dateHeaderStyle),
-        ),
+    final header = Padding(
+      padding: const EdgeInsets.only(
+        left: AppSpacing.xl,
+        bottom: AppSpacing.md,
       ),
-    ];
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: isToday
+            ? _TodayPill(label: dateLabel, colors: colors)
+            : Text(dateLabel, style: dateHeaderStyle),
+      ),
+    );
 
+    // Días con muchas citas: Column simple (sin animación de deslizamiento)
+    // para no mantener todas las filas montadas.
+    if (appointments.length > _maxGlideTiles) {
+      final tiles = <Widget>[];
+      for (var i = 0; i < appointments.length; i++) {
+        tiles.add(_appointmentTile(i));
+        if (i < appointments.length - 1) {
+          tiles.add(const SizedBox(height: _joinedGap));
+        }
+      }
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [header, ...tiles],
+      );
+    }
+
+    final rows = <SlideRow>[];
     for (var i = 0; i < appointments.length; i++) {
-      final appt = appointments[i];
-      final edges = separationFor(i);
-      children.add(
-        AppointmentTile(
-          key: ValueKey(appt.id),
-          appointment: appt,
-          completionEnabled: completionEnabled,
-          groupIndex: i,
-          groupSize: appointments.length,
-          topSeparationProgress: edges.top,
-          bottomSeparationProgress: edges.bottom,
-          onTap: () => onTap(appt),
-          onComplete: () => onComplete(appt),
-          onDelete: () => onDelete(appt),
-          onRevealProgressChanged: (value) {
-            onRevealProgressChanged(appt, value);
-          },
+      rows.add(
+        SlideRow(
+          key: ValueKey(appointments[i].id),
+          spacingAfter: i < appointments.length - 1 ? _joinedGap : 0,
+          child: _appointmentTile(i),
         ),
       );
-
-      if (i < appointments.length - 1) {
-        children.add(const SizedBox(height: _joinedGap));
-      }
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: children,
+      children: [header, SlideFlow(rows: rows)],
+    );
+  }
+
+  Widget _appointmentTile(int index) {
+    final appt = appointments[index];
+    final edges = separationFor(index);
+    return AppointmentTile(
+      appointment: appt,
+      completionEnabled: completionEnabled,
+      groupIndex: index,
+      groupSize: appointments.length,
+      topSeparationProgress: edges.top,
+      bottomSeparationProgress: edges.bottom,
+      onTap: () => onTap(appt),
+      onComplete: () => onComplete(appt),
+      onDelete: () => onDelete(appt),
+      onRevealProgressChanged: (value) {
+        onRevealProgressChanged(appt, value);
+      },
     );
   }
 }

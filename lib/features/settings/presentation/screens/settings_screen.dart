@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
+import '../widgets/appointments_completed_to_bottom_toggle.dart';
 import '../widgets/appointments_completion_toggle.dart';
 import '../widgets/completed_to_bottom_toggle.dart';
 import '../widgets/hour_format_toggle.dart';
@@ -59,6 +60,8 @@ class SettingsScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.md),
             const AppointmentsCompletionToggle(),
+            const SizedBox(height: AppSpacing.md),
+            const AppointmentsCompletedToBottomToggle(),
             const SizedBox(height: AppSpacing.md),
             const HourFormatToggle(),
             const SizedBox(height: AppSpacing.md),

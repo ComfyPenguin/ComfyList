@@ -60,6 +60,11 @@ class SettingsNotifier extends Notifier<SettingsState> {
   Future<void> setCompletedToBottom(bool enabled) =>
       ref.read(settingsRepositoryProvider).setCompletedToBottom(enabled);
 
+  Future<void> setAppointmentsCompletedToBottom(bool enabled) =>
+      ref
+          .read(settingsRepositoryProvider)
+          .setAppointmentsCompletedToBottom(enabled);
+
   Future<void> setUse24HourFormat(bool enabled) =>
       ref.read(settingsRepositoryProvider).setUse24HourFormat(enabled);
 }

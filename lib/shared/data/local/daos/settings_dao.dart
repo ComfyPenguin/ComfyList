@@ -71,6 +71,16 @@ class SettingsDao extends DatabaseAccessor<AppDatabase> with _$SettingsDaoMixin 
     );
   }
 
+  Future<void> updateAppointmentsCompletedToBottom(bool enabled) async {
+    await getOrCreate();
+    await (update(settingsTable)..where((t) => t.id.equals(1))).write(
+      SettingsTableCompanion(
+        appointmentsCompletedToBottom: Value(enabled),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+  }
+
   Future<void> updateUse24HourFormat(bool enabled) async {
     await getOrCreate();
     await (update(settingsTable)..where((t) => t.id.equals(1))).write(
