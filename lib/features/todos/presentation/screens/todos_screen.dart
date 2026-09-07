@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -147,7 +148,18 @@ class _TodosList extends ConsumerStatefulWidget {
 class _TodosListState extends ConsumerState<_TodosList> {
   static const double _joinedGap = 2;
 
+  /// Tiempo que se mantiene el orden previo tras completar/desmarcar para
+  /// que el tachado se reproduzca en el sitio donde se hizo el gesto.
+  static const Duration _reorderDelay = Duration(milliseconds: 600);
+
   final _tileRevealProgress = <String, double>{};
+
+  // Orden visual mostrado en el último build (ids), los items previos y si
+  // se está retrasando el reordenado tras un cambio de isDone.
+  List<String>? _displayedIds;
+  List<Todo>? _lastItems;
+  bool _holdingReorder = false;
+  Timer? _reorderTimer;
 
   ({double top, double bottom}) _effectiveSeparationFor(
     int tileIndex,
@@ -190,6 +202,88 @@ class _TodosListState extends ConsumerState<_TodosList> {
   }
 
   @override
+  void dispose() {
+    _reorderTimer?.cancel();
+    super.dispose();
+  }
+
+  bool _sameIds(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  /// Compara como conjunto (sin importar el orden del provider): solo nos
+  /// importa que no haya altas/borrados para poder reordenar manteniendo
+  /// los ids mostrados.
+  bool _sameIdSet(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    final bSet = b.toSet();
+    for (final id in a) {
+      if (!bSet.contains(id)) return false;
+    }
+    return true;
+  }
+
+  /// Devuelve el orden a mostrar: si un único item acaba de cambiar de
+  /// [Todo.isDone] y eso reordenaría la lista, mantiene el orden anterior
+  /// durante [_reorderDelay] para no cortar la animación del tachado.
+  List<Todo> _resolveDisplayItems(List<Todo> desired) {
+    final items = widget.items;
+    final currentIds = [for (final t in items) t.id];
+    final previous = _lastItems;
+    _lastItems = items;
+
+    // Detectar si exactamente un item cambió de isDone desde el último build.
+    String? toggledId;
+    if (previous != null) {
+      final prevById = {for (final t in previous) t.id: t};
+      var flips = 0;
+      for (final t in items) {
+        final p = prevById[t.id];
+        if (p != null && p.isDone != t.isDone) {
+          toggledId = t.id;
+          flips++;
+        }
+      }
+      if (flips != 1) toggledId = null;
+    }
+
+    final canKeepLayout =
+        _displayedIds != null && _sameIdSet(_displayedIds!, currentIds);
+    final desiredIds = [for (final t in desired) t.id];
+    final wouldReorder =
+        toggledId != null &&
+        canKeepLayout &&
+        !_sameIds(_displayedIds!, desiredIds);
+
+    if (wouldReorder && !_holdingReorder) {
+      _holdingReorder = true;
+      _reorderTimer?.cancel();
+      _reorderTimer = Timer(_reorderDelay, () {
+        if (!mounted) return;
+        setState(() => _holdingReorder = false);
+      });
+    }
+
+    if (_holdingReorder) {
+      if (canKeepLayout) {
+        final byId = {for (final t in items) t.id: t};
+        return [for (final id in _displayedIds!) byId[id]!];
+      }
+      // El conjunto de ids cambió (alta/borrado): reordenar ya.
+      _holdingReorder = false;
+      _reorderTimer?.cancel();
+      _reorderTimer = null;
+    }
+
+    _displayedIds = desiredIds;
+    return desired;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final notifier = ref.read(todosProvider(widget.listId).notifier);
     final completedToBottom = switch (ref.watch(settingsProvider)) {
@@ -211,7 +305,10 @@ class _TodosListState extends ConsumerState<_TodosList> {
         }
         return a.createdAt.compareTo(b.createdAt);
       });
-    _removeStaleRevealProgress(sorted);
+    _removeStaleRevealProgress(widget.items);
+
+    // Mantener el orden previo mientras se anima el tachado de un toggle.
+    final displayItems = _resolveDisplayItems(sorted);
 
     return ListView.separated(
       padding: EdgeInsets.fromLTRB(
@@ -220,16 +317,16 @@ class _TodosListState extends ConsumerState<_TodosList> {
         AppSpacing.lg,
         AppSpacing.section,
       ),
-      itemCount: sorted.length,
+      itemCount: displayItems.length,
       separatorBuilder: (_, _) => const SizedBox(height: _joinedGap),
       itemBuilder: (context, i) {
-        final todo = sorted[i];
-        final separation = _effectiveSeparationFor(i, sorted);
+        final todo = displayItems[i];
+        final separation = _effectiveSeparationFor(i, displayItems);
         return TodoTile(
           key: ValueKey(todo.id),
           todo: todo,
           groupIndex: i,
-          groupSize: sorted.length,
+          groupSize: displayItems.length,
           topSeparationProgress: separation.top,
           bottomSeparationProgress: separation.bottom,
           onRevealProgressChanged: (progress) =>

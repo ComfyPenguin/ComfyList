@@ -6,6 +6,7 @@ import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/ui/lists/swipe_actions_card.dart';
+import '../../../../shared/ui/text/animated_strikethrough_text.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../../settings/presentation/providers/settings_state.dart';
 import '../../domain/entities/appointment.dart';
@@ -46,10 +47,7 @@ class AppointmentTile extends ConsumerWidget {
     final colors = context.colors;
     final muted = colors.muted;
     final done = completionEnabled && appointment.isDone;
-    final titleStyle = AppTypography.bodyMdStrong.copyWith(
-      decoration: done ? TextDecoration.lineThrough : null,
-      color: done ? muted : colors.ink,
-    );
+    final titleStyle = AppTypography.bodyMdStrong;
 
     final use24H = switch (ref.watch(settingsProvider)) {
       SettingsData(:final settings) => settings.use24HourFormat,
@@ -132,7 +130,12 @@ class AppointmentTile extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(appointment.title, style: titleStyle),
+                AnimatedStrikethroughText(
+                  text: appointment.title,
+                  style: titleStyle.copyWith(color: colors.ink),
+                  done: done,
+                  doneColor: muted,
+                ),
                 if (appointment.location != null &&
                     appointment.location!.isNotEmpty)
                   Padding(

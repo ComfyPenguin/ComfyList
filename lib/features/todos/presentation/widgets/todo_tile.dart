@@ -4,6 +4,7 @@ import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/ui/lists/swipe_actions_card.dart';
+import '../../../../shared/ui/text/animated_strikethrough_text.dart';
 import '../../domain/entities/todo.dart';
 
 /// Item de la lista de tareas con acciones de completar y borrar mediante swipe.
@@ -35,10 +36,7 @@ class TodoTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final muted = colors.muted;
-    final titleStyle = AppTypography.bodyMdStrong.copyWith(
-      decoration: todo.isDone ? TextDecoration.lineThrough : null,
-      color: todo.isDone ? muted : colors.ink,
-    );
+    final titleStyle = AppTypography.bodyMdStrong;
 
     return SwipeActionsCard(
       onTap: onTap,
@@ -58,7 +56,12 @@ class TodoTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(todo.title, style: titleStyle),
+                AnimatedStrikethroughText(
+                  text: todo.title,
+                  style: titleStyle.copyWith(color: colors.ink),
+                  done: todo.isDone,
+                  doneColor: muted,
+                ),
                 if (todo.description != null && todo.description!.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: AppSpacing.xs),
