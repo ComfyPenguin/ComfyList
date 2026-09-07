@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 
-import '../../../../routing/routes.dart';
 import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
@@ -94,16 +92,12 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
     final myId = appointments[tileIndex].id;
     final myProgress = tileProgress[myId] ?? 0.0;
 
-    final prevId = tileIndex > 0
-        ? appointments[tileIndex - 1].id
-        : null;
+    final prevId = tileIndex > 0 ? appointments[tileIndex - 1].id : null;
     final nextId = tileIndex < appointments.length - 1
         ? appointments[tileIndex + 1].id
         : null;
-    final prevProgress =
-        prevId != null ? (tileProgress[prevId] ?? 0.0) : 0.0;
-    final nextProgress =
-        nextId != null ? (tileProgress[nextId] ?? 0.0) : 0.0;
+    final prevProgress = prevId != null ? (tileProgress[prevId] ?? 0.0) : 0.0;
+    final nextProgress = nextId != null ? (tileProgress[nextId] ?? 0.0) : 0.0;
 
     final top = myProgress > prevProgress ? myProgress : prevProgress;
     final bottom = myProgress > nextProgress ? myProgress : nextProgress;
@@ -214,9 +208,9 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
             tileIndex: i,
             appointments: appts,
           ),
-          onToggle: (appt, value) => notifier.toggleDone(appt.id, value),
-          onTap: (appt) => showAppointmentDetailSheet(context: context, id: appt.id),
-          onEdit: (appt) => context.push(Routes.appointmentEdit(appt.id)),
+          onTap: (appt) =>
+              showAppointmentDetailSheet(context: context, id: appt.id),
+          onComplete: (appt) => notifier.toggleDone(appt.id, !appt.isDone),
           onDelete: (appt) async {
             await notifier.delete(appt.id);
             if (!context.mounted) return;
@@ -277,9 +271,8 @@ class _AppointmentGroup extends StatelessWidget {
     required this.appointments,
     required this.completionEnabled,
     required this.separationFor,
-    required this.onToggle,
     required this.onTap,
-    required this.onEdit,
+    required this.onComplete,
     required this.onDelete,
     required this.onRevealProgressChanged,
   });
@@ -296,9 +289,8 @@ class _AppointmentGroup extends StatelessWidget {
   /// `appointments[i]`.
   final ({double top, double bottom}) Function(int tileIndex) separationFor;
 
-  final void Function(Appointment appointment, bool value) onToggle;
   final void Function(Appointment appointment) onTap;
-  final void Function(Appointment appointment) onEdit;
+  final void Function(Appointment appointment) onComplete;
   final Future<void> Function(Appointment appointment) onDelete;
   final void Function(Appointment appointment, double progress)
   onRevealProgressChanged;
@@ -333,9 +325,8 @@ class _AppointmentGroup extends StatelessWidget {
           groupSize: appointments.length,
           topSeparationProgress: edges.top,
           bottomSeparationProgress: edges.bottom,
-          onToggle: (v) => onToggle(appt, v),
           onTap: () => onTap(appt),
-          onEdit: () => onEdit(appt),
+          onComplete: () => onComplete(appt),
           onDelete: () => onDelete(appt),
           onRevealProgressChanged: (value) {
             onRevealProgressChanged(appt, value);
@@ -459,10 +450,7 @@ class _LivePulseState extends State<_LivePulse>
         },
         delegates: LottieDelegates(
           values: [
-            ValueDelegate.color(
-              const ['**', 'Fill 1'],
-              value: widget.color,
-            ),
+            ValueDelegate.color(const ['**', 'Fill 1'], value: widget.color),
           ],
         ),
       ),

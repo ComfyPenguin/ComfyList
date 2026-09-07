@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
-import '../../../../shared/ui/lists/swipe_reveal_card.dart';
+import '../../../../shared/ui/lists/swipe_actions_card.dart';
 import '../../domain/entities/todo.dart';
 
 /// Item de la lista de tareas con acciones de editar y borrar mediante swipe.
@@ -11,9 +11,8 @@ class TodoTile extends StatelessWidget {
   const TodoTile({
     super.key,
     required this.todo,
-    required this.onToggle,
     required this.onTap,
-    required this.onEdit,
+    required this.onComplete,
     required this.onDelete,
     this.groupIndex = 0,
     this.groupSize = 1,
@@ -23,9 +22,8 @@ class TodoTile extends StatelessWidget {
   });
 
   final Todo todo;
-  final ValueChanged<bool> onToggle;
   final VoidCallback onTap;
-  final VoidCallback onEdit;
+  final VoidCallback onComplete;
   final VoidCallback onDelete;
   final int groupIndex;
   final int groupSize;
@@ -42,12 +40,10 @@ class TodoTile extends StatelessWidget {
       color: todo.isDone ? muted : colors.ink,
     );
 
-    return SwipeRevealCard(
+    return SwipeActionsCard(
       onTap: onTap,
-      onEdit: onEdit,
       onDelete: onDelete,
-      editLabel: 'Editar tarea',
-      deleteLabel: 'Eliminar tarea',
+      onComplete: onComplete,
       groupIndex: groupIndex,
       groupSize: groupSize,
       topSeparationProgress: topSeparationProgress,
@@ -56,15 +52,6 @@ class TodoTile extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => onToggle(!todo.isDone),
-            child: Checkbox(
-              value: todo.isDone,
-              onChanged: (value) => onToggle(value ?? false),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.lg),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

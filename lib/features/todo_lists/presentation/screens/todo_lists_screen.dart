@@ -136,7 +136,6 @@ class _ListsState extends ConsumerState<_Lists> {
           onRevealProgressChanged: (progress) =>
               _setTileRevealProgress(list.id, progress),
           onTap: () => context.push(Routes.todoList(list.id)),
-          onEdit: () => context.push(Routes.todoListEdit(list.id)),
           onDelete: () async {
             await notifier.delete(list.id);
             if (!context.mounted) return;

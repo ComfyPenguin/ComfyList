@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
-import '../../../../shared/ui/lists/swipe_reveal_card.dart';
+import '../../../../shared/ui/lists/swipe_actions_card.dart';
 import '../../domain/entities/todo_list.dart';
 import '../../domain/entities/todo_list_icons.dart';
 
@@ -13,7 +13,6 @@ class TodoListTile extends StatelessWidget {
     super.key,
     required this.list,
     required this.onTap,
-    required this.onEdit,
     required this.onDelete,
     this.groupIndex = 0,
     this.groupSize = 1,
@@ -24,7 +23,6 @@ class TodoListTile extends StatelessWidget {
 
   final TodoList list;
   final VoidCallback onTap;
-  final VoidCallback onEdit;
   final VoidCallback onDelete;
   final int groupIndex;
   final int groupSize;
@@ -36,12 +34,9 @@ class TodoListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
 
-    return SwipeRevealCard(
+    return SwipeActionsCard(
       onTap: onTap,
-      onEdit: onEdit,
       onDelete: onDelete,
-      editLabel: 'Editar lista',
-      deleteLabel: 'Eliminar lista',
       groupIndex: groupIndex,
       groupSize: groupSize,
       topSeparationProgress: topSeparationProgress,

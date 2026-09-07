@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
-import '../../../../shared/ui/lists/swipe_reveal_card.dart';
+import '../../../../shared/ui/lists/swipe_actions_card.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../../settings/presentation/providers/settings_state.dart';
 import '../../domain/entities/appointment.dart';
@@ -15,9 +15,8 @@ class AppointmentTile extends ConsumerWidget {
   const AppointmentTile({
     super.key,
     required this.appointment,
-    required this.onToggle,
     required this.onTap,
-    required this.onEdit,
+    required this.onComplete,
     required this.onDelete,
     this.completionEnabled = false,
     this.groupIndex = 0,
@@ -32,9 +31,8 @@ class AppointmentTile extends ConsumerWidget {
        assert(bottomSeparationProgress >= 0 && bottomSeparationProgress <= 1);
 
   final Appointment appointment;
-  final ValueChanged<bool> onToggle;
   final VoidCallback onTap;
-  final VoidCallback onEdit;
+  final VoidCallback onComplete;
   final VoidCallback onDelete;
   final bool completionEnabled;
   final int groupIndex;
@@ -79,12 +77,10 @@ class AppointmentTile extends ConsumerWidget {
       fontWeight: FontWeight.w500,
     );
 
-    return SwipeRevealCard(
+    return SwipeActionsCard(
       onTap: onTap,
-      onEdit: onEdit,
       onDelete: onDelete,
-      editLabel: 'Editar cita',
-      deleteLabel: 'Eliminar cita',
+      onComplete: completionEnabled ? onComplete : null,
       groupIndex: groupIndex,
       groupSize: groupSize,
       topSeparationProgress: topSeparationProgress,
@@ -93,17 +89,6 @@ class AppointmentTile extends ConsumerWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          if (completionEnabled) ...[
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => onToggle(!appointment.isDone),
-              child: Checkbox(
-                value: appointment.isDone,
-                onChanged: (value) => onToggle(value ?? false),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.lg),
-          ],
           SizedBox(
             width: 88,
             child: use24H
