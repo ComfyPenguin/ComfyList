@@ -198,13 +198,16 @@ class _TodosListState extends ConsumerState<_TodosList> {
     };
 
     // Ordenar según el ajuste:
-    // - Activado: pendientes primero, luego por fecha de actualización desc.
+    // - Activado: pendientes primero por fecha de actualización asc (lo
+    //   recién desmarcado cae al final, junto a las completadas); completadas
+    //   después por fecha de actualización desc.
     // - Desactivado: por fecha de creación asc (mantiene la posición siempre).
     final sorted = [...widget.items]
       ..sort((a, b) {
         if (completedToBottom) {
           if (a.isDone != b.isDone) return a.isDone ? 1 : -1;
-          return b.updatedAt.compareTo(a.updatedAt);
+          if (a.isDone) return b.updatedAt.compareTo(a.updatedAt);
+          return a.updatedAt.compareTo(b.updatedAt);
         }
         return a.createdAt.compareTo(b.createdAt);
       });
