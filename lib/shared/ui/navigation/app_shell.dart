@@ -17,8 +17,8 @@ import '../dialogs/confirm_action_dialog.dart';
 import 'app_bottom_bar.dart';
 
 /// Notifier que gestiona si un bottom sheet de detalle está abierto.
-/// Cuando está activo, el AppShell oculta el FAB y la BottomBar para
-/// que no se superpongan al contenido del sheet.
+/// Cuando está activo, el AppShell oculta la BottomBar para que no se
+/// superponga al contenido del sheet, pero conserva el AppBar superior.
 class DetailSheetOpenNotifier extends Notifier<bool> {
   @override
   bool build() => false;
@@ -135,7 +135,11 @@ class AppShell extends ConsumerWidget {
         ? AppBottomTab.appointments
         : AppBottomTab.tasks;
 
-    final hideChrome = isNestedRoute || isDetailSheetOpen;
+    // El AppBar permanece visible sobre los bottom sheets de detalle, como
+    // ocurre en la pantalla de citas. Solo la BottomBar se oculta mientras
+    // el sheet de tareas está abierto.
+    final hideTopBar = isNestedRoute;
+    final hideBottomBar = isNestedRoute || isDetailSheetOpen;
 
     return Scaffold(
       // El shell usa overlays posicionados manualmente. Mantener el body a
@@ -147,7 +151,7 @@ class AppShell extends ConsumerWidget {
         children: [
           KeyboardVisibilityScope(bottomInset: keyboardInset, child: child),
           // ── AppBar superior anclado ──
-          if (!hideChrome)
+          if (!hideTopBar)
             Positioned(
               left: 0,
               right: 0,
@@ -305,7 +309,7 @@ class AppShell extends ConsumerWidget {
           // ── BottomBar flotante inferior ──
           // Se mantiene montada detrás del teclado para evitar que aparezca
           // de golpe cuando el teclado se cierra.
-          if (!hideChrome)
+          if (!hideBottomBar)
             Positioned(
               left: 0,
               right: 0,
@@ -320,7 +324,7 @@ class AppShell extends ConsumerWidget {
                 },
                 onFabTap: onFabTap,
                 fabTooltip: fabTooltip,
-                visible: !hideChrome,
+                visible: !hideBottomBar,
               ),
             ),
         ],

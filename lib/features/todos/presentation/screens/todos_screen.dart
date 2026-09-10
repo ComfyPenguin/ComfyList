@@ -396,6 +396,9 @@ class _TodosListState extends ConsumerState<_TodosList> {
 
     showModalBottomSheet<void>(
       context: context,
+      // Montar el sheet sobre el shell mantiene el mismo comportamiento que
+      // el detalle de citas y evita que la BottomBar quede por encima.
+      useRootNavigator: true,
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
