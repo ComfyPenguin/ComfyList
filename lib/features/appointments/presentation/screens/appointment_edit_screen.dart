@@ -200,7 +200,6 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
                 controller: _titleCtrl,
                 label: 'Título',
                 hint: '¿Qué cita tienes?',
-                autofocus: !_isEditing,
                 textInputAction: TextInputAction.next,
                 errorText: _titleError,
               ),

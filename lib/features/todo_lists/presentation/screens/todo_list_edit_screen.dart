@@ -152,7 +152,6 @@ class _TodoListEditScreenState extends ConsumerState<TodoListEditScreen> {
                 controller: _nameCtrl,
                 label: 'Nombre',
                 hint: 'Ej: Compra semanal',
-                autofocus: !_isEditing,
                 textInputAction: TextInputAction.done,
                 errorText: _nameError,
               ),

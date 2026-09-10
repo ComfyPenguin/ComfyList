@@ -8,16 +8,11 @@ import '../../../../shared/core/theme/app_spacing.dart';
 /// limpia el campo y mantiene el foco para seguir añadiendo tareas sin
 /// fricción. Ideal para flujos de captura rápida donde el usuario quiere
 /// volcar muchas ideas seguidas sin navegar a otra pantalla.
-///
-/// El [autofocus] debe ser `true` cuando la lista está vacía (primera tarea)
-/// para que el teclado aparezca automáticamente y el usuario empiece a
-/// escribir sin tener que pulsar el campo.
 class QuickAddBar extends StatefulWidget {
   const QuickAddBar({
     super.key,
     required this.onSubmit,
     this.hint = 'Añadir...',
-    this.autofocus = false,
   });
 
   /// Se llama al pulsar Enter con el texto introducido (ya recortado).
@@ -26,9 +21,6 @@ class QuickAddBar extends StatefulWidget {
 
   /// Texto de sugerencia cuando el campo está vacío.
   final String hint;
-
-  /// Si es `true`, el campo obtiene el foco automáticamente al montarse.
-  final bool autofocus;
 
   @override
   State<QuickAddBar> createState() => _QuickAddBarState();
@@ -64,7 +56,6 @@ class _QuickAddBarState extends State<QuickAddBar> {
     return TextField(
       controller: _controller,
       focusNode: _focusNode,
-      autofocus: widget.autofocus,
       textInputAction: TextInputAction.done,
       textCapitalization: TextCapitalization.sentences,
       onSubmitted: _submit,

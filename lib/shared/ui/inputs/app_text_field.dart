@@ -23,7 +23,6 @@ class AppTextField extends StatelessWidget {
     this.onChanged,
     this.onSubmitted,
     this.enabled = true,
-    this.autofocus = false,
     this.maxLines = 1,
     this.cardStyle = false,
     this.suffixIcon,
@@ -40,7 +39,6 @@ class AppTextField extends StatelessWidget {
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   final bool enabled;
-  final bool autofocus;
   final int maxLines;
 
   /// Renderiza el campo como una card de citas (radio grande + borde hairline).
@@ -72,7 +70,6 @@ class AppTextField extends StatelessWidget {
         onChanged: onChanged,
         onSubmitted: onSubmitted,
         enabled: enabled,
-        autofocus: autofocus,
         maxLines: obscureText ? 1 : maxLines,
         decoration: baseDecoration.copyWith(suffixIcon: suffixIcon),
       );
@@ -112,7 +109,6 @@ class AppTextField extends StatelessWidget {
       onChanged: onChanged,
       onSubmitted: onSubmitted,
       enabled: enabled,
-      autofocus: autofocus,
       maxLines: obscureText ? 1 : maxLines,
       decoration: cardDecoration,
     );

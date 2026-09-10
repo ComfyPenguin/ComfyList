@@ -116,7 +116,6 @@ class TodosScreen extends ConsumerWidget {
                   ),
                   child: QuickAddBar(
                     hint: 'Añadir tarea rápida...',
-                    autofocus: items.isEmpty,
                     onSubmit: (title) => ref
                         .read(todosProvider(listId).notifier)
                         .create(title: title),

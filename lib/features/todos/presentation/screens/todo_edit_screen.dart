@@ -155,7 +155,6 @@ class _TodoEditScreenState extends ConsumerState<TodoEditScreen> {
                 controller: _titleCtrl,
                 label: 'Título',
                 hint: '¿Qué tienes que hacer?',
-                autofocus: !_isEditing,
                 textInputAction: TextInputAction.next,
                 errorText: _titleError,
               ),
