@@ -41,7 +41,10 @@ class AppBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    // `padding.bottom` se reduce mientras el teclado está visible. Usar
+    // `viewPadding` conserva el safe area real del dispositivo y evita que el
+    // dock cambie de altura/posición al abrir o cerrar el teclado.
+    final bottomPadding = MediaQuery.viewPaddingOf(context).bottom;
     // Altura: píldora (72) + margen inferior (16) + safe area
     final totalHeight = 72.0 + AppSpacing.lg + bottomPadding;
 

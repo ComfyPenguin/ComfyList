@@ -81,8 +81,6 @@ class AppShell extends ConsumerWidget {
     final colors = context.colors;
     final isDark = colors.canvas.computeLuminance() < 0.05;
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
-    final isKeyboardVisible = keyboardInset > 0;
-
     final isLists = location == Routes.todoLists || location == Routes.home;
     final isListDetail = RegExp(r'^/lists/[^/]+$').hasMatch(location);
     final isAppointments = location == Routes.appointments;
@@ -305,7 +303,9 @@ class AppShell extends ConsumerWidget {
               ),
             ),
           // ── BottomBar flotante inferior ──
-          if (!hideChrome && !isKeyboardVisible)
+          // Se mantiene montada detrás del teclado para evitar que aparezca
+          // de golpe cuando el teclado se cierra.
+          if (!hideChrome)
             Positioned(
               left: 0,
               right: 0,

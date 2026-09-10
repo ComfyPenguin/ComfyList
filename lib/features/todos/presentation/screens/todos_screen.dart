@@ -66,7 +66,7 @@ class TodosScreen extends ConsumerWidget {
         +
         AppSpacing.sm; // separación hasta el contenido
     final bottomDockHeight =
-        72 + AppSpacing.lg + MediaQuery.of(context).padding.bottom;
+        72 + AppSpacing.lg + MediaQuery.viewPaddingOf(context).bottom;
     final keyboardInset =
         KeyboardVisibilityScope.bottomInsetOf(context) >
             MediaQuery.viewInsetsOf(context).bottom
@@ -79,11 +79,20 @@ class TodosScreen extends ConsumerWidget {
     // El Scaffold reduce la altura del body cuando aparece el teclado. Por
     // eso, en ese estado basta con separar el QuickAddBar del nuevo borde
     // inferior; no sumamos el inset del teclado una segunda vez.
-    final quickAddBottom = keyboardVisible
-        ? keyboardInset + keyboardQuickAddGap
-        : bottomDockHeight + quickAddGap;
+    //
+    // Al ocultarse el teclado, su inset baja gradualmente hasta cero mientras
+    // el BottomBar ya está colocado en su posición final. No permitimos que
+    // el QuickAddBar baje por debajo de ese dock: así la animación termina
+    // sobre la BottomBar en lugar de tocar el borde inferior y ser recolocada
+    // después.
+    final quickAddBaseOffset = keyboardInset > bottomDockHeight
+        ? keyboardInset
+        : bottomDockHeight;
+    final quickAddBottom =
+        quickAddBaseOffset +
+        (keyboardVisible ? keyboardQuickAddGap : quickAddGap);
     final contentBottomPadding =
-        (keyboardVisible ? keyboardInset : bottomDockHeight) +
+        quickAddBaseOffset +
         quickAddHeight +
         (keyboardVisible ? keyboardQuickAddGap : quickAddGap);
 
