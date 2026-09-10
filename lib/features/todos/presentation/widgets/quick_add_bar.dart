@@ -68,7 +68,7 @@ class _QuickAddBarState extends State<QuickAddBar> {
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
               child: Container(
-                height: 44,
+                height: 48,
                 alignment: Alignment.centerLeft,
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                 decoration: BoxDecoration(
@@ -81,14 +81,15 @@ class _QuickAddBarState extends State<QuickAddBar> {
                   focusNode: _focusNode,
                   textInputAction: TextInputAction.done,
                   textCapitalization: TextCapitalization.sentences,
+                  textAlignVertical: TextAlignVertical.center,
                   onEditingComplete: () {},
                   onSubmitted: _submit,
                   decoration: InputDecoration(
                     hintText: widget.hint,
                     filled: false,
+                    isCollapsed: true,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.lg,
-                      vertical: AppSpacing.sm,
                     ),
                     focusedBorder: InputBorder.none,
                     enabledBorder: InputBorder.none,
@@ -103,8 +104,8 @@ class _QuickAddBarState extends State<QuickAddBar> {
         AnimatedContainer(
           duration: const Duration(milliseconds: 280),
           curve: Curves.easeOutCubic,
-          width: widget.showSubmitButton ? 52 : 0,
-          height: 44,
+          width: widget.showSubmitButton ? 56 : 0,
+          height: 48,
           clipBehavior: Clip.none,
           child: AnimatedOpacity(
             opacity: widget.showSubmitButton ? 1 : 0,
@@ -143,8 +144,8 @@ class _SubmitButton extends StatelessWidget {
     return Tooltip(
       message: 'Añadir tarea',
       child: SizedBox(
-        width: 44,
-        height: 44,
+        width: 48,
+        height: 48,
         child: InkWell(
           onTap: onPressed,
           customBorder: const CircleBorder(),
