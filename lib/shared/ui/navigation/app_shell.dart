@@ -27,8 +27,36 @@ class DetailSheetOpenNotifier extends Notifier<bool> {
   void close() => state = false;
 }
 
-final detailSheetOpenProvider =
-    NotifierProvider<DetailSheetOpenNotifier, bool>(DetailSheetOpenNotifier.new);
+/// Expone al contenido del shell si el teclado está visible.
+///
+/// El [Scaffold] puede eliminar el `viewInsets` del teclado al calcular las
+/// constraints del `body`. En ese caso, las pantallas hijas no pueden detectar
+/// el teclado únicamente desde su propio `MediaQuery`.
+class KeyboardVisibilityScope extends InheritedWidget {
+  const KeyboardVisibilityScope({
+    super.key,
+    required this.bottomInset,
+    required super.child,
+  });
+
+  final double bottomInset;
+
+  static double bottomInsetOf(BuildContext context) {
+    return context
+            .dependOnInheritedWidgetOfExactType<KeyboardVisibilityScope>()
+            ?.bottomInset ??
+        0.0;
+  }
+
+  @override
+  bool updateShouldNotify(KeyboardVisibilityScope oldWidget) {
+    return bottomInset != oldWidget.bottomInset;
+  }
+}
+
+final detailSheetOpenProvider = NotifierProvider<DetailSheetOpenNotifier, bool>(
+  DetailSheetOpenNotifier.new,
+);
 
 /// Shell persistente de la app: AppBar, BottomBar y FAB compartidos.
 ///
@@ -52,6 +80,8 @@ class AppShell extends ConsumerWidget {
     final location = routerState.uri.path;
     final colors = context.colors;
     final isDark = colors.canvas.computeLuminance() < 0.05;
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    final isKeyboardVisible = keyboardInset > 0;
 
     final isLists = location == Routes.todoLists || location == Routes.home;
     final isListDetail = RegExp(r'^/lists/[^/]+$').hasMatch(location);
@@ -92,9 +122,10 @@ class AppShell extends ConsumerWidget {
       final listId = location.split('/').last;
       final listsState = ref.watch(todoListsProvider);
       if (listsState is TodoListsData) {
-        final list = listsState.items
-            .cast<TodoList?>()
-            .firstWhere((l) => l?.id == listId, orElse: () => null);
+        final list = listsState.items.cast<TodoList?>().firstWhere(
+          (l) => l?.id == listId,
+          orElse: () => null,
+        );
         if (list != null) {
           appBarTitle = list.name;
         }
@@ -102,16 +133,21 @@ class AppShell extends ConsumerWidget {
     }
 
     // ── BottomBar: pestaña activa según la ruta ──
-    final activeTab =
-        isAppointments ? AppBottomTab.appointments : AppBottomTab.tasks;
+    final activeTab = isAppointments
+        ? AppBottomTab.appointments
+        : AppBottomTab.tasks;
 
     final hideChrome = isNestedRoute || isDetailSheetOpen;
 
     return Scaffold(
+      // El shell usa overlays posicionados manualmente. Mantener el body a
+      // pantalla completa permite que el contenido calcule la posición del
+      // QuickAddBar usando el inset real del teclado.
+      resizeToAvoidBottomInset: false,
       appBar: null,
       body: Stack(
         children: [
-          child,
+          KeyboardVisibilityScope(bottomInset: keyboardInset, child: child),
           // ── AppBar superior anclado ──
           if (!hideChrome)
             Positioned(
@@ -178,15 +214,14 @@ class AppShell extends ConsumerWidget {
                             ),
                             tooltip: 'Cerrar sesión',
                             onPressed: () async {
-                              final confirmed =
-                                  await ConfirmActionDialog.show(
-                                    context,
-                                    title: 'Cerrar sesión',
-                                    message:
-                                        '¿Seguro que quieres cerrar la sesión?',
-                                    confirmLabel: 'Cerrar sesión',
-                                    destructive: true,
-                                  );
+                              final confirmed = await ConfirmActionDialog.show(
+                                context,
+                                title: 'Cerrar sesión',
+                                message:
+                                    '¿Seguro que quieres cerrar la sesión?',
+                                confirmLabel: 'Cerrar sesión',
+                                destructive: true,
+                              );
                               if (confirmed && context.mounted) {
                                 ref.read(authProvider.notifier).signOut();
                               }
@@ -206,8 +241,7 @@ class AppShell extends ConsumerWidget {
                                 Flexible(
                                   child: LayoutBuilder(
                                     builder: (context, constraints) {
-                                      final titleStyle = AppTypography
-                                          .displaySm
+                                      final titleStyle = AppTypography.displaySm
                                           .copyWith(color: colors.ink);
                                       // Solo animamos si el título desborda;
                                       // con un nombre corto el marquee
@@ -232,7 +266,7 @@ class AppShell extends ConsumerWidget {
                                       // falla el layout y el título desaparece.
                                       final titleLineHeight =
                                           titleStyle.fontSize! *
-                                              (titleStyle.height ?? 1.0);
+                                          (titleStyle.height ?? 1.0);
                                       return SizedBox(
                                         height: titleLineHeight,
                                         child: Marquee(
@@ -240,8 +274,9 @@ class AppShell extends ConsumerWidget {
                                           style: titleStyle,
                                           blankSpace: AppSpacing.xxxxl,
                                           velocity: 30,
-                                          pauseAfterRound:
-                                              const Duration(seconds: 2),
+                                          pauseAfterRound: const Duration(
+                                            seconds: 2,
+                                          ),
                                           startPadding: AppSpacing.md,
                                           fadingEdgeStartFraction: 0.15,
                                           fadingEdgeEndFraction: 0.15,
@@ -270,7 +305,7 @@ class AppShell extends ConsumerWidget {
               ),
             ),
           // ── BottomBar flotante inferior ──
-          if (!hideChrome)
+          if (!hideChrome && !isKeyboardVisible)
             Positioned(
               left: 0,
               right: 0,

@@ -44,11 +44,9 @@ class _QuickAddBarState extends State<QuickAddBar> {
     widget.onSubmit(text);
     _controller.clear();
 
-    // Re-solicitamos el foco en el siguiente frame para que el teclado no
-    // se cierre al procesar el onSubmitted. Sin esto, en iOS y algunos
-    // teclados Android el TextInputAction.done cierra el teclado antes de
-    // que podamos re-enfocar.
-    Future.microtask(() => _focusNode.requestFocus());
+    // Sobrescribimos `onEditingComplete` para que la acción Done del teclado
+    // no aplique el comportamiento predeterminado de retirar el foco. Así el
+    // teclado permanece abierto sin el parpadeo de ocultarlo y reabrirlo.
   }
 
   @override
@@ -58,6 +56,7 @@ class _QuickAddBarState extends State<QuickAddBar> {
       focusNode: _focusNode,
       textInputAction: TextInputAction.done,
       textCapitalization: TextCapitalization.sentences,
+      onEditingComplete: () {},
       onSubmitted: _submit,
       decoration: InputDecoration(
         hintText: widget.hint,

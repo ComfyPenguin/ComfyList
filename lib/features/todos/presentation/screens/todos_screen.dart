@@ -72,10 +72,25 @@ class TodosScreen extends ConsumerWidget {
         AppSpacing.sm; // separación hasta el contenido
     final bottomDockHeight =
         72 + AppSpacing.lg + MediaQuery.of(context).padding.bottom;
+    final keyboardInset =
+        KeyboardVisibilityScope.bottomInsetOf(context) >
+            MediaQuery.viewInsetsOf(context).bottom
+        ? KeyboardVisibilityScope.bottomInsetOf(context)
+        : MediaQuery.viewInsetsOf(context).bottom;
+    final keyboardVisible = keyboardInset > 0;
     final quickAddHeight = 52.0;
     final quickAddGap = AppSpacing.sm;
+    const keyboardQuickAddGap = 6.0;
+    // El Scaffold reduce la altura del body cuando aparece el teclado. Por
+    // eso, en ese estado basta con separar el QuickAddBar del nuevo borde
+    // inferior; no sumamos el inset del teclado una segunda vez.
+    final quickAddBottom = keyboardVisible
+        ? keyboardInset + keyboardQuickAddGap
+        : bottomDockHeight + quickAddGap;
     final contentBottomPadding =
-        bottomDockHeight + quickAddHeight + quickAddGap;
+        (keyboardVisible ? keyboardInset : bottomDockHeight) +
+        quickAddHeight +
+        (keyboardVisible ? keyboardQuickAddGap : quickAddGap);
 
     return Stack(
       children: [
@@ -100,7 +115,7 @@ class TodosScreen extends ConsumerWidget {
         Positioned(
           left: 0,
           right: 0,
-          bottom: bottomDockHeight + quickAddGap,
+          bottom: quickAddBottom,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: ClipRRect(
