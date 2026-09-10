@@ -10,9 +10,7 @@ import '../../../features/todo_lists/presentation/providers/todo_lists_provider.
 /// de red y auth en el primer tick tras resume.
 class AppLifecycleController {
   AppLifecycleController(this._ref) {
-    _listener = AppLifecycleListener(
-      onStateChange: _onStateChange,
-    );
+    _listener = AppLifecycleListener(onStateChange: _onStateChange);
   }
 
   final Ref _ref;
@@ -21,15 +19,25 @@ class AppLifecycleController {
   void _onStateChange(AppLifecycleState state) {
     switch (state) {
       case AppLifecycleState.resumed:
+        // El sistema puede ocultar el teclado mientras la app estaba en
+        // segundo plano, pero conservar el foco del campo. Lo liberamos al
+        // volver para que el layout no se quede con un inset fantasma.
+        FocusManager.instance.primaryFocus?.unfocus();
         _ref.read(appointmentsRepositoryProvider).resumeAll();
         _ref.read(todosRepositoryProvider).resumeAll();
         _ref.read(todoListsRepositoryProvider).resumeAll();
       case AppLifecycleState.paused:
       case AppLifecycleState.hidden:
-        _ref.read(appointmentsRepositoryProvider).pauseAll();
-        _ref.read(todosRepositoryProvider).pauseAll();
-        _ref.read(todoListsRepositoryProvider).pauseAll();
       case AppLifecycleState.inactive:
+        // Al salir de la app, cerramos el teclado y eliminamos el foco antes
+        // de que el sistema congele el estado de los insets de la ventana.
+        FocusManager.instance.primaryFocus?.unfocus();
+        if (state == AppLifecycleState.paused ||
+            state == AppLifecycleState.hidden) {
+          _ref.read(appointmentsRepositoryProvider).pauseAll();
+          _ref.read(todosRepositoryProvider).pauseAll();
+          _ref.read(todoListsRepositoryProvider).pauseAll();
+        }
       case AppLifecycleState.detached:
         break;
     }

@@ -60,7 +60,8 @@ class TodosScreen extends ConsumerWidget {
   ) {
     final colors = context.colors;
     final isDark = colors.canvas.computeLuminance() < 0.05;
-    // Altura acumulada: safe area + margen appbar + appbar + gap
+    // El shell superpone el AppBar y el dock sobre el body; reservamos
+    // espacio para que el contenido no quede oculto bajo ninguno de los dos.
     final topOffset =
         MediaQuery.of(context).padding.top +
         AppSpacing
@@ -68,9 +69,13 @@ class TodosScreen extends ConsumerWidget {
             +
         52 // altura del AppBar
         +
-        AppSpacing.sm; // gap entre AppBar y QuickAddBar
-
-    final contentTopPadding = topOffset + 52 + AppSpacing.sm;
+        AppSpacing.sm; // separación hasta el contenido
+    final bottomDockHeight =
+        72 + AppSpacing.lg + MediaQuery.of(context).padding.bottom;
+    final quickAddHeight = 52.0;
+    final quickAddGap = AppSpacing.sm;
+    final contentBottomPadding =
+        bottomDockHeight + quickAddHeight + quickAddGap;
 
     return Stack(
       children: [
@@ -78,20 +83,24 @@ class TodosScreen extends ConsumerWidget {
         Positioned.fill(
           child: items.isEmpty
               ? Padding(
-                  padding: EdgeInsets.only(top: contentTopPadding),
+                  padding: EdgeInsets.only(
+                    top: topOffset,
+                    bottom: contentBottomPadding,
+                  ),
                   child: const TodosEmptyState(),
                 )
               : _TodosList(
                   listId: listId,
                   items: items,
-                  topPadding: contentTopPadding,
+                  topPadding: topOffset,
+                  bottomPadding: contentBottomPadding,
                 ),
         ),
-        // ── QuickAddBar glassmorphism flotante ──
+        // ── QuickAddBar glassmorphism flotante sobre el dock ──
         Positioned(
           left: 0,
           right: 0,
-          top: topOffset,
+          bottom: bottomDockHeight + quickAddGap,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: ClipRRect(
@@ -135,11 +144,13 @@ class _TodosList extends ConsumerStatefulWidget {
     required this.listId,
     required this.items,
     required this.topPadding,
+    required this.bottomPadding,
   });
 
   final String listId;
   final List<Todo> items;
   final double topPadding;
+  final double bottomPadding;
 
   @override
   ConsumerState<_TodosList> createState() => _TodosListState();
@@ -322,7 +333,7 @@ class _TodosListState extends ConsumerState<_TodosList> {
           AppSpacing.lg,
           widget.topPadding,
           AppSpacing.lg,
-          AppSpacing.section,
+          widget.bottomPadding,
         ),
         itemCount: displayItems.length,
         separatorBuilder: (_, _) => const SizedBox(height: _joinedGap),
@@ -347,7 +358,7 @@ class _TodosListState extends ConsumerState<_TodosList> {
         AppSpacing.lg,
         widget.topPadding,
         AppSpacing.lg,
-        AppSpacing.section,
+        widget.bottomPadding,
       ),
       child: SlideFlow(rows: rows),
     );
