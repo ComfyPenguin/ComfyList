@@ -68,7 +68,7 @@ class _QuickAddBarState extends State<QuickAddBar> {
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
               child: Container(
-                height: 52,
+                height: 44,
                 alignment: Alignment.centerLeft,
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                 decoration: BoxDecoration(
@@ -88,7 +88,7 @@ class _QuickAddBarState extends State<QuickAddBar> {
                     filled: false,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.lg,
-                      vertical: AppSpacing.md,
+                      vertical: AppSpacing.sm,
                     ),
                     focusedBorder: InputBorder.none,
                     enabledBorder: InputBorder.none,
@@ -98,13 +98,33 @@ class _QuickAddBarState extends State<QuickAddBar> {
             ),
           ),
         ),
-        if (widget.showSubmitButton) ...[
-          const SizedBox(width: AppSpacing.sm),
-          _SubmitButton(
-            isDark: isDark,
-            onPressed: () => _submit(_controller.text),
+        // El ancho animado hace que el campo se encoja suavemente mientras
+        // el botón entra, sin reconstruir/intercambiar el subárbol completo.
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOutCubic,
+          width: widget.showSubmitButton ? 52 : 0,
+          height: 44,
+          clipBehavior: Clip.none,
+          child: AnimatedOpacity(
+            opacity: widget.showSubmitButton ? 1 : 0,
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            child: AnimatedScale(
+              scale: widget.showSubmitButton ? 1 : 0.78,
+              duration: const Duration(milliseconds: 280),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.only(left: AppSpacing.sm),
+                child: _SubmitButton(
+                  isDark: isDark,
+                  onPressed: () => _submit(_controller.text),
+                ),
+              ),
+            ),
           ),
-        ],
+        ),
       ],
     );
   }
@@ -123,17 +143,19 @@ class _SubmitButton extends StatelessWidget {
     return Tooltip(
       message: 'Añadir tarea',
       child: SizedBox(
-        width: 52,
-        height: 52,
+        width: 44,
+        height: 44,
         child: InkWell(
           onTap: onPressed,
           customBorder: const CircleBorder(),
-          child: Container(
-            decoration: BoxDecoration(
-              color: colors.primary,
-              shape: BoxShape.circle,
-              boxShadow: isDark
-                  ? [
+          child: Padding(
+            padding: const EdgeInsets.all(2),
+            child: Container(
+              decoration: BoxDecoration(
+                color: colors.primary,
+                shape: BoxShape.circle,
+                boxShadow: isDark
+                    ? [
                       BoxShadow(
                         color: colors.primary.withValues(alpha: 0.35),
                         blurRadius: 20,
@@ -153,11 +175,12 @@ class _SubmitButton extends StatelessWidget {
                       ),
                     ],
             ),
-            child: Center(
-              child: Icon(
-                Icons.add,
-                size: 28,
-                color: isDark ? colors.canvasSofter : colors.onPrimary,
+              child: Center(
+                child: Icon(
+                  Icons.add,
+                  size: 22,
+                  color: isDark ? colors.canvasSofter : colors.onPrimary,
+                ),
               ),
             ),
           ),
