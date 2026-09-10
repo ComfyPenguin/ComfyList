@@ -86,7 +86,7 @@ class TodoDetailSheet extends ConsumerWidget {
 
     final isDark = colors.canvas.computeLuminance() < 0.05;
     final datesMatch = todo.createdAt.isAtSameMomentAs(todo.updatedAt);
-    final metadataLabel = datesMatch ? 'Creada el' : 'Última edición el';
+    final metadataLabel = datesMatch ? 'Creada' : 'Última edición';
     final metadataDate = datesMatch ? todo.createdAt : todo.updatedAt;
 
     return SingleChildScrollView(
@@ -240,6 +240,8 @@ class _MetaRow extends StatelessWidget {
             label,
             style: AppTypography.bodySm.copyWith(color: colors.muted),
           ),
+          const SizedBox(width: AppSpacing.sm),
+          Text('•', style: AppTypography.bodySm.copyWith(color: colors.muted)),
           const SizedBox(width: AppSpacing.sm),
           Text(
             value,

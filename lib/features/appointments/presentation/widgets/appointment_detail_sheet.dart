@@ -77,27 +77,26 @@ class AppointmentDetailSheet extends ConsumerWidget {
         maxHeight: MediaQuery.of(context).size.height * 0.85,
       ),
       child: switch (state) {
-        AppointmentsInitial() || AppointmentsLoading() =>
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: AppSpacing.xxxl),
-            child: Center(child: CircularProgressIndicator()),
-          ),
+        AppointmentsInitial() || AppointmentsLoading() => const Padding(
+          padding: EdgeInsets.symmetric(vertical: AppSpacing.xxxl),
+          child: Center(child: CircularProgressIndicator()),
+        ),
         AppointmentsError(:final failure) => Padding(
-            padding: const EdgeInsets.all(AppSpacing.xxxl),
-            child: Center(
-              child: Text(
-                failure.message,
-                textAlign: TextAlign.center,
-                style: AppTypography.bodyMd.copyWith(color: colors.body),
-              ),
+          padding: const EdgeInsets.all(AppSpacing.xxxl),
+          child: Center(
+            child: Text(
+              failure.message,
+              textAlign: TextAlign.center,
+              style: AppTypography.bodyMd.copyWith(color: colors.body),
             ),
           ),
+        ),
         AppointmentsData(:final items) => _buildContent(
-            context,
-            items,
-            colors,
-            completionEnabled,
-          ),
+          context,
+          items,
+          colors,
+          completionEnabled,
+        ),
       },
     );
   }
@@ -109,9 +108,9 @@ class AppointmentDetailSheet extends ConsumerWidget {
     bool completionEnabled,
   ) {
     final appointment = items.cast<Appointment?>().firstWhere(
-          (a) => a?.id == id,
-          orElse: () => null,
-        );
+      (a) => a?.id == id,
+      orElse: () => null,
+    );
 
     // Si la cita fue eliminada mientras el sheet estaba abierto.
     if (appointment == null) {
@@ -129,6 +128,13 @@ class AppointmentDetailSheet extends ConsumerWidget {
 
     String cap(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
     final isDark = colors.canvas.computeLuminance() < 0.05;
+    final datesMatch = appointment.createdAt.isAtSameMomentAs(
+      appointment.updatedAt,
+    );
+    final metadataLabel = datesMatch ? 'Creada' : 'Última edición';
+    final metadataDate = datesMatch
+        ? appointment.createdAt
+        : appointment.updatedAt;
 
     final dt = appointment.dateTime;
     final dayName = cap(DateFormat("EEEE", 'es_ES').format(dt));
@@ -162,7 +168,7 @@ class AppointmentDetailSheet extends ConsumerWidget {
                         appointment.title.isEmpty
                             ? appointment.title
                             : appointment.title[0].toUpperCase() +
-                                appointment.title.substring(1),
+                                  appointment.title.substring(1),
                         style: AppTypography.displayMd.copyWith(
                           color: colors.ink,
                           decoration: completionEnabled && appointment.isDone
@@ -183,7 +189,11 @@ class AppointmentDetailSheet extends ConsumerWidget {
                 // Fecha.
                 Row(
                   children: [
-                    Icon(Icons.calendar_today_outlined, size: 20, color: colors.muted),
+                    Icon(
+                      Icons.calendar_today_outlined,
+                      size: 20,
+                      color: colors.muted,
+                    ),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Text(
@@ -197,7 +207,11 @@ class AppointmentDetailSheet extends ConsumerWidget {
                 // Hora.
                 Row(
                   children: [
-                    Icon(Icons.access_time_outlined, size: 20, color: colors.muted),
+                    Icon(
+                      Icons.access_time_outlined,
+                      size: 20,
+                      color: colors.muted,
+                    ),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Text(
@@ -218,7 +232,9 @@ class AppointmentDetailSheet extends ConsumerWidget {
                       Expanded(
                         child: Text(
                           appointment.location!,
-                          style: AppTypography.bodyMd.copyWith(color: colors.body),
+                          style: AppTypography.bodyMd.copyWith(
+                            color: colors.body,
+                          ),
                         ),
                       ),
                     ],
@@ -285,22 +301,17 @@ class AppointmentDetailSheet extends ConsumerWidget {
               AppSpacing.xxxl,
               AppSpacing.xxxl,
             ),
-             child: Column(
+            child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Botón principal con la estética canónica de la app
                 // (pill, primary, sombra dual, onPrimary uppercase).
-                PrimaryButton(
-                  label: 'Editar',
-                  onPressed: onEdit,
-                  expand: true,
-                ),
+                PrimaryButton(label: 'Editar', onPressed: onEdit, expand: true),
                 const SizedBox(height: AppSpacing.lg),
-                // Última edición.
                 _MetaRow(
-                  label: 'Última edición',
-                  value: _formatDate(appointment.updatedAt),
+                  label: metadataLabel,
+                  value: _formatDate(metadataDate),
                   colors: colors,
                 ),
                 SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
@@ -344,7 +355,9 @@ class _MetaRow extends StatelessWidget {
             label,
             style: AppTypography.bodySm.copyWith(color: colors.muted),
           ),
-          const SizedBox(width: AppSpacing.lg),
+          const SizedBox(width: AppSpacing.sm),
+          Text('•', style: AppTypography.bodySm.copyWith(color: colors.muted)),
+          const SizedBox(width: AppSpacing.sm),
           Text(
             value,
             style: AppTypography.bodySm.copyWith(color: colors.muted),
