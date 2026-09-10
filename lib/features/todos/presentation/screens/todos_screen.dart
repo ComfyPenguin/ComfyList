@@ -1,12 +1,9 @@
 import 'dart:async';
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../routing/routes.dart';
-import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
@@ -58,8 +55,6 @@ class TodosScreen extends ConsumerWidget {
     WidgetRef ref,
     List<Todo> items,
   ) {
-    final colors = context.colors;
-    final isDark = colors.canvas.computeLuminance() < 0.05;
     // El shell superpone el AppBar y el dock sobre el body; reservamos
     // espacio para que el contenido no quede oculto bajo ninguno de los dos.
     final topOffset =
@@ -111,41 +106,18 @@ class TodosScreen extends ConsumerWidget {
                   bottomPadding: contentBottomPadding,
                 ),
         ),
-        // ── QuickAddBar glassmorphism flotante sobre el dock ──
+        // ── QuickAddBar flotante sobre el dock ──
         Positioned(
           left: 0,
           right: 0,
           bottom: quickAddBottom,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: ClipRRect(
-              borderRadius: AppRadius.brPill,
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                child: Container(
-                  height: 52,
-                  alignment: Alignment.centerLeft,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colors.canvas.withValues(alpha: 0.7),
-                    borderRadius: AppRadius.brPill,
-                    border: Border.all(
-                      color: isDark
-                          ? colors.ink.withValues(alpha: 0.18)
-                          : colors.ink.withValues(alpha: 0.12),
-                      width: 1.2,
-                    ),
-                  ),
-                  child: QuickAddBar(
-                    hint: 'Añadir tarea rápida...',
-                    onSubmit: (title) => ref
-                        .read(todosProvider(listId).notifier)
-                        .create(title: title),
-                  ),
-                ),
-              ),
+            child: QuickAddBar(
+              hint: 'Añadir tarea rápida...',
+              showSubmitButton: keyboardVisible,
+              onSubmit: (title) =>
+                  ref.read(todosProvider(listId).notifier).create(title: title),
             ),
           ),
         ),
