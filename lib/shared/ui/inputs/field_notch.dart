@@ -57,7 +57,7 @@ class BottomLabelNotch extends StatelessWidget {
           left: FieldStyle.padding.left,
           bottom: 0,
           width: _notchWidth(context, label),
-          height: AppStroke.hairline + 1.5,
+          height: AppStroke.hairline + AppStroke.focused,
           child: IgnorePointer(
             child: ColoredBox(color: fillColor ?? context.colors.canvas),
           ),

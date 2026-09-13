@@ -110,7 +110,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppRadius.brMd,
-          borderSide: BorderSide(color: c.ink, width: 1.5),
+          borderSide: BorderSide(color: c.ink, width: AppStroke.focused),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: AppRadius.brMd,
@@ -118,7 +118,7 @@ class AppTheme {
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: AppRadius.brMd,
-          borderSide: BorderSide(color: c.error, width: 1.5),
+          borderSide: BorderSide(color: c.error, width: AppStroke.focused),
         ),
       ),
       dividerTheme:

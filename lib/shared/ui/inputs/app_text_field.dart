@@ -169,9 +169,9 @@ class _AppTextFieldState extends State<AppTextField> {
       suffixIcon: widget.suffixIcon,
       border: _outline(colors.cardBorder),
       enabledBorder: _outline(colors.cardBorder),
-      focusedBorder: _outline(colors.ink, width: 1.5),
+      focusedBorder: _outline(colors.ink, width: AppStroke.focused),
       errorBorder: _outline(colors.error),
-      focusedErrorBorder: _outline(colors.error, width: 1.5),
+      focusedErrorBorder: _outline(colors.error, width: AppStroke.focused),
     );
 
     return TextField(

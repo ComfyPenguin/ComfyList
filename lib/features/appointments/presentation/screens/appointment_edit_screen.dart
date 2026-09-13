@@ -334,7 +334,7 @@ class _DateTimeTile extends StatelessWidget {
           floatingLabelStyle: AppTypography.fieldLabel(colors.ink),
           border: _outline(colors.cardBorder),
           enabledBorder: _outline(colors.cardBorder),
-          focusedBorder: _outline(colors.ink, width: 1.5),
+          focusedBorder: _outline(colors.ink, width: AppStroke.focused),
         ),
         child: Text(
           value,
