@@ -84,10 +84,13 @@ class AppTypography {
   /// Etiqueta de un campo: mayúsculas en negrita con tracking, como las
   /// cabeceras de sección. El texto se compone ya en mayúsculas — Flutter no
   /// tiene `text-transform`.
+  ///
+  /// El tracking sigue el patrón del DS (a más tamaño, menos aire): 0.6 en las
+  /// cabeceras de 12 px y 0.4 en las mayúsculas de 16 px.
   static TextStyle fieldLabel([Color? color]) => bodySmStrong.copyWith(
     color: color,
     fontWeight: FontWeight.w700,
-    letterSpacing: 0.6,
+    letterSpacing: 0.4,
   );
 
   static const TextStyle caption = TextStyle(

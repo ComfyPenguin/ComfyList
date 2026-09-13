@@ -64,5 +64,30 @@ void main() {
       expect(find.text('Nombre'), findsOneWidget);
       expect(find.text('NOMBRE'), findsNothing);
     });
+
+    testWidgets('el ciclo foco, escritura y vaciado no rompe nada', (
+      tester,
+    ) async {
+      final controller = TextEditingController();
+      addTearDown(controller.dispose);
+
+      await pumpField(tester, controller);
+
+      await tester.tap(find.byType(TextField));
+      await tester.pump();
+      await tester.enterText(find.byType(TextField), 'Compra semanal');
+      await tester.pumpAndSettle();
+      expect(find.text('NOMBRE'), findsOneWidget);
+
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pumpAndSettle();
+      expect(find.text('NOMBRE'), findsOneWidget);
+
+      controller.clear();
+      await tester.pumpAndSettle();
+      expect(find.text('Nombre'), findsOneWidget);
+      expect(find.byType(ErrorWidget), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
   });
 }
