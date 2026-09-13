@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/ui/buttons/primary_button.dart';
 import '../../../../shared/ui/dialogs/confirm_action_dialog.dart';
 import '../../../../shared/ui/inputs/app_text_field.dart';
+import '../../../../shared/ui/text/app_tag.dart';
 import '../../domain/entities/todo_list.dart';
 import '../../domain/entities/todo_list_icons.dart';
 import '../providers/todo_lists_provider.dart';
@@ -137,7 +137,7 @@ class _TodoListEditScreenState extends ConsumerState<TodoListEditScreen> {
             padding: EdgeInsets.only(left: AppSpacing.xl),
             child: Align(
               alignment: Alignment.centerLeft,
-              child: _Tag('Así quedará tu lista'),
+              child: AppTag(label: 'Así quedará tu lista'),
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -177,33 +177,6 @@ class _TodoListEditScreenState extends ConsumerState<TodoListEditScreen> {
             ),
           ],
         ],
-      ),
-    );
-  }
-}
-
-/// Etiqueta compacta con el estilo pill del sistema.
-class _Tag extends StatelessWidget {
-  const _Tag(this.label);
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.xxs,
-      ),
-      decoration: BoxDecoration(
-        color: colors.canvasSoft,
-        borderRadius: AppRadius.brPill,
-      ),
-      child: Text(
-        label,
-        style: AppTypography.bodySmStrong.copyWith(color: colors.body),
       ),
     );
   }

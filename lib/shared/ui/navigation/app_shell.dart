@@ -89,11 +89,22 @@ class AppShell extends ConsumerWidget {
         !isListEdit && RegExp(r'^/lists/[^/]+$').hasMatch(location);
     final isAppointments = location == Routes.appointments;
 
-    // ── Rutas anidadas: ocultar chrome del shell ──
-    // Cuando el usuario está en una pantalla de detalle o edición de tarea
-    // (p. ej. /lists/:id/todos/new), la pantalla hija proporciona su propia
-    // AppBar con botón de volver. Ocultamos la AppBar del shell para evitar
-    // AppBars anidadas y la BottomBar para dar una experiencia full-screen.
+    // ── Pantallas de edición dentro del shell ──
+    // Conservan el TopBar con el nombre de la pantalla como título y ocultan
+    // la BottomBar.
+    final isTodoEdit =
+        RegExp(r'^/lists/[^/]+/todos/(new|[^/]+)$').hasMatch(location);
+    final editScreenTitle = switch (location) {
+      Routes.todoListNew => 'Nueva lista',
+      _ when isListEdit => 'Editar lista',
+      _ when location.endsWith('/todos/new') => 'Nueva tarea',
+      _ when isTodoEdit => 'Editar tarea',
+      _ => null,
+    };
+
+    // ── Rutas anidadas dentro de una lista ──
+    // Las pantallas anidadas (creación y edición de tarea) ocultan la
+    // BottomBar para dar una experiencia full-screen.
     final isNestedRoute = RegExp(r'^/lists/[^/]+/.+').hasMatch(location);
 
     // ── Sheet de detalle abierto: ocultar FAB y BottomBar ──
@@ -117,13 +128,12 @@ class AppShell extends ConsumerWidget {
     }
 
     // ── Título del AppBar ──
-    // Si estamos dentro de una lista concreta (/lists/:id), mostramos
-    // el nombre de la lista. Si estamos creando o editando una lista,
-    // mostramos el nombre de la pantalla. En el resto, el nombre de la app.
+    // En las pantallas de edición mostramos el nombre de la pantalla, dentro
+    // de una lista concreta (/lists/:id) el nombre de la lista y, en el resto,
+    // el nombre de la app.
     String appBarTitle = 'ComfyList';
-    if (isListEdit) {
-      appBarTitle =
-          location == Routes.todoListNew ? 'Nueva lista' : 'Editar lista';
+    if (editScreenTitle != null) {
+      appBarTitle = editScreenTitle;
     } else if (isListDetail) {
       final listId = location.split('/').last;
       final listsState = ref.watch(todoListsProvider);
@@ -145,12 +155,11 @@ class AppShell extends ConsumerWidget {
 
     // El AppBar permanece visible sobre los bottom sheets de detalle, como
     // ocurre en la pantalla de citas. Solo la BottomBar se oculta mientras
-    // el sheet de tareas está abierto.
-    //
-    // Las pantallas de creación y edición de lista conservan el AppBar (y el
-    // nombre de la pantalla como título) pero ocultan la BottomBar.
-    final hideTopBar = isNestedRoute && !isListEdit;
-    final hideBottomBar = isNestedRoute || isDetailSheetOpen || isListEdit;
+    // el sheet de tareas está abierto. El TopBar del shell se oculta solo si
+    // la ruta anidada aporta su propia AppBar; las pantallas de edición no.
+    final isEditScreen = editScreenTitle != null;
+    final hideTopBar = isNestedRoute && !isEditScreen;
+    final hideBottomBar = isNestedRoute || isDetailSheetOpen || isEditScreen;
 
     return Scaffold(
       // El shell usa overlays posicionados manualmente. Mantener el body a
@@ -208,7 +217,7 @@ class AppShell extends ConsumerWidget {
                     ),
                     child: Row(
                       children: [
-                        if (isListDetail || isListEdit)
+                        if (isListDetail || isEditScreen)
                           IconButton(
                             icon: Icon(
                               Icons.arrow_back_rounded,
@@ -219,7 +228,7 @@ class AppShell extends ConsumerWidget {
                             onPressed: () {
                               // En creación/edición volvemos a la pantalla que
                               // nos abrió (la lista o el listado de listas).
-                              if (isListEdit && context.canPop()) {
+                              if (isEditScreen && context.canPop()) {
                                 context.pop();
                               } else {
                                 context.go(Routes.todoLists);
