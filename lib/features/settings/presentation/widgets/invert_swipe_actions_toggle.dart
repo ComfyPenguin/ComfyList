@@ -25,12 +25,6 @@ class InvertSwipeActionsToggle extends ConsumerWidget {
     return SettingsTile(
       icon: Icons.swap_horiz_rounded,
       title: 'Invertir acciones al deslizar',
-      description: switch (state) {
-        SettingsData(:final settings) => settings.invertSwipeActions
-            ? 'Deslizar a la derecha elimina y a la izquierda completa.'
-            : 'Deslizar a la izquierda elimina y a la derecha completa.',
-        _ => 'Elige hacia dónde elimina y hacia dónde completa al deslizar.',
-      },
       enabled: state is! SettingsError,
       isFirst: isFirst,
       isLast: isLast,
