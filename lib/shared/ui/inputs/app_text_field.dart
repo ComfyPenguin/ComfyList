@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/app_typography.dart';
+import 'field_notch.dart';
 
 /// Campo de texto del DS — usa `inputDecorationTheme` del `AppTheme`
 /// (DESIGN.md `text-input`).
@@ -92,12 +93,11 @@ class AppTextField extends StatelessWidget {
       fillColor: colors.canvas,
       // Con contenido dentro la label flota hacia el borde: añadimos
       // padding vertical para que el campo respire dentro de la card.
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 22,
-      ),
+      contentPadding: FieldStyle.padding,
       labelStyle: AppTypography.bodySm.copyWith(color: colors.body),
-      floatingLabelStyle: AppTypography.bodySmStrong.copyWith(color: colors.ink),
+      floatingLabelStyle: AppTypography.bodySmStrong.copyWith(
+        color: colors.ink,
+      ),
       hintStyle: AppTypography.bodyMd.copyWith(color: colors.mutedSoft),
       suffixIcon: suffixIcon,
       border: _outline(borderColor),
@@ -122,7 +122,10 @@ class AppTextField extends StatelessWidget {
     );
   }
 
-  OutlineInputBorder _outline(Color color, {double width = 1.2}) {
+  OutlineInputBorder _outline(
+    Color color, {
+    double width = FieldStyle.borderWidth,
+  }) {
     return OutlineInputBorder(
       borderRadius: BorderRadius.circular(_cardRadius),
       borderSide: BorderSide(color: color, width: width),

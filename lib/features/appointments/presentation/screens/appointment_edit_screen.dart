@@ -9,6 +9,7 @@ import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/ui/buttons/primary_button.dart';
 import '../../../../shared/ui/dialogs/confirm_action_dialog.dart';
 import '../../../../shared/ui/inputs/app_text_field.dart';
+import '../../../../shared/ui/inputs/field_notch.dart';
 import '../../../../shared/ui/pickers/date_time_pickers.dart';
 import '../../../../shared/ui/text/app_tag.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
@@ -20,7 +21,7 @@ import '../providers/appointments_state.dart';
 /// Radio de las cards del formulario — espejo de las tiles de la app.
 const double _cardRadius = 32;
 
-/// Radios y separación de dos tiles unidas, como en las listas de la app.
+/// Radio de las esquinas interiores y separación de dos tiles unidas.
 const double _joinedRadius = 6;
 const double _joinedGap = 2;
 
@@ -61,10 +62,7 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
       final appointment = s.items
           .where((a) => a.id == widget.id)
           .cast<Appointment?>()
-          .firstWhere(
-            (e) => true,
-            orElse: () => null,
-          );
+          .firstWhere((e) => true, orElse: () => null);
       if (appointment != null) {
         _titleCtrl.text = appointment.title;
         _descCtrl.text = appointment.description ?? '';
@@ -83,10 +81,7 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
   };
 
   Future<void> _pickDateTime() async {
-    final pickedDate = await showAppDatePicker(
-      context,
-      initialDate: _dateTime,
-    );
+    final pickedDate = await showAppDatePicker(context, initialDate: _dateTime);
     if (pickedDate == null) return;
 
     if (!mounted) return;
@@ -177,8 +172,7 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
 
     // El formato de hora sigue el ajuste del usuario, igual que las tiles.
     final use24H = _use24HourFormatFrom(ref.watch(settingsProvider));
-    final dateText =
-        DateFormat('EEEE, d MMMM yyyy', 'es_ES').format(_dateTime);
+    final dateText = DateFormat('EEEE, d MMMM yyyy', 'es_ES').format(_dateTime);
     final timeText = DateFormat(
       use24H ? 'HH:mm' : 'hh:mm a',
       'es_ES',
@@ -241,18 +235,21 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
             cardStyle: true,
           ),
           const SizedBox(height: AppSpacing.md),
-          // Fecha y hora como dos tiles unidas (radio 6 en las esquinas
-          // interiores y 2 px de separación). Las dos abren el mismo flujo de
-          // selección, así que en la práctica funcionan como un solo botón.
-          _DateTimeTile(
-            label: 'Fecha',
-            value: dateText,
-            icon: Icons.calendar_today_outlined,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(_cardRadius),
-              bottom: Radius.circular(_joinedRadius),
+          // Fecha y hora como dos tiles unidas, con los mismos radios y
+          // separación que las listas de la app. Las dos abren el mismo flujo
+          // de selección, así que funcionan como un solo botón.
+          BottomLabelNotch(
+            label: 'Hora',
+            child: _DateTimeTile(
+              label: 'Fecha',
+              value: dateText,
+              icon: Icons.calendar_today_outlined,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(_cardRadius),
+                bottom: Radius.circular(_joinedRadius),
+              ),
+              onTap: _pickDateTime,
             ),
-            onTap: _pickDateTime,
           ),
           const SizedBox(height: _joinedGap),
           _DateTimeTile(
@@ -278,9 +275,7 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
               style: OutlinedButton.styleFrom(
                 foregroundColor: colors.error,
                 minimumSize: const Size.fromHeight(52),
-                side: BorderSide(
-                  color: colors.error.withValues(alpha: 0.5),
-                ),
+                side: BorderSide(color: colors.error.withValues(alpha: 0.5)),
               ),
               child: const Text('Eliminar cita'),
             ),
@@ -292,7 +287,7 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
 }
 
 /// Tile de fecha o de hora: etiqueta, valor e icono del selector. Comparte el
-/// aspecto de las tiles de la app (canvas + borde hairline, radio de tile).
+/// aspecto de los campos del formulario (canvas + borde hairline).
 class _DateTimeTile extends StatelessWidget {
   const _DateTimeTile({
     required this.label,
@@ -308,55 +303,54 @@ class _DateTimeTile extends StatelessWidget {
   final BorderRadius borderRadius;
   final VoidCallback onTap;
 
+  /// Borde de la tile: mismo trazo que los campos del formulario, con el radio
+  /// que le toca según su posición en el par de tiles unidas.
+  OutlineInputBorder _outline(
+    Color color, {
+    double width = FieldStyle.borderWidth,
+  }) {
+    return OutlineInputBorder(
+      borderRadius: borderRadius,
+      borderSide: BorderSide(color: color, width: width),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final isDark = colors.canvas.computeLuminance() < 0.05;
+    final borderColor = isDark
+        ? colors.ink.withValues(alpha: 0.18)
+        : colors.ink.withValues(alpha: 0.12);
 
-    return Material(
-      color: colors.canvas,
-      shape: RoundedRectangleBorder(
-        borderRadius: borderRadius,
-        side: BorderSide(
-          color: isDark
-              ? colors.ink.withValues(alpha: 0.18)
-              : colors.ink.withValues(alpha: 0.12),
-          width: 1.2,
+    // Sin wrapper que recorte: la etiqueta flotante sobresale del borde y
+    // quedaría cortada por la mitad.
+    return InkWell(
+      onTap: onTap,
+      borderRadius: borderRadius,
+      child: InputDecorator(
+        // Con contenido siempre: la etiqueta flota sobre el borde, igual que
+        // en los demás campos del formulario.
+        isEmpty: false,
+        decoration: InputDecoration(
+          labelText: label,
+          filled: true,
+          fillColor: colors.canvas,
+          contentPadding: FieldStyle.padding,
+          labelStyle: AppTypography.bodySm.copyWith(color: colors.body),
+          floatingLabelStyle: AppTypography.bodySmStrong.copyWith(
+            color: colors.ink,
+          ),
+          suffixIcon: Icon(icon, size: 20, color: colors.muted),
+          border: _outline(borderColor),
+          enabledBorder: _outline(borderColor),
+          focusedBorder: _outline(colors.ink, width: 1.5),
         ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.xl,
-            vertical: AppSpacing.md,
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      label,
-                      style: AppTypography.bodySm.copyWith(color: colors.body),
-                    ),
-                    const SizedBox(height: AppSpacing.xxs),
-                    Text(
-                      value,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.bodyMd.copyWith(color: colors.ink),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Icon(icon, size: 20, color: colors.muted),
-            ],
-          ),
+        child: Text(
+          value,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: AppTypography.bodyMd.copyWith(color: colors.ink),
         ),
       ),
     );
