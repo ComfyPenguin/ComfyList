@@ -72,12 +72,20 @@ class _AppTextFieldState extends State<AppTextField> {
 
   bool get _labelFloats => _focusNode.hasFocus || _hasText;
 
-  /// Etiqueta en mayúsculas solo cuando está en el borde — Flutter no tiene
-  /// `text-transform`, así que hay que componer el texto según el estado.
+  /// Dentro del campo va la etiqueta completa; en el borde solo sube el título
+  /// y en mayúsculas — Flutter no tiene `text-transform`, así que el texto se
+  /// compone según el estado.
   String? get _labelText {
     final label = widget.label;
     if (label == null) return null;
-    return _labelFloats ? label.toUpperCase() : label;
+    return _labelFloats ? _floatingTitle(label).toUpperCase() : label;
+  }
+
+  /// En el borde no sube el matiz entre paréntesis: «Notas (opcional)» queda en
+  /// «NOTAS».
+  static String _floatingTitle(String label) {
+    final title = label.replaceFirst(RegExp(r'\s*\(.*\)$'), '');
+    return title.isEmpty ? label : title;
   }
 
   @override

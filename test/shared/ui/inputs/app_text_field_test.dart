@@ -6,15 +6,16 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   Future<void> pumpField(
     WidgetTester tester,
-    TextEditingController controller,
-  ) {
+    TextEditingController controller, {
+    String label = 'Nombre',
+  }) {
     return tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light(),
         home: Scaffold(
           body: AppTextField(
             controller: controller,
-            label: 'Nombre',
+            label: label,
             cardStyle: true,
           ),
         ),
@@ -63,6 +64,22 @@ void main() {
 
       expect(find.text('Nombre'), findsOneWidget);
       expect(find.text('NOMBRE'), findsNothing);
+    });
+
+    testWidgets('en el borde solo sube el título, sin el (opcional)', (
+      tester,
+    ) async {
+      final controller = TextEditingController();
+      addTearDown(controller.dispose);
+
+      await pumpField(tester, controller, label: 'Notas (opcional)');
+      expect(find.text('Notas (opcional)'), findsOneWidget);
+
+      await tester.tap(find.byType(TextField));
+      await tester.pump();
+
+      expect(find.text('NOTAS'), findsOneWidget);
+      expect(find.textContaining('OPCIONAL'), findsNothing);
     });
 
     testWidgets('el ciclo foco, escritura y vaciado no rompe nada', (
