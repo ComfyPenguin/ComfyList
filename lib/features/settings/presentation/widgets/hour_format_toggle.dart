@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
+import '../../../../shared/ui/cards/app_card.dart';
 import '../providers/settings_provider.dart';
 import '../providers/settings_state.dart';
 
@@ -33,17 +33,7 @@ class HourFormatToggle extends ConsumerWidget {
         ),
     };
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.canvasSoft,
-        borderRadius: AppRadius.brXl,
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.sm,
-      ),
-      child: content,
-    );
+    return AppCard(child: content);
   }
 }
 

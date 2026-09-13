@@ -85,9 +85,9 @@ class _OrDivider extends StatelessWidget {
   }
 }
 
-/// Botón pill outline con logo G de Google a la izquierda.
-/// No usamos `AppSecondaryButton` porque necesitamos un widget gráfico
-/// (no IconData) para el logo multicolor.
+/// Botón pill outline con logo G de Google a la izquierda: `OutlinedButton`
+/// directo porque necesita un widget gráfico (no un `IconData`) para el logo
+/// multicolor. Hereda el estilo del `outlinedButtonTheme`.
 class _GoogleButton extends StatelessWidget {
   const _GoogleButton({required this.isLoading, required this.onPressed});
 
