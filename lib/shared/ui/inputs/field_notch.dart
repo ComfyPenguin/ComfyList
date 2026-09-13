@@ -66,12 +66,15 @@ class BottomLabelNotch extends StatelessWidget {
     );
   }
 
-  /// Anchura del hueco del framework: margen + etiqueta escalada + margen, con
-  /// la tipografía de las etiquetas flotantes y el escalado de texto del
-  /// usuario.
+  /// Anchura del hueco del framework: margen + etiqueta escalada + margen. Se
+  /// mide la etiqueta ya en mayúsculas, con la tipografía de las etiquetas de
+  /// campo y el escalado de texto del usuario.
   static double _notchWidth(BuildContext context, String label) {
     final painter = TextPainter(
-      text: TextSpan(text: label, style: AppTypography.bodySmStrong),
+      text: TextSpan(
+        text: label.toUpperCase(),
+        style: AppTypography.fieldLabel(),
+      ),
       textDirection: Directionality.of(context),
       textScaler: MediaQuery.textScalerOf(context),
     )..layout();

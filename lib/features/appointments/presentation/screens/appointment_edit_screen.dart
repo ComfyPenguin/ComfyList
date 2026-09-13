@@ -333,14 +333,12 @@ class _DateTimeTile extends StatelessWidget {
         // en los demás campos del formulario.
         isEmpty: false,
         decoration: InputDecoration(
-          labelText: label,
+          labelText: label.toUpperCase(),
           filled: true,
           fillColor: colors.canvas,
           contentPadding: FieldStyle.padding,
           labelStyle: AppTypography.bodySm.copyWith(color: colors.body),
-          floatingLabelStyle: AppTypography.bodySmStrong.copyWith(
-            color: colors.ink,
-          ),
+          floatingLabelStyle: AppTypography.fieldLabel(colors.ink),
           suffixIcon: Icon(icon, size: 20, color: colors.muted),
           border: _outline(borderColor),
           enabledBorder: _outline(borderColor),

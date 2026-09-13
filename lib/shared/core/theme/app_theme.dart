@@ -98,7 +98,7 @@ class AppTheme {
         ),
         hintStyle: AppTypography.bodyMd.copyWith(color: c.mutedSoft),
         labelStyle: AppTypography.bodySm.copyWith(color: c.body),
-        floatingLabelStyle: AppTypography.bodySmStrong.copyWith(color: c.ink),
+        floatingLabelStyle: AppTypography.fieldLabel(c.ink),
         border: const OutlineInputBorder(
           borderRadius: AppRadius.brMd,
           borderSide: BorderSide.none,

@@ -10,7 +10,10 @@ import 'field_notch.dart';
 ///
 /// Con [cardStyle] se renderiza como una card de citas (fondo `canvas`,
 /// borde hairline y radio grande) en lugar del input soft por defecto.
-class AppTextField extends StatelessWidget {
+///
+/// La etiqueta va en negrita y mayúsculas solo cuando flota al borde; dentro
+/// del campo (vacío y sin foco) se queda como el resto de placeholders.
+class AppTextField extends StatefulWidget {
   const AppTextField({
     super.key,
     this.controller,
@@ -58,28 +61,90 @@ class AppTextField extends StatelessWidget {
   static const double _cardRadius = 32;
 
   @override
+  State<AppTextField> createState() => _AppTextFieldState();
+}
+
+class _AppTextFieldState extends State<AppTextField> {
+  /// Nodo propio para seguir el foco: la etiqueta sube al borde con el foco o
+  /// con contenido (`FloatingLabelBehavior.auto`), y ahí cambia de estilo.
+  final _focusNode = FocusNode();
+  bool _hasText = false;
+
+  bool get _labelFloats => _focusNode.hasFocus || _hasText;
+
+  /// Etiqueta en mayúsculas solo cuando está en el borde — Flutter no tiene
+  /// `text-transform`, así que hay que componer el texto según el estado.
+  String? get _labelText {
+    final label = widget.label;
+    if (label == null) return null;
+    return _labelFloats ? label.toUpperCase() : label;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(_handleFocusChanged);
+    widget.controller?.addListener(_handleControllerChanged);
+    _hasText = widget.controller?.text.isNotEmpty ?? false;
+  }
+
+  @override
+  void didUpdateWidget(AppTextField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller == widget.controller) return;
+    oldWidget.controller?.removeListener(_handleControllerChanged);
+    widget.controller?.addListener(_handleControllerChanged);
+    _hasText = widget.controller?.text.isNotEmpty ?? false;
+  }
+
+  @override
+  void dispose() {
+    widget.controller?.removeListener(_handleControllerChanged);
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _handleFocusChanged() => setState(() {});
+
+  void _handleControllerChanged() {
+    _setHasText(widget.controller!.text.isNotEmpty);
+  }
+
+  void _handleChanged(String value) {
+    _setHasText(value.isNotEmpty);
+    widget.onChanged?.call(value);
+  }
+
+  /// Reconstruye solo al cambiar de estado, no en cada pulsación.
+  void _setHasText(bool hasText) {
+    if (hasText == _hasText) return;
+    setState(() => _hasText = hasText);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.colors;
 
     final baseDecoration = InputDecoration(
-      labelText: label,
-      hintText: hint,
-      errorText: errorText,
+      labelText: _labelText,
+      hintText: widget.hint,
+      errorText: widget.errorText,
     );
 
-    if (!cardStyle) {
+    if (!widget.cardStyle) {
       return TextField(
-        controller: controller,
-        obscureText: obscureText,
-        keyboardType: keyboardType,
-        textCapitalization: textCapitalization,
-        textInputAction: textInputAction,
-        inputFormatters: inputFormatters,
-        onChanged: onChanged,
-        onSubmitted: onSubmitted,
-        enabled: enabled,
-        maxLines: obscureText ? 1 : maxLines,
-        decoration: baseDecoration.copyWith(suffixIcon: suffixIcon),
+        controller: widget.controller,
+        focusNode: _focusNode,
+        obscureText: widget.obscureText,
+        keyboardType: widget.keyboardType,
+        textCapitalization: widget.textCapitalization,
+        textInputAction: widget.textInputAction,
+        inputFormatters: widget.inputFormatters,
+        onChanged: _handleChanged,
+        onSubmitted: widget.onSubmitted,
+        enabled: widget.enabled,
+        maxLines: widget.obscureText ? 1 : widget.maxLines,
+        decoration: baseDecoration.copyWith(suffixIcon: widget.suffixIcon),
       );
     }
 
@@ -95,11 +160,9 @@ class AppTextField extends StatelessWidget {
       // padding vertical para que el campo respire dentro de la card.
       contentPadding: FieldStyle.padding,
       labelStyle: AppTypography.bodySm.copyWith(color: colors.body),
-      floatingLabelStyle: AppTypography.bodySmStrong.copyWith(
-        color: colors.ink,
-      ),
+      floatingLabelStyle: AppTypography.fieldLabel(colors.ink),
       hintStyle: AppTypography.bodyMd.copyWith(color: colors.mutedSoft),
-      suffixIcon: suffixIcon,
+      suffixIcon: widget.suffixIcon,
       border: _outline(borderColor),
       enabledBorder: _outline(borderColor),
       focusedBorder: _outline(colors.ink, width: 1.5),
@@ -108,16 +171,17 @@ class AppTextField extends StatelessWidget {
     );
 
     return TextField(
-      controller: controller,
-      obscureText: obscureText,
-      keyboardType: keyboardType,
-      textCapitalization: textCapitalization,
-      textInputAction: textInputAction,
-      inputFormatters: inputFormatters,
-      onChanged: onChanged,
-      onSubmitted: onSubmitted,
-      enabled: enabled,
-      maxLines: obscureText ? 1 : maxLines,
+      controller: widget.controller,
+      focusNode: _focusNode,
+      obscureText: widget.obscureText,
+      keyboardType: widget.keyboardType,
+      textCapitalization: widget.textCapitalization,
+      textInputAction: widget.textInputAction,
+      inputFormatters: widget.inputFormatters,
+      onChanged: _handleChanged,
+      onSubmitted: widget.onSubmitted,
+      enabled: widget.enabled,
+      maxLines: widget.obscureText ? 1 : widget.maxLines,
       decoration: cardDecoration,
     );
   }
@@ -127,7 +191,7 @@ class AppTextField extends StatelessWidget {
     double width = FieldStyle.borderWidth,
   }) {
     return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(_cardRadius),
+      borderRadius: BorderRadius.circular(AppTextField._cardRadius),
       borderSide: BorderSide(color: color, width: width),
     );
   }
