@@ -31,16 +31,14 @@ class InvertSwipeActionsToggle extends ConsumerWidget {
             : 'Deslizar a la izquierda elimina y a la derecha completa.',
         _ => 'Elige hacia dónde elimina y hacia dónde completa al deslizar.',
       },
+      enabled: state is! SettingsError,
       isFirst: isFirst,
       isLast: isLast,
-      trailing: switch (state) {
-        SettingsData(:final settings) => Switch.adaptive(
-          value: settings.invertSwipeActions,
-          onChanged: notifier.setInvertSwipeActions,
-        ),
-        SettingsError() => const SettingsTileError(),
-        SettingsInitial() || SettingsLoading() => const SettingsTileSpinner(),
-      },
+      trailing: SettingsSwitch(
+        state: state,
+        value: (settings) => settings.invertSwipeActions,
+        onChanged: notifier.setInvertSwipeActions,
+      ),
     );
   }
 }

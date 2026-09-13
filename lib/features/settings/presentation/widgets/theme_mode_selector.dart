@@ -6,6 +6,7 @@ import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../providers/settings_provider.dart';
+import '../providers/settings_state.dart';
 import 'settings_tile.dart';
 
 /// Selector de tema — pills horizontales (`category-button` / `pill-tab`):
@@ -21,13 +22,19 @@ class ThemeModeSelector extends ConsumerWidget {
     final mode = ref.watch(themeModeProvider);
     final notifier = ref.read(settingsProvider.notifier);
     final colors = context.colors;
+    // Sin preferencias leídas no sabemos qué modo está guardado, así que no
+    // marcamos ninguna pill y las dejamos sin poder pulsarse.
+    final loadFailed = ref.watch(settingsProvider) is SettingsError;
 
     Widget pill({
       required IconData icon,
       required String label,
       required ThemeMode value,
     }) {
-      final selected = mode == value;
+      final selected = !loadFailed && mode == value;
+      final foreground = selected
+          ? colors.onPrimary
+          : (loadFailed ? colors.muted : colors.ink);
       return Padding(
         padding: const EdgeInsets.only(right: AppSpacing.sm),
         child: Material(
@@ -35,7 +42,7 @@ class ThemeModeSelector extends ConsumerWidget {
           shape: const RoundedRectangleBorder(borderRadius: AppRadius.brPill),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
-            onTap: () => notifier.setThemeMode(value),
+            onTap: loadFailed ? null : () => notifier.setThemeMode(value),
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.lg,
@@ -44,16 +51,12 @@ class ThemeModeSelector extends ConsumerWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    icon,
-                    size: 18,
-                    color: selected ? colors.onPrimary : colors.ink,
-                  ),
+                  Icon(icon, size: 18, color: foreground),
                   const SizedBox(width: AppSpacing.xs),
                   Text(
                     label,
                     style: AppTypography.bodySmStrong.copyWith(
-                      color: selected ? colors.onPrimary : colors.ink,
+                      color: foreground,
                     ),
                   ),
                 ],
@@ -68,6 +71,7 @@ class ThemeModeSelector extends ConsumerWidget {
       icon: Icons.palette_outlined,
       title: 'Tema',
       description: 'Claro, oscuro o el que tenga el sistema.',
+      enabled: !loadFailed,
       isFirst: isFirst,
       isLast: isLast,
       child: SingleChildScrollView(

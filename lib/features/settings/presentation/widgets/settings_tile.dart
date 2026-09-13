@@ -5,6 +5,8 @@ import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_stroke.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
+import '../../domain/entities/app_settings.dart';
+import '../providers/settings_state.dart';
 
 /// Píldora de estado para las filas que aún no se pueden usar.
 class SettingsTileBadge extends StatelessWidget {
@@ -49,16 +51,32 @@ class SettingsTileSpinner extends StatelessWidget {
   }
 }
 
-/// Aviso del hueco del switch cuando no se ha podido leer la preferencia.
-class SettingsTileError extends StatelessWidget {
-  const SettingsTileError({super.key});
+/// Switch de una preferencia según el estado de lectura: con los datos guarda
+/// su valor, mientras se leen muestra un indicador y si falla la lectura queda
+/// deshabilitado. El aviso del fallo lo da el banner de la pantalla, una sola
+/// vez, no cada fila.
+class SettingsSwitch extends StatelessWidget {
+  const SettingsSwitch({
+    super.key,
+    required this.state,
+    required this.value,
+    this.onChanged,
+  });
+
+  final SettingsState state;
+  final bool Function(AppSettings settings) value;
+  final ValueChanged<bool>? onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: 'No se ha podido leer la preferencia.',
-      child: Icon(Icons.error_outline_rounded, color: context.colors.error),
-    );
+    return switch (state) {
+      SettingsData(:final settings) => Switch.adaptive(
+        value: value(settings),
+        onChanged: onChanged,
+      ),
+      SettingsError() => Switch.adaptive(value: false, onChanged: null),
+      SettingsInitial() || SettingsLoading() => const SettingsTileSpinner(),
+    };
   }
 }
 

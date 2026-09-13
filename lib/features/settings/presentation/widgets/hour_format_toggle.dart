@@ -23,16 +23,14 @@ class HourFormatToggle extends ConsumerWidget {
       description:
           'Muestra las horas en formato 24H (ej. 14:00) en lugar de 12H '
           '(ej. 02:00 PM).',
+      enabled: state is! SettingsError,
       isFirst: isFirst,
       isLast: isLast,
-      trailing: switch (state) {
-        SettingsData(:final settings) => Switch.adaptive(
-          value: settings.use24HourFormat,
-          onChanged: notifier.setUse24HourFormat,
-        ),
-        SettingsError() => const SettingsTileError(),
-        SettingsInitial() || SettingsLoading() => const SettingsTileSpinner(),
-      },
+      trailing: SettingsSwitch(
+        state: state,
+        value: (settings) => settings.use24HourFormat,
+        onChanged: notifier.setUse24HourFormat,
+      ),
     );
   }
 }

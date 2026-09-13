@@ -36,19 +36,16 @@ class AppointmentsCompletedToBottomToggle extends ConsumerWidget {
           ? 'Las citas que marques como completadas se mueven al final de '
                 'la lista de ese día automáticamente.'
           : 'Disponible al activar «Completar citas».',
-      enabled: enabled,
+      enabled: enabled && state is! SettingsError,
       isFirst: isFirst,
       isLast: isLast,
-      trailing: switch (state) {
-        SettingsData() => Switch.adaptive(
-          value: enabled ? settings!.appointmentsCompletedToBottom : false,
-          onChanged: enabled
-              ? notifier.setAppointmentsCompletedToBottom
-              : null,
-        ),
-        SettingsError() => const SettingsTileError(),
-        SettingsInitial() || SettingsLoading() => const SettingsTileSpinner(),
-      },
+      trailing: SettingsSwitch(
+        state: state,
+        value: (settings) => settings.appointmentsCompletionEnabled
+            ? settings.appointmentsCompletedToBottom
+            : false,
+        onChanged: enabled ? notifier.setAppointmentsCompletedToBottom : null,
+      ),
     );
   }
 }

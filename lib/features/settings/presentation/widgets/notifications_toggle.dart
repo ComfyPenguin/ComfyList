@@ -21,16 +21,14 @@ class NotificationsToggle extends ConsumerWidget {
       icon: Icons.notifications_none_rounded,
       title: 'Notificaciones',
       description: 'Recibir avisos en este dispositivo cuando estén disponibles.',
+      enabled: state is! SettingsError,
       isFirst: isFirst,
       isLast: isLast,
-      trailing: switch (state) {
-        SettingsData(:final settings) => Switch.adaptive(
-          value: settings.notificationsEnabled,
-          onChanged: notifier.setNotificationsEnabled,
-        ),
-        SettingsError() => const SettingsTileError(),
-        SettingsInitial() || SettingsLoading() => const SettingsTileSpinner(),
-      },
+      trailing: SettingsSwitch(
+        state: state,
+        value: (settings) => settings.notificationsEnabled,
+        onChanged: notifier.setNotificationsEnabled,
+      ),
     );
   }
 }

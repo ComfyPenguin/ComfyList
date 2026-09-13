@@ -27,16 +27,14 @@ class CompletedToBottomToggle extends ConsumerWidget {
       description:
           'Las tareas que marques como hechas se mueven al final '
           'de la lista automáticamente.',
+      enabled: state is! SettingsError,
       isFirst: isFirst,
       isLast: isLast,
-      trailing: switch (state) {
-        SettingsData(:final settings) => Switch.adaptive(
-          value: settings.completedToBottom,
-          onChanged: notifier.setCompletedToBottom,
-        ),
-        SettingsError() => const SettingsTileError(),
-        SettingsInitial() || SettingsLoading() => const SettingsTileSpinner(),
-      },
+      trailing: SettingsSwitch(
+        state: state,
+        value: (settings) => settings.completedToBottom,
+        onChanged: notifier.setCompletedToBottom,
+      ),
     );
   }
 }

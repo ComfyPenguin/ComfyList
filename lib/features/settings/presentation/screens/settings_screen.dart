@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
+import '../../../../shared/core/theme/app_stroke.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
+import '../providers/settings_provider.dart';
+import '../providers/settings_state.dart';
 import '../widgets/appointments_completed_to_bottom_toggle.dart';
 import '../widgets/appointments_completion_toggle.dart';
 import '../widgets/completed_to_bottom_toggle.dart';
@@ -17,16 +22,18 @@ import '../widgets/today_on_top_toggle.dart';
 ///
 /// Las preferencias de una misma sección forman un grupo de tiles unidos, con
 /// la geometría de las listas: radios 32/6 y 2 px entre ellos.
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final sectionStyle = AppTypography.sectionLabel(context.colors.muted);
 
     // El TopBar del shell se superpone al contenido: reservamos su altura
     // (iconButton + padding del AppBar) más un margen hasta la primera sección.
     final topOffset = MediaQuery.paddingOf(context).top + 56 + AppSpacing.md;
+
+    final loadFailed = ref.watch(settingsProvider) is SettingsError;
 
     return ListView(
       padding: EdgeInsets.fromLTRB(
@@ -36,6 +43,10 @@ class SettingsScreen extends StatelessWidget {
         AppSpacing.section,
       ),
       children: [
+        if (loadFailed) ...[
+          const _LoadErrorBanner(),
+          const SizedBox(height: AppSpacing.xxxl),
+        ],
         _SectionHeader(label: 'APARIENCIA', style: sectionStyle),
         const ThemeModeSelector(),
         const SizedBox(height: AppSpacing.xxxl),
@@ -77,6 +88,43 @@ class _SectionHeader extends StatelessWidget {
         bottom: AppSpacing.md,
       ),
       child: Text(label, style: style),
+    );
+  }
+}
+
+/// Aviso de que no se han podido leer las preferencias: se muestra una sola
+/// vez, sobre las secciones, mientras las filas quedan sin poder cambiarse.
+class _LoadErrorBanner extends StatelessWidget {
+  const _LoadErrorBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xl,
+        vertical: AppSpacing.lg,
+      ),
+      decoration: BoxDecoration(
+        color: colors.canvas,
+        borderRadius: AppRadius.brXl,
+        border: Border.all(
+          color: colors.error.withValues(alpha: 0.5),
+          width: AppStroke.hairline,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline_rounded, size: 20, color: colors.error),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Text(
+              'No se han podido leer tus ajustes.',
+              style: AppTypography.bodySm.copyWith(color: colors.ink),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
