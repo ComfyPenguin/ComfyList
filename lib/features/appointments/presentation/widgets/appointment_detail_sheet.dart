@@ -127,7 +127,7 @@ class AppointmentDetailSheet extends ConsumerWidget {
     }
 
     String cap(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
-    final isDark = colors.canvas.computeLuminance() < 0.05;
+    final isDark = colors.isDarkCanvas;
     final datesMatch = appointment.createdAt.isAtSameMomentAs(
       appointment.updatedAt,
     );

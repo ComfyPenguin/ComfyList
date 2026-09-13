@@ -103,7 +103,7 @@ class _BarContent extends StatelessWidget {
 
   /// En modo oscuro, la píldora debe usar una superficie ligeramente
   /// elevada para distinguirse del fondo negro puro.
-  bool get _isDark => colors.canvas.computeLuminance() < 0.05;
+  bool get _isDark => colors.isDarkCanvas;
 
   @override
   Widget build(BuildContext context) {
@@ -125,12 +125,7 @@ class _BarContent extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: colors.canvas.withValues(alpha: 0.7),
                     borderRadius: AppRadius.brPill,
-                    border: Border.all(
-                      color: _isDark
-                          ? colors.ink.withValues(alpha: 0.18)
-                          : colors.ink.withValues(alpha: 0.12),
-                      width: 1.2,
-                    ),
+                    border: Border.all(color: colors.cardBorder, width: 1.2),
                   ),
                   child: Row(
                     children: [

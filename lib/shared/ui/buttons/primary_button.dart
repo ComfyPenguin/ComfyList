@@ -33,7 +33,7 @@ class PrimaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final isDark = colors.canvas.computeLuminance() < 0.05;
+    final isDark = colors.isDarkCanvas;
 
     final bg = backgroundColor ?? colors.primary;
     final fg = foregroundColor ?? colors.onPrimary;

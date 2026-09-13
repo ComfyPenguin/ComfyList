@@ -128,7 +128,7 @@ class AppointmentTile extends ConsumerWidget {
           VerticalDivider(
             width: 1,
             thickness: 1,
-            color: colors.ink.withValues(alpha: 0.12),
+            color: colors.cardBorder,
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(

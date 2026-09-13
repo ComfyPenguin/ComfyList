@@ -194,10 +194,6 @@ class _ListPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final isDark = colors.canvas.computeLuminance() < 0.05;
-    final borderColor = isDark
-        ? colors.ink.withValues(alpha: 0.18)
-        : colors.ink.withValues(alpha: 0.12);
 
     return ValueListenableBuilder<TextEditingValue>(
       valueListenable: nameListenable,
@@ -214,7 +210,7 @@ class _ListPreview extends StatelessWidget {
           decoration: BoxDecoration(
             color: colors.canvas,
             borderRadius: BorderRadius.circular(_cardRadius),
-            border: Border.all(color: borderColor, width: 1.2),
+            border: Border.all(color: colors.cardBorder, width: 1.2),
           ),
           child: Row(
             children: [

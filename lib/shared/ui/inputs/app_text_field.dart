@@ -83,11 +83,6 @@ class AppTextField extends StatelessWidget {
       );
     }
 
-    final isDark = colors.canvas.computeLuminance() < 0.05;
-    final borderColor = isDark
-        ? colors.ink.withValues(alpha: 0.18)
-        : colors.ink.withValues(alpha: 0.12);
-
     final cardDecoration = baseDecoration.copyWith(
       filled: true,
       fillColor: colors.canvas,
@@ -100,8 +95,8 @@ class AppTextField extends StatelessWidget {
       ),
       hintStyle: AppTypography.bodyMd.copyWith(color: colors.mutedSoft),
       suffixIcon: suffixIcon,
-      border: _outline(borderColor),
-      enabledBorder: _outline(borderColor),
+      border: _outline(colors.cardBorder),
+      enabledBorder: _outline(colors.cardBorder),
       focusedBorder: _outline(colors.ink, width: 1.5),
       errorBorder: _outline(colors.error),
       focusedErrorBorder: _outline(colors.error, width: 1.5),

@@ -52,10 +52,6 @@ class ConfirmActionDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final isDark = colors.canvas.computeLuminance() < 0.05;
-    final borderColor = isDark
-        ? colors.ink.withValues(alpha: 0.18)
-        : colors.ink.withValues(alpha: 0.12);
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -65,7 +61,7 @@ class ConfirmActionDialog extends StatelessWidget {
         decoration: BoxDecoration(
           color: colors.canvas,
           borderRadius: AppRadius.brDialog,
-          border: Border.all(color: borderColor, width: 1.2),
+          border: Border.all(color: colors.cardBorder, width: 1.2),
         ),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xxl),

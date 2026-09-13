@@ -82,10 +82,6 @@ class _ForgotPasswordDialogState extends ConsumerState<ForgotPasswordDialog> {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final isDark = colors.canvas.computeLuminance() < 0.05;
-    final borderColor = isDark
-        ? colors.ink.withValues(alpha: 0.18)
-        : colors.ink.withValues(alpha: 0.12);
 
     // Card estilo citas: fondo canvas + borde hairline + radio grande.
     return Dialog(
@@ -96,7 +92,7 @@ class _ForgotPasswordDialogState extends ConsumerState<ForgotPasswordDialog> {
         decoration: BoxDecoration(
           color: colors.canvas,
           borderRadius: AppRadius.brDialog,
-          border: Border.all(color: borderColor, width: 1.2),
+          border: Border.all(color: colors.cardBorder, width: 1.2),
         ),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xxl),

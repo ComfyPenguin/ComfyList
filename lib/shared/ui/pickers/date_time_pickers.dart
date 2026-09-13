@@ -103,7 +103,6 @@ class _CircleIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final isDark = colors.canvas.computeLuminance() < 0.05;
 
     return Tooltip(
       message: tooltip,
@@ -111,12 +110,7 @@ class _CircleIconButton extends StatelessWidget {
         color: colors.canvas,
         shape: RoundedRectangleBorder(
           borderRadius: AppRadius.brFull,
-          side: BorderSide(
-            color: isDark
-                ? colors.ink.withValues(alpha: 0.18)
-                : colors.ink.withValues(alpha: 0.12),
-            width: 1.2,
-          ),
+          side: BorderSide(color: colors.cardBorder, width: 1.2),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -323,13 +317,9 @@ class _DatePickerSheetState extends State<_DatePickerSheet> {
 
   Widget _dayCell(int day) {
     final colors = context.colors;
-    final isDark = colors.canvas.computeLuminance() < 0.05;
     final date = DateTime(_month.year, _month.month, day);
     final selected = date == _selected;
     final isToday = date == _today;
-    final borderColor = isDark
-        ? colors.ink.withValues(alpha: 0.18)
-        : colors.ink.withValues(alpha: 0.12);
 
     return SizedBox(
       height: 44,
@@ -338,7 +328,7 @@ class _DatePickerSheetState extends State<_DatePickerSheet> {
           color: selected ? colors.primary : Colors.transparent,
           shape: CircleBorder(
             side: !selected && isToday
-                ? BorderSide(color: borderColor, width: 1.2)
+                ? BorderSide(color: colors.cardBorder, width: 1.2)
                 : BorderSide.none,
           ),
           clipBehavior: Clip.antiAlias,

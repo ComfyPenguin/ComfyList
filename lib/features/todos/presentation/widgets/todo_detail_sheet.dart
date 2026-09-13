@@ -84,7 +84,7 @@ class TodoDetailSheet extends ConsumerWidget {
       );
     }
 
-    final isDark = colors.canvas.computeLuminance() < 0.05;
+    final isDark = colors.isDarkCanvas;
     final datesMatch = todo.createdAt.isAtSameMomentAs(todo.updatedAt);
     final metadataLabel = datesMatch ? 'Creada' : 'Última edición';
     final metadataDate = datesMatch ? todo.createdAt : todo.updatedAt;

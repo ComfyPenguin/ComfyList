@@ -479,7 +479,7 @@ class _TodayPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = colors.canvas.computeLuminance() < 0.05;
+    final isDark = colors.isDarkCanvas;
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,

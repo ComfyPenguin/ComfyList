@@ -64,12 +64,14 @@ class AppColors {
   final Color success;
   final Color warning;
   final Color error;
+
   /// Foreground sobre superficies [error] (iconos/textos del atajo de borrado).
   final Color onError;
 
   // Neumorphic shadows
   /// Sombra clara (arriba-izquierda) — simula luz ambiental.
   final Color shadowLight;
+
   /// Sombra oscura (abajo-derecha) — simula sombra proyectada.
   final Color shadowDark;
 
@@ -132,5 +134,22 @@ class AppColors {
     shadowLight: Color(0xFF3A3A3A),
     // Sombra "oscura": más profunda, para simular sombra sobre negro
     shadowDark: Color(0xFF000000),
+  );
+}
+
+/// Alpha del hairline de contorno sobre `canvas`.
+const double _cardBorderAlpha = 0.12;
+const double _cardBorderAlphaOnDark = 0.18;
+
+/// Colores derivados de la paleta.
+extension AppColorsSurfaces on AppColors {
+  /// `true` cuando la paleta monta sobre canvas oscuro (negro puro).
+  bool get isDarkCanvas => canvas.computeLuminance() < 0.05;
+
+  /// Hairline de contorno de las superficies que van sobre `canvas` (cards,
+  /// chrome del shell, sheets): sobre el canvas oscuro necesita más alpha para
+  /// leerse.
+  Color get cardBorder => ink.withValues(
+    alpha: isDarkCanvas ? _cardBorderAlphaOnDark : _cardBorderAlpha,
   );
 }
