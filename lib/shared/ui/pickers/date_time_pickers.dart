@@ -267,11 +267,7 @@ class _DatePickerSheetState extends State<_DatePickerSheet> {
 
   Widget _weekdayRow() {
     final colors = context.colors;
-    final style = AppTypography.caption.copyWith(
-      color: colors.muted,
-      fontWeight: FontWeight.w700,
-      letterSpacing: 0.6,
-    );
+    final style = AppTypography.sectionLabel(colors.muted);
 
     return Row(
       children: [

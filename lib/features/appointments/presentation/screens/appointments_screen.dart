@@ -244,10 +244,8 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
   Widget build(BuildContext context) {
     final notifier = ref.read(appointmentsProvider.notifier);
     final colors = context.colors;
-    final dateHeaderStyle = AppTypography.caption.copyWith(
-      color: Color.lerp(colors.muted, colors.body, 0.4),
-      fontWeight: FontWeight.w700,
-      letterSpacing: 0.6,
+    final dateHeaderStyle = AppTypography.sectionLabel(
+      Color.lerp(colors.muted, colors.body, 0.4),
     );
 
     // Leer preferencias de completado en citas.
