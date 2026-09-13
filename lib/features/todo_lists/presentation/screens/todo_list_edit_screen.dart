@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
@@ -118,72 +119,91 @@ class _TodoListEditScreenState extends ConsumerState<TodoListEditScreen> {
     final colors = context.colors;
     _hydrateFromState(state);
 
-    final sectionStyle = AppTypography.caption.copyWith(
-      color: Color.lerp(colors.muted, colors.body, 0.4),
-      fontWeight: FontWeight.w700,
-      letterSpacing: 0.6,
-    );
+    // El TopBar del shell se superpone al contenido: reservamos su altura
+    // (iconButton + padding del AppBar) más un margen hasta la primera card.
+    final topOffset = MediaQuery.paddingOf(context).top + 56 + AppSpacing.md;
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          tooltip: 'Volver',
-          onPressed: () => context.pop(),
+      body: ListView(
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          topOffset,
+          AppSpacing.lg,
+          AppSpacing.section,
         ),
-        title: Text(
-          _isEditing ? 'Editar lista' : 'Nueva lista',
-          style: AppTypography.displaySm.copyWith(color: colors.ink),
-        ),
-      ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.lg,
-            AppSpacing.lg,
-            AppSpacing.section,
+        children: [
+          // Mismo sangrado que las cabeceras de grupo de citas.
+          const Padding(
+            padding: EdgeInsets.only(left: AppSpacing.xl),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: _Tag('Así quedará tu lista'),
+            ),
           ),
-          children: [
-            _ListPreview(iconKey: _iconKey, nameListenable: _nameCtrl),
-            const SizedBox(height: AppSpacing.xxl),
-            AppTextField(
-              controller: _nameCtrl,
-              label: 'Nombre',
-              hint: 'Ej: Compra semanal',
-              textInputAction: TextInputAction.done,
-              errorText: _nameError,
-              cardStyle: true,
-            ),
-            const SizedBox(height: AppSpacing.xxl),
-            Text('ICONO', style: sectionStyle),
+          const SizedBox(height: AppSpacing.sm),
+          _ListPreview(iconKey: _iconKey, nameListenable: _nameCtrl),
+          const SizedBox(height: AppSpacing.xxl),
+          AppTextField(
+            controller: _nameCtrl,
+            label: 'Nombre',
+            hint: 'Ej: Compra semanal',
+            textInputAction: TextInputAction.done,
+            errorText: _nameError,
+            cardStyle: true,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          IconPicker(
+            selectedKey: _iconKey,
+            onChanged: (k) => setState(() => _iconKey = k),
+          ),
+          const SizedBox(height: AppSpacing.xxxl),
+          PrimaryButton(
+            label: _isEditing ? 'Guardar' : 'Crear',
+            onPressed: _submit,
+            expand: true,
+          ),
+          if (_isEditing) ...[
             const SizedBox(height: AppSpacing.md),
-            IconPicker(
-              selectedKey: _iconKey,
-              onChanged: (k) => setState(() => _iconKey = k),
-            ),
-            const SizedBox(height: AppSpacing.xxxl),
-            PrimaryButton(
-              label: _isEditing ? 'Guardar' : 'Crear',
-              onPressed: _submit,
-              expand: true,
-            ),
-            if (_isEditing) ...[
-              const SizedBox(height: AppSpacing.md),
-              OutlinedButton(
-                onPressed: _delete,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: colors.error,
-                  minimumSize: const Size.fromHeight(52),
-                  side: BorderSide(
-                    color: colors.error.withValues(alpha: 0.5),
-                  ),
+            OutlinedButton(
+              onPressed: _delete,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: colors.error,
+                minimumSize: const Size.fromHeight(52),
+                side: BorderSide(
+                  color: colors.error.withValues(alpha: 0.5),
                 ),
-                child: const Text('Eliminar lista'),
               ),
-            ],
+              child: const Text('Eliminar lista'),
+            ),
           ],
-        ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Etiqueta compacta con el estilo pill del sistema.
+class _Tag extends StatelessWidget {
+  const _Tag(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: colors.canvasSoft,
+        borderRadius: AppRadius.brPill,
+      ),
+      child: Text(
+        label,
+        style: AppTypography.bodySmStrong.copyWith(color: colors.body),
       ),
     );
   }

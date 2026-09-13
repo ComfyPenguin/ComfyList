@@ -23,6 +23,7 @@ class IconPicker extends StatelessWidget {
     final entries = TodoListIcons.all.entries.toList(growable: false);
 
     return Wrap(
+      alignment: WrapAlignment.center,
       spacing: AppSpacing.md,
       runSpacing: AppSpacing.md,
       children: [
