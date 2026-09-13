@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
+import '../../../../shared/core/text/date_format.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
@@ -58,18 +58,14 @@ class AppointmentTile extends ConsumerWidget {
       SettingsData(:final settings) => settings.invertSwipeActions,
       _ => false,
     };
-    final dateFormat = use24H ? 'HH:mm' : 'hh:mm';
-    final timeText = DateFormat(
-      dateFormat,
-      'es_ES',
-    ).format(appointment.dateTime);
-    final periodText = use24H
-        ? ''
-        : DateFormat('a', 'es_ES')
-              .format(appointment.dateTime)
-              .toUpperCase()
-              .replaceAll(RegExp(r'\s+'), '')
-              .replaceAll('.', '');
+    final timeText = formatClockTime(
+      appointment.dateTime,
+      use24HourFormat: use24H,
+    );
+    final periodText = formatClockPeriod(
+      appointment.dateTime,
+      use24HourFormat: use24H,
+    );
     final timeStyle = AppTypography.displayMd.copyWith(
       color: done ? muted : colors.ink,
       height: 1,

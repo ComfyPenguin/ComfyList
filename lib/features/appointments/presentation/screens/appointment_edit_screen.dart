@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../shared/core/text/date_format.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
@@ -174,10 +173,10 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
     // El formato de hora sigue el ajuste del usuario, igual que las tiles.
     final use24H = _use24HourFormatFrom(ref.watch(settingsProvider));
     final dateText = formatLongDate(_dateTime);
-    final timeText = DateFormat(
-      use24H ? 'HH:mm' : 'hh:mm a',
-      'es_ES',
-    ).format(_dateTime);
+    final timeText = formatClockTimeWithPeriod(
+      _dateTime,
+      use24HourFormat: use24H,
+    );
 
     // El TopBar del shell se superpone al contenido: reservamos su altura
     // (iconButton + padding del AppBar) más un margen hasta la primera card.
@@ -388,17 +387,14 @@ class _AppointmentPreview extends StatelessWidget {
         final location = locationCtrl.text.trim();
         final hasNotes = descriptionCtrl.text.trim().isNotEmpty;
 
-        final timeText = DateFormat(
-          use24H ? 'HH:mm' : 'hh:mm',
-          'es_ES',
-        ).format(dateTime);
-        final periodText = use24H
-            ? ''
-            : DateFormat('a', 'es_ES')
-                  .format(dateTime)
-                  .toUpperCase()
-                  .replaceAll(RegExp(r'\s+'), '')
-                  .replaceAll('.', '');
+        final timeText = formatClockTime(
+          dateTime,
+          use24HourFormat: use24H,
+        );
+        final periodText = formatClockPeriod(
+          dateTime,
+          use24HourFormat: use24H,
+        );
         final timeStyle = AppTypography.displayMd.copyWith(
           color: colors.ink,
           height: 1,

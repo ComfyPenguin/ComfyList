@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../routing/routes.dart';
 import '../../../../shared/core/text/capitalize.dart';
@@ -73,6 +72,10 @@ class AppointmentDetailSheet extends ConsumerWidget {
       SettingsData(:final settings) => settings.appointmentsCompletionEnabled,
       _ => false,
     };
+    final use24HourFormat = switch (settingsState) {
+      SettingsData(:final settings) => settings.use24HourFormat,
+      _ => false,
+    };
 
     return ConstrainedBox(
       constraints: BoxConstraints(
@@ -98,6 +101,7 @@ class AppointmentDetailSheet extends ConsumerWidget {
           items,
           colors,
           completionEnabled,
+          use24HourFormat,
         ),
       },
     );
@@ -108,6 +112,7 @@ class AppointmentDetailSheet extends ConsumerWidget {
     List<Appointment> items,
     AppColors colors,
     bool completionEnabled,
+    bool use24HourFormat,
   ) {
     final appointment = items.cast<Appointment?>().firstWhere(
       (a) => a?.id == id,
@@ -139,7 +144,11 @@ class AppointmentDetailSheet extends ConsumerWidget {
 
     final dt = appointment.dateTime;
     final dateFull = formatLongDate(dt);
-    final timeText = DateFormat('HH:mm').format(dt);
+    // Misma hora que el campo y las tiles, siguiendo el ajuste de 12/24 h.
+    final timeText = formatClockTimeWithPeriod(
+      dt,
+      use24HourFormat: use24HourFormat,
+    );
 
     return SingleChildScrollView(
       child: Column(

@@ -20,4 +20,35 @@ void main() {
       );
     });
   });
+
+  group('formatClockTime', () {
+    test('en 24 h usa HH:mm sin periodo', () {
+      final time = DateTime(2026, 9, 30, 14, 5);
+      expect(formatClockTime(time, use24HourFormat: true), '14:05');
+      expect(formatClockPeriod(time, use24HourFormat: true), isEmpty);
+      expect(
+        formatClockTimeWithPeriod(time, use24HourFormat: true),
+        '14:05',
+      );
+    });
+
+    test('en 12 h añade el periodo normalizado', () {
+      final time = DateTime(2026, 9, 30, 14, 5);
+      expect(formatClockTime(time, use24HourFormat: false), '02:05');
+      expect(formatClockPeriod(time, use24HourFormat: false), 'PM');
+      expect(
+        formatClockTimeWithPeriod(time, use24HourFormat: false),
+        '02:05 PM',
+      );
+    });
+
+    test('la medianoche sale como AM', () {
+      final time = DateTime(2026, 9, 30);
+      expect(formatClockPeriod(time, use24HourFormat: false), 'AM');
+      expect(
+        formatClockTimeWithPeriod(time, use24HourFormat: false),
+        '12:00 AM',
+      );
+    });
+  });
 }
