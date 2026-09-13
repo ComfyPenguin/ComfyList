@@ -14,6 +14,9 @@ import '../widgets/today_on_top_toggle.dart';
 
 /// Pantalla de ajustes. Vive dentro del [AppShell], que pone el título y la
 /// flecha atrás en su TopBar.
+///
+/// Las preferencias de una misma sección forman un grupo de tiles unidos, con
+/// la geometría de las listas: radios 32/6 y 2 px entre ellos.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -22,45 +25,58 @@ class SettingsScreen extends StatelessWidget {
     final sectionStyle = AppTypography.sectionLabel(context.colors.muted);
 
     // El TopBar del shell se superpone al contenido: reservamos su altura
-    // (iconButton + padding del AppBar) más un margen hasta la primera card.
+    // (iconButton + padding del AppBar) más un margen hasta la primera sección.
     final topOffset = MediaQuery.paddingOf(context).top + 56 + AppSpacing.md;
 
-    return Scaffold(
-      body: ListView(
-        padding: EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          topOffset,
-          AppSpacing.lg,
-          AppSpacing.section,
-        ),
-        children: [
-          Text('APARIENCIA', style: sectionStyle),
-          const SizedBox(height: AppSpacing.md),
-          const ThemeModeSelector(),
-          const SizedBox(height: AppSpacing.xxxl),
-          Text('GESTOS', style: sectionStyle),
-          const SizedBox(height: AppSpacing.md),
-          const InvertSwipeActionsToggle(),
-          const SizedBox(height: AppSpacing.xxxl),
-          Text('AVISOS', style: sectionStyle),
-          const SizedBox(height: AppSpacing.md),
-          const NotificationsToggle(),
-          const SizedBox(height: AppSpacing.xxxl),
-          Text('CITAS', style: sectionStyle),
-          const SizedBox(height: AppSpacing.md),
-          const AppointmentsCompletionToggle(),
-          const SizedBox(height: AppSpacing.md),
-          const AppointmentsCompletedToBottomToggle(),
-          const SizedBox(height: AppSpacing.md),
-          const HourFormatToggle(),
-          const SizedBox(height: AppSpacing.md),
-          const TodayOnTopToggle(),
-          const SizedBox(height: AppSpacing.xxxl),
-          Text('TAREAS', style: sectionStyle),
-          const SizedBox(height: AppSpacing.md),
-          const CompletedToBottomToggle(),
-        ],
+    return ListView(
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        topOffset,
+        AppSpacing.lg,
+        AppSpacing.section,
       ),
+      children: [
+        _SectionHeader(label: 'APARIENCIA', style: sectionStyle),
+        const ThemeModeSelector(),
+        const SizedBox(height: AppSpacing.xxxl),
+        _SectionHeader(label: 'GESTOS', style: sectionStyle),
+        const InvertSwipeActionsToggle(),
+        const SizedBox(height: AppSpacing.xxxl),
+        _SectionHeader(label: 'AVISOS', style: sectionStyle),
+        const NotificationsToggle(),
+        const SizedBox(height: AppSpacing.xxxl),
+        _SectionHeader(label: 'CITAS', style: sectionStyle),
+        const AppointmentsCompletionToggle(isFirst: true, isLast: false),
+        const SizedBox(height: AppSpacing.joined),
+        const AppointmentsCompletedToBottomToggle(isFirst: false, isLast: false),
+        const SizedBox(height: AppSpacing.joined),
+        const HourFormatToggle(isFirst: false, isLast: false),
+        const SizedBox(height: AppSpacing.joined),
+        const TodayOnTopToggle(isFirst: false, isLast: true),
+        const SizedBox(height: AppSpacing.xxxl),
+        _SectionHeader(label: 'TAREAS', style: sectionStyle),
+        const CompletedToBottomToggle(),
+      ],
+    );
+  }
+}
+
+/// Cabecera de sección, sangrada igual que las cabeceras de grupo de las
+/// listas de citas.
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.label, required this.style});
+
+  final String label;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(
+        left: AppSpacing.xl,
+        bottom: AppSpacing.md,
+      ),
+      child: Text(label, style: style),
     );
   }
 }

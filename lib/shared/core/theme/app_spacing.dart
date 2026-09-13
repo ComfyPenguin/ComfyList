@@ -4,9 +4,13 @@
 ///
 /// `section` se conserva para gaps verticales muy grandes
 /// (padding inferior de listas largas, fin de página).
+///
+/// `joined` (2 px) no es un paso de la escala: es la separación fija entre los
+/// tiles de un grupo unido, la pareja de `AppRadius.joined`.
 class AppSpacing {
   AppSpacing._();
 
+  static const double joined = 2;
   static const double xxs = 4;
   static const double xs = 6;
   static const double sm = 8;

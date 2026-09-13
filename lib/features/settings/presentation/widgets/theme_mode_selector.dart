@@ -6,11 +6,15 @@ import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../providers/settings_provider.dart';
+import 'settings_tile.dart';
 
 /// Selector de tema — pills horizontales (`category-button` / `pill-tab`):
 /// activo en ink, inactivos en canvas-soft con texto ink.
 class ThemeModeSelector extends ConsumerWidget {
-  const ThemeModeSelector({super.key});
+  const ThemeModeSelector({super.key, this.isFirst = true, this.isLast = true});
+
+  final bool isFirst;
+  final bool isLast;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -60,26 +64,33 @@ class ThemeModeSelector extends ConsumerWidget {
       );
     }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          pill(
-            icon: Icons.brightness_auto_outlined,
-            label: 'Sistema',
-            value: ThemeMode.system,
-          ),
-          pill(
-            icon: Icons.light_mode_outlined,
-            label: 'Claro',
-            value: ThemeMode.light,
-          ),
-          pill(
-            icon: Icons.dark_mode_outlined,
-            label: 'Oscuro',
-            value: ThemeMode.dark,
-          ),
-        ],
+    return SettingsTile(
+      icon: Icons.palette_outlined,
+      title: 'Tema',
+      description: 'Claro, oscuro o el que tenga el sistema.',
+      isFirst: isFirst,
+      isLast: isLast,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            pill(
+              icon: Icons.brightness_auto_outlined,
+              label: 'Sistema',
+              value: ThemeMode.system,
+            ),
+            pill(
+              icon: Icons.light_mode_outlined,
+              label: 'Claro',
+              value: ThemeMode.light,
+            ),
+            pill(
+              icon: Icons.dark_mode_outlined,
+              label: 'Oscuro',
+              value: ThemeMode.dark,
+            ),
+          ],
+        ),
       ),
     );
   }

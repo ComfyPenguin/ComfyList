@@ -377,8 +377,6 @@ class _AppointmentGroup extends StatelessWidget {
     required this.onRevealProgressChanged,
   });
 
-  static const double _joinedGap = 2;
-
   /// Días con más citas que esto se renderizan en Column simple (sin
   /// deslizamiento) para no mantener todas las filas montadas.
   static const int _maxGlideTiles = 60;
@@ -422,7 +420,7 @@ class _AppointmentGroup extends StatelessWidget {
       for (var i = 0; i < appointments.length; i++) {
         tiles.add(_appointmentTile(i));
         if (i < appointments.length - 1) {
-          tiles.add(const SizedBox(height: _joinedGap));
+          tiles.add(const SizedBox(height: AppSpacing.joined));
         }
       }
       return Column(
@@ -436,7 +434,7 @@ class _AppointmentGroup extends StatelessWidget {
       rows.add(
         SlideRow(
           key: ValueKey(appointments[i].id),
-          spacingAfter: i < appointments.length - 1 ? _joinedGap : 0,
+          spacingAfter: i < appointments.length - 1 ? AppSpacing.joined : 0,
           child: _appointmentTile(i),
         ),
       );

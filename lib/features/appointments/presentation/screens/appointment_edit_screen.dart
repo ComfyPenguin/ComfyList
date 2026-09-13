@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../shared/core/text/date_format.dart';
+import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_stroke.dart';
 import '../../../../shared/core/theme/app_theme.dart';
@@ -18,13 +19,6 @@ import '../../../settings/presentation/providers/settings_state.dart';
 import '../../domain/entities/appointment.dart';
 import '../providers/appointments_provider.dart';
 import '../providers/appointments_state.dart';
-
-/// Radio de las cards del formulario — espejo de las tiles de la app.
-const double _cardRadius = 32;
-
-/// Radio de las esquinas interiores y separación de dos tiles unidas.
-const double _joinedRadius = 6;
-const double _joinedGap = 2;
 
 /// Pantalla unificada de creación y edición de citas.
 /// Si [id] es null → crear; si no → editar.
@@ -245,19 +239,19 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
               label: 'Fecha',
               value: dateText,
               borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(_cardRadius),
-                bottom: Radius.circular(_joinedRadius),
+                top: AppRadius.rTile,
+                bottom: AppRadius.rJoined,
               ),
               onTap: _pickDateTime,
             ),
           ),
-          const SizedBox(height: _joinedGap),
+          const SizedBox(height: AppSpacing.joined),
           _DateTimeTile(
             label: 'Hora',
             value: timeText,
             borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(_joinedRadius),
-              bottom: Radius.circular(_cardRadius),
+              top: AppRadius.rJoined,
+              bottom: AppRadius.rTile,
             ),
             onTap: _pickDateTime,
           ),
@@ -396,7 +390,7 @@ class _AppointmentPreview extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             color: colors.canvas,
-            borderRadius: BorderRadius.circular(_cardRadius),
+            borderRadius: AppRadius.brTile,
             border: Border.all(
               color: colors.cardBorder,
               width: AppStroke.hairline,

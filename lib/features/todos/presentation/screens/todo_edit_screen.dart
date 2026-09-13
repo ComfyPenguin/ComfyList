@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_stroke.dart';
 import '../../../../shared/core/theme/app_theme.dart';
@@ -13,9 +14,6 @@ import '../../../../shared/ui/text/app_tag.dart';
 import '../../domain/entities/todo.dart';
 import '../providers/todos_provider.dart';
 import '../providers/todos_state.dart';
-
-/// Radio de las cards del formulario — espejo de las tiles de la app.
-const double _cardRadius = 32;
 
 /// Pantalla unificada de creación y edición de tareas para una lista
 /// concreta. Si [id] es null → crear; si no → editar.
@@ -217,7 +215,7 @@ class _TodoPreview extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             color: colors.canvas,
-            borderRadius: BorderRadius.circular(_cardRadius),
+            borderRadius: AppRadius.brTile,
             border: Border.all(
               color: colors.cardBorder,
               width: AppStroke.hairline,
