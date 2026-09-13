@@ -83,8 +83,6 @@ class TodoTile extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(width: AppSpacing.lg),
-          Icon(Icons.chevron_right, color: colors.muted),
         ],
       ),
     );
