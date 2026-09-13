@@ -243,7 +243,6 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
             child: _DateTimeTile(
               label: 'Fecha',
               value: dateText,
-              icon: Icons.calendar_today_outlined,
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(_cardRadius),
                 bottom: Radius.circular(_joinedRadius),
@@ -255,7 +254,6 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
           _DateTimeTile(
             label: 'Hora',
             value: timeText,
-            icon: Icons.schedule_outlined,
             borderRadius: const BorderRadius.vertical(
               top: Radius.circular(_joinedRadius),
               bottom: Radius.circular(_cardRadius),
@@ -286,20 +284,18 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
   }
 }
 
-/// Tile de fecha o de hora: etiqueta, valor e icono del selector. Comparte el
-/// aspecto de los campos del formulario (canvas + borde hairline).
+/// Tile de fecha o de hora: etiqueta y valor. Comparte el aspecto de los campos
+/// del formulario (canvas + borde hairline).
 class _DateTimeTile extends StatelessWidget {
   const _DateTimeTile({
     required this.label,
     required this.value,
-    required this.icon,
     required this.borderRadius,
     required this.onTap,
   });
 
   final String label;
   final String value;
-  final IconData icon;
   final BorderRadius borderRadius;
   final VoidCallback onTap;
 
@@ -339,7 +335,6 @@ class _DateTimeTile extends StatelessWidget {
           contentPadding: FieldStyle.padding,
           labelStyle: AppTypography.bodySm.copyWith(color: colors.body),
           floatingLabelStyle: AppTypography.fieldLabel(colors.ink),
-          suffixIcon: Icon(icon, size: 20, color: colors.muted),
           border: _outline(borderColor),
           enabledBorder: _outline(borderColor),
           focusedBorder: _outline(colors.ink, width: 1.5),
