@@ -29,7 +29,9 @@ class SettingsTileBadge extends StatelessWidget {
       child: Text(
         label,
         style: AppTypography.caption.copyWith(
-          color: colors.muted,
+          // Sobre el relleno de la píldora el `muted` se queda en ~2,3:1;
+          // con el `body` sube a ~5,9:1 en claro y ~7,8:1 en oscuro.
+          color: colors.body,
           fontWeight: FontWeight.w700,
         ),
       ),

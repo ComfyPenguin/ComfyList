@@ -70,7 +70,9 @@ class ThemeModeSelector extends ConsumerWidget {
     return SettingsTile(
       icon: Icons.palette_outlined,
       title: 'Tema',
-      description: 'Claro, oscuro o el que tenga el sistema.',
+      // Cabe en una línea a partir de 360 dp; con «o el que tenga el sistema»
+      // se partía en dos por 5 px y la tile crecía 20 px.
+      description: 'Claro, oscuro o el del sistema.',
       enabled: !loadFailed,
       isFirst: isFirst,
       isLast: isLast,
