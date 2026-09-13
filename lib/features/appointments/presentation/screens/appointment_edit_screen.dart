@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../shared/core/text/date_format.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
@@ -172,7 +173,7 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
 
     // El formato de hora sigue el ajuste del usuario, igual que las tiles.
     final use24H = _use24HourFormatFrom(ref.watch(settingsProvider));
-    final dateText = DateFormat('EEEE, d MMMM yyyy', 'es_ES').format(_dateTime);
+    final dateText = formatLongDate(_dateTime);
     final timeText = DateFormat(
       use24H ? 'HH:mm' : 'hh:mm a',
       'es_ES',

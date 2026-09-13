@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/text/capitalize.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
@@ -224,10 +225,7 @@ class _DatePickerSheetState extends State<_DatePickerSheet> {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final monthLabel = DateFormat.yMMMM('es_ES').format(_month);
-    final monthText = monthLabel.isEmpty
-        ? monthLabel
-        : monthLabel[0].toUpperCase() + monthLabel.substring(1);
+    final monthText = capitalize(DateFormat.yMMMM('es_ES').format(_month));
 
     return _PickerSheet(
       title: 'Fecha',
