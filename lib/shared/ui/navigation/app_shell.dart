@@ -153,12 +153,10 @@ class AppShell extends ConsumerWidget {
         ? AppBottomTab.appointments
         : AppBottomTab.tasks;
 
-    // El AppBar permanece visible sobre los bottom sheets de detalle, como
-    // ocurre en la pantalla de citas. Solo la BottomBar se oculta mientras
-    // el sheet de tareas está abierto. El TopBar del shell se oculta solo si
-    // la ruta anidada aporta su propia AppBar; las pantallas de edición no.
+    // El TopBar se mantiene siempre visible dentro del shell —también sobre
+    // los bottom sheets de detalle—; la BottomBar se oculta en las pantallas
+    // de detalle/edición y mientras hay un sheet de detalle abierto.
     final isEditScreen = editScreenTitle != null;
-    final hideTopBar = isNestedRoute && !isEditScreen;
     final hideBottomBar = isNestedRoute || isDetailSheetOpen || isEditScreen;
 
     return Scaffold(
@@ -171,169 +169,167 @@ class AppShell extends ConsumerWidget {
         children: [
           KeyboardVisibilityScope(bottomInset: keyboardInset, child: child),
           // ── AppBar superior anclado ──
-          if (!hideTopBar)
-            Positioned(
-              left: 0,
-              right: 0,
-              top: 0,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(24),
-                ),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                  child: Container(
-                    padding: EdgeInsets.only(
-                      top: MediaQuery.of(context).padding.top,
-                      bottom: AppSpacing.sm,
-                      left: AppSpacing.lg,
-                      right: AppSpacing.lg,
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 0,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(24),
+              ),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                child: Container(
+                  padding: EdgeInsets.only(
+                    top: MediaQuery.of(context).padding.top,
+                    bottom: AppSpacing.sm,
+                    left: AppSpacing.lg,
+                    right: AppSpacing.lg,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.canvas.withValues(alpha: 0.7),
+                    borderRadius: const BorderRadius.vertical(
+                      bottom: Radius.circular(24),
                     ),
-                    decoration: BoxDecoration(
-                      color: colors.canvas.withValues(alpha: 0.7),
-                      borderRadius: const BorderRadius.vertical(
-                        bottom: Radius.circular(24),
+                    border: Border(
+                      left: BorderSide(
+                        color: isDark
+                            ? colors.ink.withValues(alpha: 0.18)
+                            : colors.ink.withValues(alpha: 0.12),
+                        width: 1.2,
                       ),
-                      border: Border(
-                        left: BorderSide(
-                          color: isDark
-                              ? colors.ink.withValues(alpha: 0.18)
-                              : colors.ink.withValues(alpha: 0.12),
-                          width: 1.2,
-                        ),
-                        right: BorderSide(
-                          color: isDark
-                              ? colors.ink.withValues(alpha: 0.18)
-                              : colors.ink.withValues(alpha: 0.12),
-                          width: 1.2,
-                        ),
-                        bottom: BorderSide(
-                          color: isDark
-                              ? colors.ink.withValues(alpha: 0.18)
-                              : colors.ink.withValues(alpha: 0.12),
-                          width: 1.2,
-                        ),
+                      right: BorderSide(
+                        color: isDark
+                            ? colors.ink.withValues(alpha: 0.18)
+                            : colors.ink.withValues(alpha: 0.12),
+                        width: 1.2,
+                      ),
+                      bottom: BorderSide(
+                        color: isDark
+                            ? colors.ink.withValues(alpha: 0.18)
+                            : colors.ink.withValues(alpha: 0.12),
+                        width: 1.2,
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        if (isListDetail || isEditScreen)
-                          IconButton(
-                            icon: Icon(
-                              Icons.arrow_back_rounded,
-                              color: colors.ink,
-                              size: 22,
-                            ),
-                            tooltip: 'Volver',
-                            onPressed: () {
-                              // En creación/edición volvemos a la pantalla que
-                              // nos abrió (la lista o el listado de listas).
-                              if (isEditScreen && context.canPop()) {
-                                context.pop();
-                              } else {
-                                context.go(Routes.todoLists);
-                              }
-                            },
-                          )
-                        else
-                          IconButton(
-                            icon: Icon(
-                              Icons.logout_outlined,
-                              color: colors.error,
-                              size: 22,
-                            ),
-                            tooltip: 'Cerrar sesión',
-                            onPressed: () async {
-                              final confirmed = await ConfirmActionDialog.show(
-                                context,
-                                title: 'Cerrar sesión',
-                                message:
-                                    '¿Seguro que quieres cerrar la sesión?',
-                                confirmLabel: 'Cerrar sesión',
-                                destructive: true,
-                              );
-                              if (confirmed && context.mounted) {
-                                ref.read(authProvider.notifier).signOut();
-                              }
-                            },
-                          ),
-                        Expanded(
-                          child: Center(
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Image.asset(
-                                  'assets/logo-no-text-background.png',
-                                  width: 24,
-                                  height: 24,
-                                ),
-                                const SizedBox(width: AppSpacing.xs),
-                                Flexible(
-                                  child: LayoutBuilder(
-                                    builder: (context, constraints) {
-                                      final titleStyle = AppTypography.displaySm
-                                          .copyWith(color: colors.ink);
-                                      // Solo animamos si el título desborda;
-                                      // con un nombre corto el marquee
-                                      // scrollaría en bucle innecesariamente.
-                                      final titleWidth = _measureTitleWidth(
-                                        appBarTitle,
-                                        titleStyle,
-                                        MediaQuery.textScalerOf(context),
-                                      );
-                                      final overflows =
-                                          titleWidth > constraints.maxWidth;
-                                      if (!overflows) {
-                                        return Text(
-                                          appBarTitle,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: titleStyle,
-                                        );
-                                      }
-                                      // El marquee es un viewport horizontal
-                                      // y necesita altura acotada; sin ella
-                                      // falla el layout y el título desaparece.
-                                      final titleLineHeight =
-                                          titleStyle.fontSize! *
-                                          (titleStyle.height ?? 1.0);
-                                      return SizedBox(
-                                        height: titleLineHeight,
-                                        child: Marquee(
-                                          text: appBarTitle,
-                                          style: titleStyle,
-                                          blankSpace: AppSpacing.xxxxl,
-                                          velocity: 30,
-                                          pauseAfterRound: const Duration(
-                                            seconds: 2,
-                                          ),
-                                          startPadding: AppSpacing.md,
-                                          fadingEdgeStartFraction: 0.15,
-                                          fadingEdgeEndFraction: 0.15,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                  ),
+                  child: Row(
+                    children: [
+                      if (isListDetail || isEditScreen)
                         IconButton(
                           icon: Icon(
-                            Icons.settings_outlined,
+                            Icons.arrow_back_rounded,
                             color: colors.ink,
                             size: 22,
                           ),
-                          tooltip: 'Ajustes',
-                          onPressed: () => context.push(Routes.settings),
+                          tooltip: 'Volver',
+                          onPressed: () {
+                            // En creación/edición volvemos a la pantalla que
+                            // nos abrió (la lista o el listado de listas).
+                            if (isEditScreen && context.canPop()) {
+                              context.pop();
+                            } else {
+                              context.go(Routes.todoLists);
+                            }
+                          },
+                        )
+                      else
+                        IconButton(
+                          icon: Icon(
+                            Icons.logout_outlined,
+                            color: colors.error,
+                            size: 22,
+                          ),
+                          tooltip: 'Cerrar sesión',
+                          onPressed: () async {
+                            final confirmed = await ConfirmActionDialog.show(
+                              context,
+                              title: 'Cerrar sesión',
+                              message: '¿Seguro que quieres cerrar la sesión?',
+                              confirmLabel: 'Cerrar sesión',
+                              destructive: true,
+                            );
+                            if (confirmed && context.mounted) {
+                              ref.read(authProvider.notifier).signOut();
+                            }
+                          },
                         ),
-                      ],
-                    ),
+                      Expanded(
+                        child: Center(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Image.asset(
+                                'assets/logo-no-text-background.png',
+                                width: 24,
+                                height: 24,
+                              ),
+                              const SizedBox(width: AppSpacing.xs),
+                              Flexible(
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final titleStyle = AppTypography.displaySm
+                                        .copyWith(color: colors.ink);
+                                    // Solo animamos si el título desborda; con
+                                    // un nombre corto el marquee scrollaría en
+                                    // bucle innecesariamente.
+                                    final titleWidth = _measureTitleWidth(
+                                      appBarTitle,
+                                      titleStyle,
+                                      MediaQuery.textScalerOf(context),
+                                    );
+                                    final overflows =
+                                        titleWidth > constraints.maxWidth;
+                                    if (!overflows) {
+                                      return Text(
+                                        appBarTitle,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: titleStyle,
+                                      );
+                                    }
+                                    // El marquee es un viewport horizontal y
+                                    // necesita altura acotada; sin ella falla
+                                    // el layout y el título desaparece.
+                                    final titleLineHeight =
+                                        titleStyle.fontSize! *
+                                        (titleStyle.height ?? 1.0);
+                                    return SizedBox(
+                                      height: titleLineHeight,
+                                      child: Marquee(
+                                        text: appBarTitle,
+                                        style: titleStyle,
+                                        blankSpace: AppSpacing.xxxxl,
+                                        velocity: 30,
+                                        pauseAfterRound: const Duration(
+                                          seconds: 2,
+                                        ),
+                                        startPadding: AppSpacing.md,
+                                        fadingEdgeStartFraction: 0.15,
+                                        fadingEdgeEndFraction: 0.15,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.settings_outlined,
+                          color: colors.ink,
+                          size: 22,
+                        ),
+                        tooltip: 'Ajustes',
+                        onPressed: () => context.push(Routes.settings),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
+          ),
           // ── BottomBar flotante inferior ──
           // Se mantiene montada detrás del teclado para evitar que aparezca
           // de golpe cuando el teclado se cierra.
