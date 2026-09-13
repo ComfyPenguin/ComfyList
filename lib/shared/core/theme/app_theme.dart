@@ -4,6 +4,7 @@ import 'app_colors.dart';
 export 'app_colors.dart';
 import 'app_radius.dart';
 import 'app_spacing.dart';
+import 'app_stroke.dart';
 import 'app_typography.dart';
 
 class AppTheme {
@@ -33,7 +34,9 @@ class AppTheme {
       surface: c.canvas,
       onSurface: c.ink,
       surfaceContainerHighest: c.canvasSoft,
-      outline: c.hairline,
+      // Mismo hairline que las cards: el trazo de los contornos sobre canvas
+      // sale siempre del token derivado, no de un gris fijo de la paleta.
+      outline: c.cardBorder,
       outlineVariant: c.hairlineSoft,
     );
 
@@ -74,7 +77,7 @@ class AppTheme {
             vertical: AppSpacing.md,
           ),
           shape: const RoundedRectangleBorder(borderRadius: AppRadius.brPill),
-          side: BorderSide(color: c.hairline),
+          side: BorderSide(color: c.cardBorder),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
@@ -109,7 +112,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppRadius.brMd,
-          borderSide: BorderSide(color: c.ink, width: 1.5),
+          borderSide: BorderSide(color: c.ink, width: AppStroke.focused),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: AppRadius.brMd,
@@ -117,11 +120,14 @@ class AppTheme {
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: AppRadius.brMd,
-          borderSide: BorderSide(color: c.error, width: 1.5),
+          borderSide: BorderSide(color: c.error, width: AppStroke.focused),
         ),
       ),
-      dividerTheme:
-          DividerThemeData(color: c.hairline, thickness: 1, space: 1),
+      dividerTheme: DividerThemeData(
+        color: c.cardBorder,
+        thickness: 1,
+        space: 1,
+      ),
       // Switch ink/canvas — sin tintes de marca extra.
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith(
@@ -166,7 +172,7 @@ class AppTheme {
           borderRadius: const BorderRadius.vertical(
             top: Radius.circular(24),
           ),
-          side: BorderSide(color: c.cardBorder, width: 1.2),
+          side: BorderSide(color: c.cardBorder, width: AppStroke.hairline),
         ),
         showDragHandle: true,
         // 2x el default M3 (32x4) para mayor affordance del drag.

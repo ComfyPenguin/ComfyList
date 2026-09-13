@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
+import '../../../../shared/ui/cards/app_card.dart';
 
 /// Empty state de la pantalla de listas — mismo patrón visual que el
 /// empty state de todos (canvas-soft + radio xl).
@@ -16,11 +16,7 @@ class TodoListsEmptyState extends StatelessWidget {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xxxl),
-        child: Container(
-          decoration: BoxDecoration(
-            color: colors.canvasSoft,
-            borderRadius: AppRadius.brXl,
-          ),
+        child: AppCard(
           padding: const EdgeInsets.all(AppSpacing.xxxl),
           child: Column(
             mainAxisSize: MainAxisSize.min,

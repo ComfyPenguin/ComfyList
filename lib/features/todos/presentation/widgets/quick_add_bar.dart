@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
+import '../../../../shared/core/theme/app_stroke.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 
 /// Barra de entrada rápida estilo "lista de compra".
@@ -71,7 +72,10 @@ class _QuickAddBarState extends State<QuickAddBar> {
                 decoration: BoxDecoration(
                   color: colors.canvas.withValues(alpha: 0.7),
                   borderRadius: AppRadius.brPill,
-                  border: Border.all(color: colors.cardBorder, width: 1.2),
+                  border: Border.all(
+                    color: colors.cardBorder,
+                    width: AppStroke.hairline,
+                  ),
                 ),
                 child: TextField(
                   controller: _controller,

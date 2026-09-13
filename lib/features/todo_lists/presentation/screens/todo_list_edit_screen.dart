@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../shared/core/theme/app_spacing.dart';
+import '../../../../shared/core/theme/app_stroke.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/ui/buttons/primary_button.dart';
@@ -210,7 +211,10 @@ class _ListPreview extends StatelessWidget {
           decoration: BoxDecoration(
             color: colors.canvas,
             borderRadius: BorderRadius.circular(_cardRadius),
-            border: Border.all(color: colors.cardBorder, width: 1.2),
+            border: Border.all(
+              color: colors.cardBorder,
+              width: AppStroke.hairline,
+            ),
           ),
           child: Row(
             children: [

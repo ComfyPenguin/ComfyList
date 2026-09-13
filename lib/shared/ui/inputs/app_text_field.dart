@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/theme/app_stroke.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/app_typography.dart';
 import 'field_notch.dart';
@@ -168,9 +169,9 @@ class _AppTextFieldState extends State<AppTextField> {
       suffixIcon: widget.suffixIcon,
       border: _outline(colors.cardBorder),
       enabledBorder: _outline(colors.cardBorder),
-      focusedBorder: _outline(colors.ink, width: 1.5),
+      focusedBorder: _outline(colors.ink, width: AppStroke.focused),
       errorBorder: _outline(colors.error),
-      focusedErrorBorder: _outline(colors.error, width: 1.5),
+      focusedErrorBorder: _outline(colors.error, width: AppStroke.focused),
     );
 
     return TextField(
@@ -191,7 +192,7 @@ class _AppTextFieldState extends State<AppTextField> {
 
   OutlineInputBorder _outline(
     Color color, {
-    double width = FieldStyle.borderWidth,
+    double width = AppStroke.hairline,
   }) {
     return OutlineInputBorder(
       borderRadius: BorderRadius.circular(AppTextField._cardRadius),

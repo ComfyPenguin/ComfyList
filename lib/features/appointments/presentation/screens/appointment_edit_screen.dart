@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../shared/core/text/date_format.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
+import '../../../../shared/core/theme/app_stroke.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/ui/buttons/primary_button.dart';
@@ -303,7 +304,7 @@ class _DateTimeTile extends StatelessWidget {
   /// que le toca según su posición en el par de tiles unidas.
   OutlineInputBorder _outline(
     Color color, {
-    double width = FieldStyle.borderWidth,
+    double width = AppStroke.hairline,
   }) {
     return OutlineInputBorder(
       borderRadius: borderRadius,
@@ -333,7 +334,7 @@ class _DateTimeTile extends StatelessWidget {
           floatingLabelStyle: AppTypography.fieldLabel(colors.ink),
           border: _outline(colors.cardBorder),
           enabledBorder: _outline(colors.cardBorder),
-          focusedBorder: _outline(colors.ink, width: 1.5),
+          focusedBorder: _outline(colors.ink, width: AppStroke.focused),
         ),
         child: Text(
           value,
@@ -396,7 +397,10 @@ class _AppointmentPreview extends StatelessWidget {
           decoration: BoxDecoration(
             color: colors.canvas,
             borderRadius: BorderRadius.circular(_cardRadius),
-            border: Border.all(color: colors.cardBorder, width: 1.2),
+            border: Border.all(
+              color: colors.cardBorder,
+              width: AppStroke.hairline,
+            ),
           ),
           child: Row(
             children: [

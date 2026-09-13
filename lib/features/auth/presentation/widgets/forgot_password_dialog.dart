@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
+import '../../../../shared/core/theme/app_stroke.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/ui/buttons/primary_button.dart';
@@ -92,7 +93,10 @@ class _ForgotPasswordDialogState extends ConsumerState<ForgotPasswordDialog> {
         decoration: BoxDecoration(
           color: colors.canvas,
           borderRadius: AppRadius.brDialog,
-          border: Border.all(color: colors.cardBorder, width: 1.2),
+          border: Border.all(
+            color: colors.cardBorder,
+            width: AppStroke.hairline,
+          ),
         ),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xxl),

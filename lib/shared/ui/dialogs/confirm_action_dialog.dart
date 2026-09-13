@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_stroke.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/app_typography.dart';
 import '../buttons/primary_button.dart';
@@ -61,7 +62,10 @@ class ConfirmActionDialog extends StatelessWidget {
         decoration: BoxDecoration(
           color: colors.canvas,
           borderRadius: AppRadius.brDialog,
-          border: Border.all(color: colors.cardBorder, width: 1.2),
+          border: Border.all(
+            color: colors.cardBorder,
+            width: AppStroke.hairline,
+          ),
         ),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xxl),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_stroke.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/app_typography.dart';
 
@@ -9,12 +10,11 @@ import '../../core/theme/app_typography.dart';
 class FieldStyle {
   FieldStyle._();
 
-  /// Relleno interior y trazo del borde.
+  /// Relleno interior del campo.
   static const EdgeInsets padding = EdgeInsets.symmetric(
     horizontal: AppSpacing.xl,
     vertical: 22,
   );
-  static const double borderWidth = 1.2;
 }
 
 /// Escala final de la etiqueta flotante y margen del hueco que el framework
@@ -57,7 +57,7 @@ class BottomLabelNotch extends StatelessWidget {
           left: FieldStyle.padding.left,
           bottom: 0,
           width: _notchWidth(context, label),
-          height: FieldStyle.borderWidth + 1.5,
+          height: AppStroke.hairline + AppStroke.focused,
           child: IgnorePointer(
             child: ColoredBox(color: fillColor ?? context.colors.canvas),
           ),

@@ -46,6 +46,9 @@ class GoogleSignInSection extends ConsumerWidget {
 }
 
 /// Línea horizontal con "o continuar con" centrado.
+///
+/// Va sobre el fondo del scaffold y no sobre canvas, así que mantiene el gris
+/// fijo de la paleta en vez del hairline derivado de las cards.
 class _OrDivider extends StatelessWidget {
   const _OrDivider({required this.text});
 
@@ -57,37 +60,30 @@ class _OrDivider extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Divider(
-            color: colors.hairline,
-            thickness: 2,
-            height: 1,
-          ),
+          child: Divider(color: colors.hairline, thickness: 2, height: 1),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: Text(
             text.toUpperCase(),
-            style: AppTypography.bodySm.copyWith(
+            style: AppTypography.caption.copyWith(
               color: colors.muted,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.6,
             ),
           ),
         ),
         Expanded(
-          child: Divider(
-            color: colors.hairline,
-            thickness: 2,
-            height: 1,
-          ),
+          child: Divider(color: colors.hairline, thickness: 2, height: 1),
         ),
       ],
     );
   }
 }
 
-/// Botón pill outline con logo G de Google a la izquierda.
-/// No usamos `AppSecondaryButton` porque necesitamos un widget gráfico
-/// (no IconData) para el logo multicolor.
+/// Botón pill outline con logo G de Google a la izquierda: `OutlinedButton`
+/// directo porque necesita un widget gráfico (no un `IconData`) para el logo
+/// multicolor. Hereda el estilo del `outlinedButtonTheme`.
 class _GoogleButton extends StatelessWidget {
   const _GoogleButton({required this.isLoading, required this.onPressed});
 

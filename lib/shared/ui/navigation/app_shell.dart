@@ -11,6 +11,7 @@ import '../../../features/todo_lists/presentation/providers/todo_lists_provider.
 import '../../../features/todo_lists/presentation/providers/todo_lists_state.dart';
 import '../../../routing/routes.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_stroke.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/app_typography.dart';
 import '../dialogs/confirm_action_dialog.dart';
@@ -195,9 +196,18 @@ class AppShell extends ConsumerWidget {
                       bottom: Radius.circular(24),
                     ),
                     border: Border(
-                      left: BorderSide(color: colors.cardBorder, width: 1.2),
-                      right: BorderSide(color: colors.cardBorder, width: 1.2),
-                      bottom: BorderSide(color: colors.cardBorder, width: 1.2),
+                      left: BorderSide(
+                        color: colors.cardBorder,
+                        width: AppStroke.hairline,
+                      ),
+                      right: BorderSide(
+                        color: colors.cardBorder,
+                        width: AppStroke.hairline,
+                      ),
+                      bottom: BorderSide(
+                        color: colors.cardBorder,
+                        width: AppStroke.hairline,
+                      ),
                     ),
                   ),
                   child: Row(

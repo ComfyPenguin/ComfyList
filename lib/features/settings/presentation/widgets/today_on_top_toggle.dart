@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
+import '../../../../shared/ui/cards/app_card.dart';
 
 /// Ajuste pendiente de implementación: fijar las citas de hoy arriba
 /// en la pantalla de citas. Deshabilitado hasta que se implemente.
@@ -13,15 +13,7 @@ class TodayOnTopToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.canvasSoft,
-        borderRadius: AppRadius.brXl,
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.sm,
-      ),
+    return AppCard(
       child: Row(
         children: [
           Expanded(
