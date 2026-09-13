@@ -56,13 +56,7 @@ class _OrDivider extends StatelessWidget {
     final colors = context.colors;
     return Row(
       children: [
-        Expanded(
-          child: Divider(
-            color: colors.hairline,
-            thickness: 2,
-            height: 1,
-          ),
-        ),
+        Expanded(child: Divider(thickness: 2, height: 1)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: Text(
@@ -73,13 +67,7 @@ class _OrDivider extends StatelessWidget {
             ),
           ),
         ),
-        Expanded(
-          child: Divider(
-            color: colors.hairline,
-            thickness: 2,
-            height: 1,
-          ),
-        ),
+        Expanded(child: Divider(thickness: 2, height: 1)),
       ],
     );
   }

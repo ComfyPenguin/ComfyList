@@ -34,7 +34,9 @@ class AppTheme {
       surface: c.canvas,
       onSurface: c.ink,
       surfaceContainerHighest: c.canvasSoft,
-      outline: c.hairline,
+      // Mismo hairline que las cards: el trazo de los contornos sobre canvas
+      // sale siempre del token derivado, no de un gris fijo de la paleta.
+      outline: c.cardBorder,
       outlineVariant: c.hairlineSoft,
     );
 
@@ -75,7 +77,7 @@ class AppTheme {
             vertical: AppSpacing.md,
           ),
           shape: const RoundedRectangleBorder(borderRadius: AppRadius.brPill),
-          side: BorderSide(color: c.hairline),
+          side: BorderSide(color: c.cardBorder),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
@@ -121,8 +123,11 @@ class AppTheme {
           borderSide: BorderSide(color: c.error, width: AppStroke.focused),
         ),
       ),
-      dividerTheme:
-          DividerThemeData(color: c.hairline, thickness: 1, space: 1),
+      dividerTheme: DividerThemeData(
+        color: c.cardBorder,
+        thickness: 1,
+        space: 1,
+      ),
       // Switch ink/canvas — sin tintes de marca extra.
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith(
