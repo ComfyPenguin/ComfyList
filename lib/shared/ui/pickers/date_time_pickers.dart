@@ -15,6 +15,8 @@ Future<DateTime?> showAppDatePicker(
 }) {
   return showModalBottomSheet<DateTime>(
     context: context,
+    // Sobre el Navigator raíz para que el sheet tape el TopBar del shell.
+    useRootNavigator: true,
     isScrollControlled: true,
     useSafeArea: true,
     showDragHandle: true,
@@ -31,6 +33,8 @@ Future<TimeOfDay?> showAppTimePicker(
 }) {
   return showModalBottomSheet<TimeOfDay>(
     context: context,
+    // Sobre el Navigator raíz para que el sheet tape el TopBar del shell.
+    useRootNavigator: true,
     isScrollControlled: true,
     useSafeArea: true,
     showDragHandle: true,
