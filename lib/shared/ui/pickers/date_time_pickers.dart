@@ -67,7 +67,7 @@ class _PickerSheet extends StatelessWidget {
         AppSpacing.xxl,
         0,
         AppSpacing.xxl,
-        AppSpacing.xxl,
+        AppSpacing.xxxl,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -82,18 +82,6 @@ class _PickerSheet extends StatelessWidget {
           child,
           const SizedBox(height: AppSpacing.xl),
           PrimaryButton(label: 'Aceptar', onPressed: onConfirm, expand: true),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: TextButton.styleFrom(
-              minimumSize: Size.zero,
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(
-              'Cancelar',
-              style: AppTypography.bodyMd.copyWith(color: colors.body),
-            ),
-          ),
         ],
       ),
     );
