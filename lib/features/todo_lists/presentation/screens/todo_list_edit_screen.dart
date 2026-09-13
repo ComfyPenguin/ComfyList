@@ -1,17 +1,23 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/ui/buttons/primary_button.dart';
+import '../../../../shared/ui/dialogs/confirm_action_dialog.dart';
 import '../../../../shared/ui/inputs/app_text_field.dart';
 import '../../domain/entities/todo_list.dart';
 import '../../domain/entities/todo_list_icons.dart';
 import '../providers/todo_lists_provider.dart';
 import '../providers/todo_lists_state.dart';
 import '../widgets/icon_picker.dart';
+
+/// Radio de las cards del formulario — espejo de las tiles de la app.
+const double _cardRadius = 32;
 
 /// Pantalla unificada de creación y edición de listas. Si [id] es null →
 /// crear; si no → editar (con opción de eliminar la lista y sus tareas).
@@ -82,32 +88,19 @@ class _TodoListEditScreenState extends ConsumerState<TodoListEditScreen> {
   Future<void> _delete() async {
     if (!_isEditing) return;
 
-    final colors = context.colors;
     final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('¿Eliminar lista?'),
-        content: Text(
+    final confirmed = await ConfirmActionDialog.show(
+      context,
+      title: '¿Eliminar lista?',
+      message:
           '«$_hydratedName» y todas sus tareas se eliminarán permanentemente. '
           'Esta acción no se puede deshacer.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: TextButton.styleFrom(foregroundColor: colors.error),
-            child: const Text('Eliminar'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Eliminar',
+      destructive: true,
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
 
     await ref.read(todoListsProvider.notifier).delete(widget.id!);
     if (!mounted) return;
@@ -126,55 +119,151 @@ class _TodoListEditScreenState extends ConsumerState<TodoListEditScreen> {
     final colors = context.colors;
     _hydrateFromState(state);
 
+    // El TopBar del shell se superpone al contenido: reservamos su altura
+    // (iconButton + padding del AppBar) más un margen hasta la primera card.
+    final topOffset = MediaQuery.paddingOf(context).top + 56 + AppSpacing.md;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          _isEditing ? 'Editar lista' : 'Nueva lista',
-          style: AppTypography.displaySm.copyWith(color: colors.ink),
+      body: ListView(
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          topOffset,
+          AppSpacing.lg,
+          AppSpacing.section,
         ),
-        actions: [
-          if (_isEditing)
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              tooltip: 'Eliminar',
-              onPressed: _delete,
+        children: [
+          // Mismo sangrado que las cabeceras de grupo de citas.
+          const Padding(
+            padding: EdgeInsets.only(left: AppSpacing.xl),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: _Tag('Así quedará tu lista'),
             ),
-          const SizedBox(width: AppSpacing.sm),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          _ListPreview(iconKey: _iconKey, nameListenable: _nameCtrl),
+          const SizedBox(height: AppSpacing.xxl),
+          AppTextField(
+            controller: _nameCtrl,
+            label: 'Nombre',
+            hint: 'Ej: Compra semanal',
+            textInputAction: TextInputAction.done,
+            errorText: _nameError,
+            cardStyle: true,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          IconPicker(
+            selectedKey: _iconKey,
+            onChanged: (k) => setState(() => _iconKey = k),
+          ),
+          const SizedBox(height: AppSpacing.xxxl),
+          PrimaryButton(
+            label: _isEditing ? 'Guardar' : 'Crear',
+            onPressed: _submit,
+            expand: true,
+          ),
+          if (_isEditing) ...[
+            const SizedBox(height: AppSpacing.md),
+            OutlinedButton(
+              onPressed: _delete,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: colors.error,
+                minimumSize: const Size.fromHeight(52),
+                side: BorderSide(
+                  color: colors.error.withValues(alpha: 0.5),
+                ),
+              ),
+              child: const Text('Eliminar lista'),
+            ),
+          ],
         ],
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.xxxl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    );
+  }
+}
+
+/// Etiqueta compacta con el estilo pill del sistema.
+class _Tag extends StatelessWidget {
+  const _Tag(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: colors.canvasSoft,
+        borderRadius: AppRadius.brPill,
+      ),
+      child: Text(
+        label,
+        style: AppTypography.bodySmStrong.copyWith(color: colors.body),
+      ),
+    );
+  }
+}
+
+/// Réplica de una fila de la pantalla de listas: muestra en vivo cómo quedará
+/// la lista con el nombre y el icono elegidos.
+class _ListPreview extends StatelessWidget {
+  const _ListPreview({required this.iconKey, required this.nameListenable});
+
+  final String iconKey;
+  final ValueListenable<TextEditingValue> nameListenable;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final isDark = colors.canvas.computeLuminance() < 0.05;
+    final borderColor = isDark
+        ? colors.ink.withValues(alpha: 0.18)
+        : colors.ink.withValues(alpha: 0.12);
+
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: nameListenable,
+      builder: (context, value, _) {
+        final name = value.text.trim();
+        final isEmpty = name.isEmpty;
+
+        return Container(
+          constraints: const BoxConstraints(minHeight: 72),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.xl,
+            vertical: AppSpacing.lg,
+          ),
+          decoration: BoxDecoration(
+            color: colors.canvas,
+            borderRadius: BorderRadius.circular(_cardRadius),
+            border: Border.all(color: borderColor, width: 1.2),
+          ),
+          child: Row(
             children: [
-              AppTextField(
-                controller: _nameCtrl,
-                label: 'Nombre',
-                hint: 'Ej: Compra semanal',
-                textInputAction: TextInputAction.done,
-                errorText: _nameError,
+              Icon(
+                TodoListIcons.resolve(iconKey),
+                color: isEmpty ? colors.muted : colors.ink,
+                size: 28,
               ),
-              const SizedBox(height: AppSpacing.xxl),
-              Text(
-                'Icono',
-                style: AppTypography.bodyMdStrong.copyWith(color: colors.ink),
+              const SizedBox(width: AppSpacing.lg),
+              Expanded(
+                child: Text(
+                  isEmpty ? 'Sin nombre' : name,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.bodyMdStrong.copyWith(
+                    color: isEmpty ? colors.muted : colors.ink,
+                  ),
+                ),
               ),
-              const SizedBox(height: AppSpacing.md),
-              IconPicker(
-                selectedKey: _iconKey,
-                onChanged: (k) => setState(() => _iconKey = k),
-              ),
-              const SizedBox(height: AppSpacing.xxxl),
-              PrimaryButton(
-                label: _isEditing ? 'Guardar' : 'Crear',
-                onPressed: _submit,
-                expand: true,
-              ),
+              Icon(Icons.chevron_right, color: colors.muted),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

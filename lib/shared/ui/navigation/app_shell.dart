@@ -82,7 +82,11 @@ class AppShell extends ConsumerWidget {
     final isDark = colors.canvas.computeLuminance() < 0.05;
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
     final isLists = location == Routes.todoLists || location == Routes.home;
-    final isListDetail = RegExp(r'^/lists/[^/]+$').hasMatch(location);
+    final isListEdit =
+        location == Routes.todoListNew ||
+        RegExp(r'^/lists/[^/]+/edit$').hasMatch(location);
+    final isListDetail =
+        !isListEdit && RegExp(r'^/lists/[^/]+$').hasMatch(location);
     final isAppointments = location == Routes.appointments;
 
     // ── Rutas anidadas: ocultar chrome del shell ──
@@ -114,9 +118,13 @@ class AppShell extends ConsumerWidget {
 
     // ── Título del AppBar ──
     // Si estamos dentro de una lista concreta (/lists/:id), mostramos
-    // el nombre de la lista. En caso contrario, el nombre de la app.
+    // el nombre de la lista. Si estamos creando o editando una lista,
+    // mostramos el nombre de la pantalla. En el resto, el nombre de la app.
     String appBarTitle = 'ComfyList';
-    if (isListDetail) {
+    if (isListEdit) {
+      appBarTitle =
+          location == Routes.todoListNew ? 'Nueva lista' : 'Editar lista';
+    } else if (isListDetail) {
       final listId = location.split('/').last;
       final listsState = ref.watch(todoListsProvider);
       if (listsState is TodoListsData) {
@@ -138,8 +146,11 @@ class AppShell extends ConsumerWidget {
     // El AppBar permanece visible sobre los bottom sheets de detalle, como
     // ocurre en la pantalla de citas. Solo la BottomBar se oculta mientras
     // el sheet de tareas está abierto.
-    final hideTopBar = isNestedRoute;
-    final hideBottomBar = isNestedRoute || isDetailSheetOpen;
+    //
+    // Las pantallas de creación y edición de lista conservan el AppBar (y el
+    // nombre de la pantalla como título) pero ocultan la BottomBar.
+    final hideTopBar = isNestedRoute && !isListEdit;
+    final hideBottomBar = isNestedRoute || isDetailSheetOpen || isListEdit;
 
     return Scaffold(
       // El shell usa overlays posicionados manualmente. Mantener el body a
@@ -197,7 +208,7 @@ class AppShell extends ConsumerWidget {
                     ),
                     child: Row(
                       children: [
-                        if (isListDetail)
+                        if (isListDetail || isListEdit)
                           IconButton(
                             icon: Icon(
                               Icons.arrow_back_rounded,
@@ -205,7 +216,15 @@ class AppShell extends ConsumerWidget {
                               size: 22,
                             ),
                             tooltip: 'Volver',
-                            onPressed: () => context.go(Routes.todoLists),
+                            onPressed: () {
+                              // En creación/edición volvemos a la pantalla que
+                              // nos abrió (la lista o el listado de listas).
+                              if (isListEdit && context.canPop()) {
+                                context.pop();
+                              } else {
+                                context.go(Routes.todoLists);
+                              }
+                            },
                           )
                         else
                           IconButton(

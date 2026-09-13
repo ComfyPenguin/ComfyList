@@ -5,7 +5,8 @@ import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../domain/entities/todo_list_icons.dart';
 
-/// Grid de iconos seleccionables. El seleccionado se resalta con el color
+/// Grid de iconos seleccionables. Cada opción es una superficie circular del
+/// DS (canvas + borde hairline); la seleccionada se rellena con el color
 /// primario del tema.
 class IconPicker extends StatelessWidget {
   const IconPicker({
@@ -19,10 +20,10 @@ class IconPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
     final entries = TodoListIcons.all.entries.toList(growable: false);
 
     return Wrap(
+      alignment: WrapAlignment.center,
       spacing: AppSpacing.md,
       runSpacing: AppSpacing.md,
       children: [
@@ -31,10 +32,6 @@ class IconPicker extends StatelessWidget {
             iconKey: e.key,
             icon: e.value,
             selected: e.key == selectedKey,
-            selectedBg: colors.primary,
-            selectedFg: colors.onPrimary,
-            unselectedBg: colors.canvasSoft,
-            unselectedFg: colors.ink,
             onTap: () => onChanged(e.key),
           ),
       ],
@@ -47,31 +44,35 @@ class _IconChoice extends StatelessWidget {
     required this.iconKey,
     required this.icon,
     required this.selected,
-    required this.selectedBg,
-    required this.selectedFg,
-    required this.unselectedBg,
-    required this.unselectedFg,
     required this.onTap,
   });
 
   final String iconKey;
   final IconData icon;
   final bool selected;
-  final Color selectedBg;
-  final Color selectedFg;
-  final Color unselectedBg;
-  final Color unselectedFg;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+    final isDark = colors.canvas.computeLuminance() < 0.05;
+    final borderColor = isDark
+        ? colors.ink.withValues(alpha: 0.18)
+        : colors.ink.withValues(alpha: 0.12);
+
     return Semantics(
       button: true,
       selected: selected,
       label: iconKey,
       child: Material(
-        color: selected ? selectedBg : unselectedBg,
-        shape: const RoundedRectangleBorder(borderRadius: AppRadius.brXl),
+        color: selected ? colors.primary : colors.canvas,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.brFull,
+          side: BorderSide(
+            color: selected ? Colors.transparent : borderColor,
+            width: 1.2,
+          ),
+        ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
@@ -80,7 +81,7 @@ class _IconChoice extends StatelessWidget {
             height: 56,
             child: Icon(
               icon,
-              color: selected ? selectedFg : unselectedFg,
+              color: selected ? colors.onPrimary : colors.ink,
               size: 24,
             ),
           ),

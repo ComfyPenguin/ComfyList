@@ -102,21 +102,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => _instantPage(const SettingsScreen()),
       ),
 
-      // Rutas de edición fuera del shell. Se declaran ANTES del ShellRoute
-      // para que GoRouter resuelva los segmentos literales (`/lists/new`,
-      // `/lists/:listId/edit`, etc.) antes que el comodín `/lists/:listId`
-      // del shell, evitando que `:listId` capture el literal `new`.
-      GoRoute(
-        path: Routes.todoListNew,
-        pageBuilder: (context, state) =>
-            _instantPage(const TodoListEditScreen()),
-      ),
-      GoRoute(
-        path: '/lists/:listId/edit',
-        pageBuilder: (context, state) => _instantPage(
-            TodoListEditScreen(id: state.pathParameters['listId'])),
-      ),
-
+      // Rutas de citas fuera del shell (pantalla limpia sin TopBar ni
+      // BottomBar). Se declaran ANTES del ShellRoute para que GoRouter
+      // resuelva los segmentos literales (`/appointments/new`,
+      // `/appointments/:id/edit`) antes que el comodín `/appointments` del
+      // shell, evitando que `:id` capture el literal `new`.
       GoRoute(
         path: Routes.appointmentNew,
         pageBuilder: (context, state) =>
@@ -138,11 +128,23 @@ final routerProvider = Provider<GoRouter>((ref) {
             pageBuilder: (context, state) =>
                 _instantPage(const TodoListsScreen()),
           ),
+          // Declarada antes de `/lists/:listId` para que el literal `new` no
+          // sea capturado por el parámetro `:listId`.
+          GoRoute(
+            path: Routes.todoListNew,
+            pageBuilder: (context, state) =>
+                _instantPage(const TodoListEditScreen()),
+          ),
           GoRoute(
             path: '/lists/:listId',
             pageBuilder: (context, state) => _instantPage(
                 TodosScreen(listId: state.pathParameters['listId']!)),
             routes: [
+              GoRoute(
+                path: 'edit',
+                pageBuilder: (context, state) => _instantPage(
+                    TodoListEditScreen(id: state.pathParameters['listId'])),
+              ),
               GoRoute(
                 path: 'todos/new',
                 pageBuilder: (context, state) => _instantPage(
