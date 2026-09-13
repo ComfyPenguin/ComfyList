@@ -147,6 +147,7 @@ class _TodoListEditScreenState extends ConsumerState<TodoListEditScreen> {
             controller: _nameCtrl,
             label: 'Nombre',
             hint: 'Ej: Compra semanal',
+            textCapitalization: TextCapitalization.sentences,
             textInputAction: TextInputAction.done,
             errorText: _nameError,
             cardStyle: true,

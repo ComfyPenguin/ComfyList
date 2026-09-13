@@ -18,6 +18,7 @@ class AppTextField extends StatelessWidget {
     this.errorText,
     this.obscureText = false,
     this.keyboardType,
+    this.textCapitalization = TextCapitalization.none,
     this.textInputAction,
     this.inputFormatters,
     this.onChanged,
@@ -34,6 +35,11 @@ class AppTextField extends StatelessWidget {
   final String? errorText;
   final bool obscureText;
   final TextInputType? keyboardType;
+
+  /// Estado inicial de mayúsculas del teclado (p. ej. [TextCapitalization.sentences]
+  /// en campos de texto libre).
+  final TextCapitalization textCapitalization;
+
   final TextInputAction? textInputAction;
   final List<TextInputFormatter>? inputFormatters;
   final ValueChanged<String>? onChanged;
@@ -65,6 +71,7 @@ class AppTextField extends StatelessWidget {
         controller: controller,
         obscureText: obscureText,
         keyboardType: keyboardType,
+        textCapitalization: textCapitalization,
         textInputAction: textInputAction,
         inputFormatters: inputFormatters,
         onChanged: onChanged,
@@ -104,6 +111,7 @@ class AppTextField extends StatelessWidget {
       controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
+      textCapitalization: textCapitalization,
       textInputAction: textInputAction,
       inputFormatters: inputFormatters,
       onChanged: onChanged,
