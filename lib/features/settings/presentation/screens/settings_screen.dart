@@ -94,11 +94,14 @@ class _SectionHeader extends StatelessWidget {
 
 /// Aviso de que no se han podido leer las preferencias: se muestra una sola
 /// vez, sobre las secciones, mientras las filas quedan sin poder cambiarse.
-class _LoadErrorBanner extends StatelessWidget {
+///
+/// El reintento relanza la lectura y, al pasar el estado a carga, este aviso
+/// desaparece por sí solo con las filas mostrando su indicador.
+class _LoadErrorBanner extends ConsumerWidget {
   const _LoadErrorBanner();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -122,6 +125,11 @@ class _LoadErrorBanner extends StatelessWidget {
               'No se han podido leer tus ajustes.',
               style: AppTypography.bodySm.copyWith(color: colors.ink),
             ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          TextButton(
+            onPressed: () => ref.read(settingsProvider.notifier).reload(),
+            child: const Text('Reintentar'),
           ),
         ],
       ),

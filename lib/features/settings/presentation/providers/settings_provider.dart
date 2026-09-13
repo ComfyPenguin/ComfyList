@@ -29,6 +29,10 @@ class SettingsNotifier extends Notifier<SettingsState> {
     return const SettingsInitial();
   }
 
+  /// Vuelve a leer las preferencias tras un fallo, para el reintento de la
+  /// pantalla de ajustes.
+  Future<void> reload() => _bootstrap();
+
   Future<void> _bootstrap() async {
     state = const SettingsLoading();
     final repo = ref.read(settingsRepositoryProvider);
