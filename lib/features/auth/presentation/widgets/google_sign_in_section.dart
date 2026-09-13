@@ -46,6 +46,9 @@ class GoogleSignInSection extends ConsumerWidget {
 }
 
 /// Línea horizontal con "o continuar con" centrado.
+///
+/// Va sobre el fondo del scaffold y no sobre canvas, así que mantiene el gris
+/// fijo de la paleta en vez del hairline derivado de las cards.
 class _OrDivider extends StatelessWidget {
   const _OrDivider({required this.text});
 
@@ -56,7 +59,9 @@ class _OrDivider extends StatelessWidget {
     final colors = context.colors;
     return Row(
       children: [
-        Expanded(child: Divider(thickness: 2, height: 1)),
+        Expanded(
+          child: Divider(color: colors.hairline, thickness: 2, height: 1),
+        ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: Text(
@@ -67,7 +72,9 @@ class _OrDivider extends StatelessWidget {
             ),
           ),
         ),
-        Expanded(child: Divider(thickness: 2, height: 1)),
+        Expanded(
+          child: Divider(color: colors.hairline, thickness: 2, height: 1),
+        ),
       ],
     );
   }
