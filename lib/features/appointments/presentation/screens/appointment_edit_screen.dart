@@ -9,6 +9,7 @@ import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/ui/buttons/primary_button.dart';
 import '../../../../shared/ui/dialogs/confirm_action_dialog.dart';
 import '../../../../shared/ui/inputs/app_text_field.dart';
+import '../../../../shared/ui/pickers/date_time_pickers.dart';
 import '../../../../shared/ui/text/app_tag.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../../settings/presentation/providers/settings_state.dart';
@@ -71,19 +72,24 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
     }
   }
 
+  /// Formato de hora según el ajuste del usuario, igual que las tiles.
+  static bool _use24HourFormatFrom(SettingsState state) => switch (state) {
+    SettingsData(:final settings) => settings.use24HourFormat,
+    _ => false,
+  };
+
   Future<void> _pickDateTime() async {
-    final pickedDate = await showDatePicker(
-      context: context,
+    final pickedDate = await showAppDatePicker(
+      context,
       initialDate: _dateTime,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
     );
     if (pickedDate == null) return;
 
     if (!mounted) return;
-    final pickedTime = await showTimePicker(
-      context: context,
+    final pickedTime = await showAppTimePicker(
+      context,
       initialTime: TimeOfDay.fromDateTime(_dateTime),
+      use24HourFormat: _use24HourFormatFrom(ref.read(settingsProvider)),
     );
     if (pickedTime == null) return;
 
@@ -179,10 +185,7 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
         : colors.ink.withValues(alpha: 0.12);
 
     // El formato de hora sigue el ajuste del usuario, igual que las tiles.
-    final use24H = switch (ref.watch(settingsProvider)) {
-      SettingsData(:final settings) => settings.use24HourFormat,
-      _ => false,
-    };
+    final use24H = _use24HourFormatFrom(ref.watch(settingsProvider));
     final dateText =
         DateFormat('EEEE, d MMMM yyyy', 'es_ES').format(_dateTime);
     final timeText = DateFormat(
