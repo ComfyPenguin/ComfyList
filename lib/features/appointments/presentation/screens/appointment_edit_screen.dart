@@ -20,6 +20,10 @@ import '../providers/appointments_state.dart';
 /// Radio de las cards del formulario — espejo de las tiles de la app.
 const double _cardRadius = 32;
 
+/// Radios y separación de dos tiles unidas, como en las listas de la app.
+const double _joinedRadius = 6;
+const double _joinedGap = 2;
+
 /// Pantalla unificada de creación y edición de citas.
 /// Si [id] es null → crear; si no → editar.
 class AppointmentEditScreen extends ConsumerStatefulWidget {
@@ -165,24 +169,11 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
     router.pop();
   }
 
-  /// Borde de las cards del formulario, espejo de [AppTextField.cardStyle].
-  OutlineInputBorder _cardBorder(Color color, {double width = 1.2}) {
-    return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(_cardRadius),
-      borderSide: BorderSide(color: color, width: width),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(appointmentsProvider);
     final colors = context.colors;
     _hydrateFromState(state);
-
-    final isDark = colors.canvas.computeLuminance() < 0.05;
-    final borderColor = isDark
-        ? colors.ink.withValues(alpha: 0.18)
-        : colors.ink.withValues(alpha: 0.12);
 
     // El formato de hora sigue el ajuste del usuario, igual que las tiles.
     final use24H = _use24HourFormatFrom(ref.watch(settingsProvider));
@@ -250,36 +241,29 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
             cardStyle: true,
           ),
           const SizedBox(height: AppSpacing.md),
-          InkWell(
-            onTap: _pickDateTime,
-            borderRadius: BorderRadius.circular(_cardRadius),
-            child: InputDecorator(
-              decoration: InputDecoration(
-                labelText: 'Fecha y hora',
-                filled: true,
-                fillColor: colors.canvas,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 22,
-                ),
-                labelStyle: AppTypography.bodySm.copyWith(color: colors.body),
-                floatingLabelStyle: AppTypography.bodySmStrong.copyWith(
-                  color: colors.ink,
-                ),
-                suffixIcon: Icon(
-                  Icons.calendar_today_outlined,
-                  size: 20,
-                  color: colors.ink,
-                ),
-                border: _cardBorder(borderColor),
-                enabledBorder: _cardBorder(borderColor),
-                focusedBorder: _cardBorder(colors.ink, width: 1.5),
-              ),
-              child: Text(
-                '$dateText · $timeText',
-                style: AppTypography.bodyMd.copyWith(color: colors.ink),
-              ),
+          // Fecha y hora como dos tiles unidas (radio 6 en las esquinas
+          // interiores y 2 px de separación). Las dos abren el mismo flujo de
+          // selección, así que en la práctica funcionan como un solo botón.
+          _DateTimeTile(
+            label: 'Fecha',
+            value: dateText,
+            icon: Icons.calendar_today_outlined,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(_cardRadius),
+              bottom: Radius.circular(_joinedRadius),
             ),
+            onTap: _pickDateTime,
+          ),
+          const SizedBox(height: _joinedGap),
+          _DateTimeTile(
+            label: 'Hora',
+            value: timeText,
+            icon: Icons.schedule_outlined,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(_joinedRadius),
+              bottom: Radius.circular(_cardRadius),
+            ),
+            onTap: _pickDateTime,
           ),
           const SizedBox(height: AppSpacing.xxxl),
           PrimaryButton(
@@ -302,6 +286,78 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// Tile de fecha o de hora: etiqueta, valor e icono del selector. Comparte el
+/// aspecto de las tiles de la app (canvas + borde hairline, radio de tile).
+class _DateTimeTile extends StatelessWidget {
+  const _DateTimeTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.borderRadius,
+    required this.onTap,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final BorderRadius borderRadius;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final isDark = colors.canvas.computeLuminance() < 0.05;
+
+    return Material(
+      color: colors.canvas,
+      shape: RoundedRectangleBorder(
+        borderRadius: borderRadius,
+        side: BorderSide(
+          color: isDark
+              ? colors.ink.withValues(alpha: 0.18)
+              : colors.ink.withValues(alpha: 0.12),
+          width: 1.2,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.xl,
+            vertical: AppSpacing.md,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      label,
+                      style: AppTypography.bodySm.copyWith(color: colors.body),
+                    ),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      value,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.bodyMd.copyWith(color: colors.ink),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Icon(icon, size: 20, color: colors.muted),
+            ],
+          ),
+        ),
       ),
     );
   }
