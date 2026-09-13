@@ -58,10 +58,6 @@ class SwipeActionsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final isDark = colors.canvas.computeLuminance() < 0.05;
-    final borderColor = isDark
-        ? colors.ink.withValues(alpha: 0.18)
-        : colors.ink.withValues(alpha: 0.12);
     final cardRadius = _borderRadiusForPosition();
     final completeAction = onComplete;
     final completeOnLeft = !invertActions;
@@ -119,7 +115,7 @@ class SwipeActionsCard extends StatelessWidget {
           color: colors.canvas,
           shape: RoundedRectangleBorder(
             borderRadius: cardRadius,
-            side: BorderSide(color: borderColor, width: 1.2),
+            side: BorderSide(color: colors.cardBorder, width: 1.2),
           ),
           clipBehavior: Clip.antiAlias,
           child: InkWell(

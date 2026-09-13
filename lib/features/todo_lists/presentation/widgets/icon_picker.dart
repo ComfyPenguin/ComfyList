@@ -55,10 +55,6 @@ class _IconChoice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final isDark = colors.canvas.computeLuminance() < 0.05;
-    final borderColor = isDark
-        ? colors.ink.withValues(alpha: 0.18)
-        : colors.ink.withValues(alpha: 0.12);
 
     return Semantics(
       button: true,
@@ -69,7 +65,7 @@ class _IconChoice extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: AppRadius.brFull,
           side: BorderSide(
-            color: selected ? Colors.transparent : borderColor,
+            color: selected ? Colors.transparent : colors.cardBorder,
             width: 1.2,
           ),
         ),

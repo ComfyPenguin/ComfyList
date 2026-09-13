@@ -133,7 +133,7 @@ class AppointmentDetailSheet extends ConsumerWidget {
       );
     }
 
-    final isDark = colors.canvas.computeLuminance() < 0.05;
+    final isDark = colors.isDarkCanvas;
     final datesMatch = appointment.createdAt.isAtSameMomentAs(
       appointment.updatedAt,
     );

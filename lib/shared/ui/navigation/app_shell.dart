@@ -79,7 +79,6 @@ class AppShell extends ConsumerWidget {
     // por lo que detectar `/lists/:id` requiere mirar el path real.
     final location = routerState.uri.path;
     final colors = context.colors;
-    final isDark = colors.canvas.computeLuminance() < 0.05;
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
     final isLists = location == Routes.todoLists || location == Routes.home;
     final isListEdit =
@@ -196,24 +195,9 @@ class AppShell extends ConsumerWidget {
                       bottom: Radius.circular(24),
                     ),
                     border: Border(
-                      left: BorderSide(
-                        color: isDark
-                            ? colors.ink.withValues(alpha: 0.18)
-                            : colors.ink.withValues(alpha: 0.12),
-                        width: 1.2,
-                      ),
-                      right: BorderSide(
-                        color: isDark
-                            ? colors.ink.withValues(alpha: 0.18)
-                            : colors.ink.withValues(alpha: 0.12),
-                        width: 1.2,
-                      ),
-                      bottom: BorderSide(
-                        color: isDark
-                            ? colors.ink.withValues(alpha: 0.18)
-                            : colors.ink.withValues(alpha: 0.12),
-                        width: 1.2,
-                      ),
+                      left: BorderSide(color: colors.cardBorder, width: 1.2),
+                      right: BorderSide(color: colors.cardBorder, width: 1.2),
+                      bottom: BorderSide(color: colors.cardBorder, width: 1.2),
                     ),
                   ),
                   child: Row(

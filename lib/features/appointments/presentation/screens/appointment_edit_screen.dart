@@ -314,10 +314,6 @@ class _DateTimeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final isDark = colors.canvas.computeLuminance() < 0.05;
-    final borderColor = isDark
-        ? colors.ink.withValues(alpha: 0.18)
-        : colors.ink.withValues(alpha: 0.12);
 
     // Sin wrapper que recorte: la etiqueta flotante sobresale del borde y
     // quedaría cortada por la mitad.
@@ -335,8 +331,8 @@ class _DateTimeTile extends StatelessWidget {
           contentPadding: FieldStyle.padding,
           labelStyle: AppTypography.bodySm.copyWith(color: colors.body),
           floatingLabelStyle: AppTypography.fieldLabel(colors.ink),
-          border: _outline(borderColor),
-          enabledBorder: _outline(borderColor),
+          border: _outline(colors.cardBorder),
+          enabledBorder: _outline(colors.cardBorder),
           focusedBorder: _outline(colors.ink, width: 1.5),
         ),
         child: Text(
@@ -370,10 +366,6 @@ class _AppointmentPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final isDark = colors.canvas.computeLuminance() < 0.05;
-    final borderColor = isDark
-        ? colors.ink.withValues(alpha: 0.18)
-        : colors.ink.withValues(alpha: 0.12);
 
     return ListenableBuilder(
       listenable: Listenable.merge([titleCtrl, descriptionCtrl, locationCtrl]),
@@ -404,7 +396,7 @@ class _AppointmentPreview extends StatelessWidget {
           decoration: BoxDecoration(
             color: colors.canvas,
             borderRadius: BorderRadius.circular(_cardRadius),
-            border: Border.all(color: borderColor, width: 1.2),
+            border: Border.all(color: colors.cardBorder, width: 1.2),
           ),
           child: Row(
             children: [
@@ -446,7 +438,7 @@ class _AppointmentPreview extends StatelessWidget {
               VerticalDivider(
                 width: 1,
                 thickness: 1,
-                color: colors.ink.withValues(alpha: 0.12),
+                color: colors.cardBorder,
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(

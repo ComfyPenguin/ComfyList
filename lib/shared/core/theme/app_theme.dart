@@ -166,12 +166,7 @@ class AppTheme {
           borderRadius: const BorderRadius.vertical(
             top: Radius.circular(24),
           ),
-          side: BorderSide(
-            color: brightness == Brightness.light
-                ? c.ink.withValues(alpha: 0.12)
-                : c.ink.withValues(alpha: 0.18),
-            width: 1.2,
-          ),
+          side: BorderSide(color: c.cardBorder, width: 1.2),
         ),
         showDragHandle: true,
         // 2x el default M3 (32x4) para mayor affordance del drag.
