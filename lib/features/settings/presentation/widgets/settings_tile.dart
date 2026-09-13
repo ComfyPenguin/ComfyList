@@ -86,14 +86,14 @@ class SettingsSwitch extends StatelessWidget {
 /// `canvas` con borde hairline y los radios que le tocan dentro de su grupo
 /// ([isFirst]/[isLast]).
 ///
-/// El icono va en un disco `canvasSoft`, el mismo relleno que las pills del
-/// selector de tema.
+/// El icono va delante del título, en la misma línea y sin contenedor, para que
+/// el texto arranque en el relleno del tile y la descripción use todo el ancho.
 class SettingsTile extends StatelessWidget {
   const SettingsTile({
     super.key,
     required this.icon,
     required this.title,
-    required this.description,
+    this.description,
     this.trailing,
     this.child,
     this.enabled = true,
@@ -104,7 +104,10 @@ class SettingsTile extends StatelessWidget {
 
   final IconData icon;
   final String title;
-  final String description;
+
+  /// Línea de apoyo bajo el título. Opcional: las filas cuyo control ya se
+  /// explica solo (el selector de tema) van solo con el título.
+  final String? description;
 
   /// Control al final de la fila — el switch de la preferencia.
   final Widget? trailing;
@@ -118,39 +121,43 @@ class SettingsTile extends StatelessWidget {
   final bool isLast;
   final VoidCallback? onTap;
 
-  static const double _iconDisc = 40;
+  static const double _iconSize = 20;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final accent = enabled ? colors.ink : colors.muted;
 
     final header = Row(
       children: [
-        Container(
-          width: _iconDisc,
-          height: _iconDisc,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: colors.canvasSoft,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, size: 20, color: accent),
-        ),
-        const SizedBox(width: AppSpacing.lg),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: AppTypography.bodyMdStrong.copyWith(color: accent),
+              Row(
+                children: [
+                  Icon(
+                    icon,
+                    size: _iconSize,
+                    color: enabled ? colors.body : colors.muted,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: AppTypography.bodyMdStrong.copyWith(
+                        color: enabled ? colors.ink : colors.muted,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: AppSpacing.xxs),
-              Text(
-                description,
-                style: AppTypography.bodySm.copyWith(color: colors.body),
-              ),
+              if (description != null) ...[
+                const SizedBox(height: AppSpacing.xxs),
+                Text(
+                  description!,
+                  style: AppTypography.bodySm.copyWith(color: colors.body),
+                ),
+              ],
             ],
           ),
         ),

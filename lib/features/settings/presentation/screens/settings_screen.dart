@@ -20,8 +20,9 @@ import '../widgets/today_on_top_toggle.dart';
 /// Pantalla de ajustes. Vive dentro del [AppShell], que pone el título y la
 /// flecha atrás en su TopBar.
 ///
-/// Las preferencias de una misma sección forman un grupo de tiles unidos, con
-/// la geometría de las listas: radios 32/6 y 2 px entre ellos.
+/// Los ajustes generales van arriba sin cabecera; citas y tareas llevan tag de
+/// sección porque agrupan varias preferencias de su feature. Cada grupo usa la
+/// geometría de las listas: radios 32/6 y 2 px entre las tiles.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -47,14 +48,11 @@ class SettingsScreen extends ConsumerWidget {
           const _LoadErrorBanner(),
           const SizedBox(height: AppSpacing.xxxl),
         ],
-        _SectionHeader(label: 'APARIENCIA', style: sectionStyle),
-        const ThemeModeSelector(),
-        const SizedBox(height: AppSpacing.xxxl),
-        _SectionHeader(label: 'GESTOS', style: sectionStyle),
-        const InvertSwipeActionsToggle(),
-        const SizedBox(height: AppSpacing.xxxl),
-        _SectionHeader(label: 'AVISOS', style: sectionStyle),
-        const NotificationsToggle(),
+        const ThemeModeSelector(isFirst: true, isLast: false),
+        const SizedBox(height: AppSpacing.joined),
+        const InvertSwipeActionsToggle(isFirst: false, isLast: false),
+        const SizedBox(height: AppSpacing.joined),
+        const NotificationsToggle(isFirst: false, isLast: true),
         const SizedBox(height: AppSpacing.xxxl),
         _SectionHeader(label: 'CITAS', style: sectionStyle),
         const AppointmentsCompletionToggle(isFirst: true, isLast: false),
