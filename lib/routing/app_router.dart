@@ -102,22 +102,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => _instantPage(const SettingsScreen()),
       ),
 
-      // Rutas de citas fuera del shell (pantalla limpia sin TopBar ni
-      // BottomBar). Se declaran ANTES del ShellRoute para que GoRouter
-      // resuelva los segmentos literales (`/appointments/new`,
-      // `/appointments/:id/edit`) antes que el comodín `/appointments` del
-      // shell, evitando que `:id` capture el literal `new`.
-      GoRoute(
-        path: Routes.appointmentNew,
-        pageBuilder: (context, state) =>
-            _instantPage(const AppointmentEditScreen()),
-      ),
-      GoRoute(
-        path: '/appointments/:id/edit',
-        pageBuilder: (context, state) => _instantPage(
-            AppointmentEditScreen(id: state.pathParameters['id'])),
-      ),
-
       // Shell persistente: TopBar + BottomBar + FAB compartidos.
       ShellRoute(
         builder: (context, state, child) =>
@@ -163,6 +147,16 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: Routes.appointments,
             pageBuilder: (context, state) =>
                 _instantPage(const AppointmentsScreen()),
+          ),
+          GoRoute(
+            path: Routes.appointmentNew,
+            pageBuilder: (context, state) =>
+                _instantPage(const AppointmentEditScreen()),
+          ),
+          GoRoute(
+            path: '/appointments/:id/edit',
+            pageBuilder: (context, state) => _instantPage(
+                AppointmentEditScreen(id: state.pathParameters['id'])),
           ),
         ],
       ),

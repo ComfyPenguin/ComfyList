@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../routing/routes.dart';
+import '../../../../shared/core/text/capitalize.dart';
+import '../../../../shared/core/text/date_format.dart';
 import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
@@ -71,6 +72,10 @@ class AppointmentDetailSheet extends ConsumerWidget {
       SettingsData(:final settings) => settings.appointmentsCompletionEnabled,
       _ => false,
     };
+    final use24HourFormat = switch (settingsState) {
+      SettingsData(:final settings) => settings.use24HourFormat,
+      _ => false,
+    };
 
     return ConstrainedBox(
       constraints: BoxConstraints(
@@ -96,6 +101,7 @@ class AppointmentDetailSheet extends ConsumerWidget {
           items,
           colors,
           completionEnabled,
+          use24HourFormat,
         ),
       },
     );
@@ -106,6 +112,7 @@ class AppointmentDetailSheet extends ConsumerWidget {
     List<Appointment> items,
     AppColors colors,
     bool completionEnabled,
+    bool use24HourFormat,
   ) {
     final appointment = items.cast<Appointment?>().firstWhere(
       (a) => a?.id == id,
@@ -126,7 +133,6 @@ class AppointmentDetailSheet extends ConsumerWidget {
       );
     }
 
-    String cap(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
     final isDark = colors.canvas.computeLuminance() < 0.05;
     final datesMatch = appointment.createdAt.isAtSameMomentAs(
       appointment.updatedAt,
@@ -137,10 +143,12 @@ class AppointmentDetailSheet extends ConsumerWidget {
         : appointment.updatedAt;
 
     final dt = appointment.dateTime;
-    final dayName = cap(DateFormat("EEEE", 'es_ES').format(dt));
-    final monthName = cap(DateFormat("MMMM", 'es_ES').format(dt));
-    final dateFull = '$dayName, ${dt.day} de $monthName de ${dt.year}';
-    final timeText = DateFormat('HH:mm').format(dt);
+    final dateFull = formatLongDate(dt);
+    // Misma hora que el campo y las tiles, siguiendo el ajuste de 12/24 h.
+    final timeText = formatClockTimeWithPeriod(
+      dt,
+      use24HourFormat: use24HourFormat,
+    );
 
     return SingleChildScrollView(
       child: Column(
@@ -165,10 +173,7 @@ class AppointmentDetailSheet extends ConsumerWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        appointment.title.isEmpty
-                            ? appointment.title
-                            : appointment.title[0].toUpperCase() +
-                                  appointment.title.substring(1),
+                        capitalize(appointment.title),
                         style: AppTypography.displayMd.copyWith(
                           color: colors.ink,
                           decoration: completionEnabled && appointment.isDone

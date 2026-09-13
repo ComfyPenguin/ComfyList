@@ -94,11 +94,15 @@ class AppShell extends ConsumerWidget {
     // la BottomBar.
     final isTodoEdit =
         RegExp(r'^/lists/[^/]+/todos/(new|[^/]+)$').hasMatch(location);
+    final isAppointmentEdit =
+        RegExp(r'^/appointments/[^/]+/edit$').hasMatch(location);
     final editScreenTitle = switch (location) {
       Routes.todoListNew => 'Nueva lista',
+      Routes.appointmentNew => 'Nueva cita',
       _ when isListEdit => 'Editar lista',
       _ when location.endsWith('/todos/new') => 'Nueva tarea',
       _ when isTodoEdit => 'Editar tarea',
+      _ when isAppointmentEdit => 'Editar cita',
       _ => null,
     };
 
