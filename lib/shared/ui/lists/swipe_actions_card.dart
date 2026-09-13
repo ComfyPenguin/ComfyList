@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_stroke.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/app_typography.dart';
 import '../complete_circle_icon.dart';
@@ -115,7 +116,10 @@ class SwipeActionsCard extends StatelessWidget {
           color: colors.canvas,
           shape: RoundedRectangleBorder(
             borderRadius: cardRadius,
-            side: BorderSide(color: colors.cardBorder, width: 1.2),
+            side: BorderSide(
+              color: colors.cardBorder,
+              width: AppStroke.hairline,
+            ),
           ),
           clipBehavior: Clip.antiAlias,
           child: InkWell(

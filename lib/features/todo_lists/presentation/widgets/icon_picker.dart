@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
+import '../../../../shared/core/theme/app_stroke.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../domain/entities/todo_list_icons.dart';
 
@@ -66,7 +67,7 @@ class _IconChoice extends StatelessWidget {
           borderRadius: AppRadius.brFull,
           side: BorderSide(
             color: selected ? Colors.transparent : colors.cardBorder,
-            width: 1.2,
+            width: AppStroke.hairline,
           ),
         ),
         clipBehavior: Clip.antiAlias,

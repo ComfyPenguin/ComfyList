@@ -4,6 +4,7 @@ import 'app_colors.dart';
 export 'app_colors.dart';
 import 'app_radius.dart';
 import 'app_spacing.dart';
+import 'app_stroke.dart';
 import 'app_typography.dart';
 
 class AppTheme {
@@ -166,7 +167,7 @@ class AppTheme {
           borderRadius: const BorderRadius.vertical(
             top: Radius.circular(24),
           ),
-          side: BorderSide(color: c.cardBorder, width: 1.2),
+          side: BorderSide(color: c.cardBorder, width: AppStroke.hairline),
         ),
         showDragHandle: true,
         // 2x el default M3 (32x4) para mayor affordance del drag.

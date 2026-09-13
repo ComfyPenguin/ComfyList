@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../core/text/capitalize.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_stroke.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/app_typography.dart';
 import '../buttons/primary_button.dart';
@@ -111,7 +112,10 @@ class _CircleIconButton extends StatelessWidget {
         color: colors.canvas,
         shape: RoundedRectangleBorder(
           borderRadius: AppRadius.brFull,
-          side: BorderSide(color: colors.cardBorder, width: 1.2),
+          side: BorderSide(
+            color: colors.cardBorder,
+            width: AppStroke.hairline,
+          ),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -326,7 +330,10 @@ class _DatePickerSheetState extends State<_DatePickerSheet> {
           color: selected ? colors.primary : Colors.transparent,
           shape: CircleBorder(
             side: !selected && isToday
-                ? BorderSide(color: colors.cardBorder, width: 1.2)
+                ? BorderSide(
+                    color: colors.cardBorder,
+                    width: AppStroke.hairline,
+                  )
                 : BorderSide.none,
           ),
           clipBehavior: Clip.antiAlias,

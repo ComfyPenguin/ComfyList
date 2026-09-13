@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/theme/app_stroke.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/app_typography.dart';
 import 'field_notch.dart';
@@ -191,7 +192,7 @@ class _AppTextFieldState extends State<AppTextField> {
 
   OutlineInputBorder _outline(
     Color color, {
-    double width = FieldStyle.borderWidth,
+    double width = AppStroke.hairline,
   }) {
     return OutlineInputBorder(
       borderRadius: BorderRadius.circular(AppTextField._cardRadius),
