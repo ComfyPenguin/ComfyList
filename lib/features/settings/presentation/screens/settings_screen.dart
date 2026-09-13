@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
@@ -13,76 +12,54 @@ import '../widgets/notifications_toggle.dart';
 import '../widgets/theme_mode_selector.dart';
 import '../widgets/today_on_top_toggle.dart';
 
-/// Pantalla de ajustes. Pantalla independiente fuera del [AppShell].
+/// Pantalla de ajustes. Vive dentro del [AppShell], que pone el título y la
+/// flecha atrás en su TopBar.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
+    final sectionStyle = AppTypography.sectionLabel(context.colors.muted);
+
+    // El TopBar del shell se superpone al contenido: reservamos su altura
+    // (iconButton + padding del AppBar) más un margen hasta la primera card.
+    final topOffset = MediaQuery.paddingOf(context).top + 56 + AppSpacing.md;
+
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          tooltip: 'Volver',
-          onPressed: () => context.pop(),
+      body: ListView(
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          topOffset,
+          AppSpacing.lg,
+          AppSpacing.section,
         ),
-        title: Text(
-          'Ajustes',
-          style: AppTypography.displaySm.copyWith(color: colors.ink),
-        ),
-      ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.lg,
-            AppSpacing.lg,
-            AppSpacing.section,
-          ),
-          children: [
-            Text(
-              'Apariencia',
-              style: AppTypography.displayMd.copyWith(color: colors.ink),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            const ThemeModeSelector(),
-            const SizedBox(height: AppSpacing.xxxl),
-            Text(
-              'Gestos',
-              style: AppTypography.displayMd.copyWith(color: colors.ink),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            const InvertSwipeActionsToggle(),
-            const SizedBox(height: AppSpacing.xxxl),
-            Text(
-              'Avisos',
-              style: AppTypography.displayMd.copyWith(color: colors.ink),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            const NotificationsToggle(),
-            const SizedBox(height: AppSpacing.xxxl),
-            Text(
-              'Citas',
-              style: AppTypography.displayMd.copyWith(color: colors.ink),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            const AppointmentsCompletionToggle(),
-            const SizedBox(height: AppSpacing.md),
-            const AppointmentsCompletedToBottomToggle(),
-            const SizedBox(height: AppSpacing.md),
-            const HourFormatToggle(),
-            const SizedBox(height: AppSpacing.md),
-            const TodayOnTopToggle(),
-            const SizedBox(height: AppSpacing.xxxl),
-            Text(
-              'Tareas',
-              style: AppTypography.displayMd.copyWith(color: colors.ink),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            const CompletedToBottomToggle(),
-          ],
-        ),
+        children: [
+          Text('APARIENCIA', style: sectionStyle),
+          const SizedBox(height: AppSpacing.md),
+          const ThemeModeSelector(),
+          const SizedBox(height: AppSpacing.xxxl),
+          Text('GESTOS', style: sectionStyle),
+          const SizedBox(height: AppSpacing.md),
+          const InvertSwipeActionsToggle(),
+          const SizedBox(height: AppSpacing.xxxl),
+          Text('AVISOS', style: sectionStyle),
+          const SizedBox(height: AppSpacing.md),
+          const NotificationsToggle(),
+          const SizedBox(height: AppSpacing.xxxl),
+          Text('CITAS', style: sectionStyle),
+          const SizedBox(height: AppSpacing.md),
+          const AppointmentsCompletionToggle(),
+          const SizedBox(height: AppSpacing.md),
+          const AppointmentsCompletedToBottomToggle(),
+          const SizedBox(height: AppSpacing.md),
+          const HourFormatToggle(),
+          const SizedBox(height: AppSpacing.md),
+          const TodayOnTopToggle(),
+          const SizedBox(height: AppSpacing.xxxl),
+          Text('TAREAS', style: sectionStyle),
+          const SizedBox(height: AppSpacing.md),
+          const CompletedToBottomToggle(),
+        ],
       ),
     );
   }

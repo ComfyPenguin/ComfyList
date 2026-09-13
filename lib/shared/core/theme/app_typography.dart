@@ -100,6 +100,15 @@ class AppTypography {
     height: 20 / 12,
   );
 
+  /// Cabecera de sección en mayúsculas de 12 px con tracking, como «HOY» en
+  /// las listas, los días del calendario y las secciones de ajustes. El texto
+  /// se compone ya en mayúsculas — Flutter no tiene `text-transform`.
+  static TextStyle sectionLabel([Color? color]) => caption.copyWith(
+    color: color,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 0.6,
+  );
+
   // ─── Botones ───────────────────────────────────────────────────────────
 
   /// Etiqueta del botón grande (button-large-rounded).

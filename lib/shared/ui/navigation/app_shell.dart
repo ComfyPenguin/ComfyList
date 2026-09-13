@@ -103,6 +103,7 @@ class AppShell extends ConsumerWidget {
       _ when location.endsWith('/todos/new') => 'Nueva tarea',
       _ when isTodoEdit => 'Editar tarea',
       _ when isAppointmentEdit => 'Editar cita',
+      Routes.settings => 'Ajustes',
       _ => null,
     };
 

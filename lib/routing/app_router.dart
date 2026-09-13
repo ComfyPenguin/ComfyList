@@ -96,12 +96,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => _instantPage(const SignUpScreen()),
       ),
 
-      // Pantalla de ajustes fuera del shell (pantalla limpia sin BottomBar).
-      GoRoute(
-        path: Routes.settings,
-        pageBuilder: (context, state) => _instantPage(const SettingsScreen()),
-      ),
-
       // Shell persistente: TopBar + BottomBar + FAB compartidos.
       ShellRoute(
         builder: (context, state, child) =>
@@ -157,6 +151,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/appointments/:id/edit',
             pageBuilder: (context, state) => _instantPage(
                 AppointmentEditScreen(id: state.pathParameters['id'])),
+          ),
+          // Dentro del shell para usar su TopBar, como las pantallas de
+          // edición: el nombre de la pantalla y la flecha atrás los pone el
+          // shell y la BottomBar se oculta.
+          GoRoute(
+            path: Routes.settings,
+            pageBuilder: (context, state) =>
+                _instantPage(const SettingsScreen()),
           ),
         ],
       ),
