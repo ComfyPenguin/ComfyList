@@ -128,21 +128,6 @@ class AppTheme {
         thickness: 1,
         space: 1,
       ),
-      // Switch ink/canvas — sin tintes de marca extra.
-      switchTheme: SwitchThemeData(
-        thumbColor: WidgetStateProperty.resolveWith(
-          (states) =>
-              states.contains(WidgetState.selected) ? c.onPrimary : c.canvas,
-        ),
-        trackColor: WidgetStateProperty.resolveWith(
-          (states) =>
-              states.contains(WidgetState.selected) ? c.primary : c.hairline,
-        ),
-        trackOutlineColor: WidgetStateProperty.resolveWith(
-          (states) =>
-              states.contains(WidgetState.selected) ? c.primary : c.hairline,
-        ),
-      ),
       checkboxTheme: CheckboxThemeData(
         side: BorderSide(color: c.hairlineMid, width: 1.5),
         fillColor: WidgetStateProperty.resolveWith(

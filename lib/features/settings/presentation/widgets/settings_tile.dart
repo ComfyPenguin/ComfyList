@@ -5,6 +5,7 @@ import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_stroke.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
+import '../../../../shared/ui/inputs/app_switch.dart';
 import '../../domain/entities/app_settings.dart';
 import '../providers/settings_state.dart';
 
@@ -72,11 +73,11 @@ class SettingsSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return switch (state) {
-      SettingsData(:final settings) => Switch.adaptive(
+      SettingsData(:final settings) => AppSwitch(
         value: value(settings),
         onChanged: onChanged,
       ),
-      SettingsError() => Switch.adaptive(value: false, onChanged: null),
+      SettingsError() => const AppSwitch(value: false, onChanged: null),
       SettingsInitial() || SettingsLoading() => const SettingsTileSpinner(),
     };
   }

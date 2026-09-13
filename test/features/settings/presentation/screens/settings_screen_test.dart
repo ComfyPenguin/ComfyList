@@ -4,6 +4,7 @@ import 'package:comfy_list/features/settings/presentation/providers/settings_pro
 import 'package:comfy_list/features/settings/presentation/screens/settings_screen.dart';
 import 'package:comfy_list/shared/core/failures/failure.dart';
 import 'package:comfy_list/shared/core/theme/app_theme.dart';
+import 'package:comfy_list/shared/ui/inputs/app_switch.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -57,9 +58,9 @@ void main() {
     await loader.load();
   });
 
-  Future<int> disabledSwitches(WidgetTester tester) async {
+  int disabledSwitches(WidgetTester tester) {
     return tester
-        .widgetList<Switch>(find.byType(Switch))
+        .widgetList<AppSwitch>(find.byType(AppSwitch))
         .where((s) => s.onChanged == null)
         .length;
   }
@@ -89,7 +90,7 @@ void main() {
 
     expect(repo.loadCalls, 1);
     expect(find.text('No se han podido leer tus ajustes.'), findsOneWidget);
-    expect(await disabledSwitches(tester), 6);
+    expect(disabledSwitches(tester), 6);
 
     repo.fail = false;
     await tester.tap(find.text('Reintentar'));
@@ -102,7 +103,7 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsNothing);
     // Con los datos leídos solo queda deshabilitado el ajuste que depende de
     // «Completar citas», que por defecto está apagado.
-    expect(await disabledSwitches(tester), 1);
+    expect(disabledSwitches(tester), 1);
     expect(tester.takeException(), isNull);
   });
 }
