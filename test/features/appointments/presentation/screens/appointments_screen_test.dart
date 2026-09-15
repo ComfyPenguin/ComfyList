@@ -36,17 +36,35 @@ void main() {
     await loader.load();
   });
 
-  // Fecha fija: la pantalla la recibe inyectada, así que el test no depende
+  // Fechas fijas: la pantalla las recibe inyectadas, así que el test no depende
   // del reloj de la máquina.
   final today = DateTime(2026, 9, 15, 10);
   final yesterday = DateTime(2026, 9, 14, 9);
+  final tomorrow = DateTime(2026, 9, 16, 11);
 
-  // Misma cabecera que pinta la pantalla para el día de ayer.
+  final yesterdayAppointment = buildAppointment(
+    id: 'ayer',
+    title: 'Dentista',
+    dateTime: yesterday,
+  );
+  final todayAppointment = buildAppointment(
+    id: 'hoy',
+    title: 'Análisis',
+    dateTime: today,
+  );
+  final tomorrowAppointment = buildAppointment(
+    id: 'manana',
+    title: 'Revisión',
+    dateTime: tomorrow,
+  );
+
+  // Misma cabecera que pinta la pantalla para un día que no es hoy ni mañana.
   String headerOf(DateTime date) =>
       DateFormat('EEEE, d MMM', 'es_ES').format(date).toUpperCase();
 
   Future<void> pumpScreen(
     WidgetTester tester, {
+    required List<Appointment> items,
     required bool todayOnTop,
   }) async {
     final repo = FakeSettingsRepository(
@@ -62,10 +80,7 @@ void main() {
       ProviderScope(
         overrides: [
           appointmentsProvider.overrideWith(
-            () => _FixedAppointmentsNotifier([
-              buildAppointment(id: 'ayer', title: 'Ayer', dateTime: yesterday),
-              buildAppointment(id: 'hoy', title: 'Hoy', dateTime: today),
-            ]),
+            () => _FixedAppointmentsNotifier(items),
           ),
           settingsRepositoryProvider.overrideWithValue(repo),
         ],
@@ -84,7 +99,11 @@ void main() {
   testWidgets('con «Citas de hoy arriba», el día de hoy encabeza la lista', (
     tester,
   ) async {
-    await pumpScreen(tester, todayOnTop: true);
+    await pumpScreen(
+      tester,
+      items: [yesterdayAppointment, todayAppointment],
+      todayOnTop: true,
+    );
 
     expect(
       tester.getTopLeft(find.text('CITAS DE HOY')).dy,
@@ -93,11 +112,32 @@ void main() {
   });
 
   testWidgets('con el ajuste apagado manda el orden por fecha', (tester) async {
-    await pumpScreen(tester, todayOnTop: false);
+    await pumpScreen(
+      tester,
+      items: [yesterdayAppointment, todayAppointment],
+      todayOnTop: false,
+    );
 
     expect(
       tester.getTopLeft(find.text(headerOf(yesterday))).dy,
       lessThan(tester.getTopLeft(find.text('CITAS DE HOY')).dy),
+    );
+  });
+
+  testWidgets('el día siguiente va con la cabecera «MAÑANA»', (tester) async {
+    await pumpScreen(
+      tester,
+      items: [yesterdayAppointment, todayAppointment, tomorrowAppointment],
+      todayOnTop: true,
+    );
+
+    expect(find.text('MAÑANA'), findsOneWidget);
+    // Y no con la fecha formateada: la que entra es la rama de «mañana».
+    expect(find.text(headerOf(tomorrow)), findsNothing);
+    // Los días que no son hoy siguen en ascendente: ayer por delante de mañana.
+    expect(
+      tester.getTopLeft(find.text(headerOf(yesterday))).dy,
+      lessThan(tester.getTopLeft(find.text('MAÑANA')).dy),
     );
   });
 }
