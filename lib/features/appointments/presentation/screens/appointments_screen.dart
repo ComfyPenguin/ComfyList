@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../../../shared/core/theme/app_radius.dart';
+import '../../../../shared/core/theme/app_shadow.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
@@ -475,7 +476,6 @@ class _TodayPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = colors.isDarkCanvas;
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
@@ -484,28 +484,7 @@ class _TodayPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.primary,
         borderRadius: AppRadius.brPill,
-        boxShadow: isDark
-            ? [
-                // Modo oscuro: glow luminoso doble alrededor del FAB blanco
-                BoxShadow(
-                  color: colors.primary.withValues(alpha: 0.35),
-                  blurRadius: 14,
-                  offset: Offset.zero,
-                ),
-                BoxShadow(
-                  color: colors.shadowDark,
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ]
-            : [
-                // Modo claro: sombra oscura pronunciada
-                BoxShadow(
-                  color: colors.shadowDark,
-                  blurRadius: 10,
-                  offset: const Offset(2, 5),
-                ),
-              ],
+        boxShadow: AppShadow.primaryGlow(colors),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_shadow.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_stroke.dart';
 import '../../core/theme/app_theme.dart';
@@ -250,28 +251,7 @@ class _NeuFab extends StatelessWidget {
             decoration: BoxDecoration(
               color: colors.primary,
               shape: BoxShape.circle,
-              boxShadow: isDark
-                  ? [
-                      // Modo oscuro: glow luminoso doble alrededor del FAB blanco
-                      BoxShadow(
-                        color: colors.primary.withValues(alpha: 0.35),
-                        blurRadius: 20,
-                        offset: Offset.zero,
-                      ),
-                      BoxShadow(
-                        color: colors.shadowDark,
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
-                  : [
-                      // Modo claro: sombra oscura pronunciada
-                      BoxShadow(
-                        color: colors.shadowDark,
-                        blurRadius: 16,
-                        offset: const Offset(4, 8),
-                      ),
-                    ],
+              boxShadow: AppShadow.fabGlow(colors),
             ),
             child: Center(
               child: Icon(

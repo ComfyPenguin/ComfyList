@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_shadow.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/app_typography.dart';
@@ -33,7 +34,6 @@ class PrimaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final isDark = colors.isDarkCanvas;
 
     final bg = backgroundColor ?? colors.primary;
     final fg = foregroundColor ?? colors.onPrimary;
@@ -70,26 +70,7 @@ class PrimaryButton extends StatelessWidget {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: AppRadius.brPill,
-        boxShadow: isDark
-            ? [
-                BoxShadow(
-                  color: bg.withValues(alpha: 0.35),
-                  blurRadius: 14,
-                  offset: Offset.zero,
-                ),
-                BoxShadow(
-                  color: colors.shadowDark,
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ]
-            : [
-                BoxShadow(
-                  color: colors.shadowDark,
-                  blurRadius: 10,
-                  offset: const Offset(2, 5),
-                ),
-              ],
+        boxShadow: AppShadow.primaryGlow(colors, bg),
       ),
       child: Material(
         color: Colors.transparent,

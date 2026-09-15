@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/core/theme/app_radius.dart';
+import '../../../../shared/core/theme/app_shadow.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
+import '../../../../shared/core/theme/app_stroke.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../providers/settings_provider.dart';
@@ -63,44 +65,20 @@ class _ThemeSegmentedControl extends StatelessWidget {
     (icon: Icons.dark_mode_outlined, label: 'Oscuro', value: ThemeMode.dark),
   ];
 
-  /// Solo la pastilla se desliza; es el gesto que explica el cambio.
-  static const Duration _slide = Duration(milliseconds: 240);
-  static const Curve _slideCurve = Curves.easeOutCubic;
   static const double _height = 44;
 
-  /// Aire entre la pastilla y el borde del raíl.
-  static const double _inset = 3;
+  /// Aire entre la pastilla y el borde del raíl. El contenido se sangra con el
+  /// mismo valor para que cada opción ocupe justo la pastilla que le toca.
+  static const double _inset = AppSpacing.xxs;
+
+  /// Solo la pastilla se desliza; es el gesto que explica el cambio. El color
+  /// del texto tarda lo mismo, así que llegan juntos.
+  static const Duration _slide = Duration(milliseconds: 240);
+  static const Curve _slideCurve = Curves.easeOutCubic;
 
   final int selectedIndex;
   final bool enabled;
   final ValueChanged<int> onSelected;
-
-  /// El mismo glow del botón primario: en oscuro un halo de luz del propio
-  /// color primario más una sombra profunda; en claro, una sombra proyectada.
-  static List<BoxShadow> _pillGlow(AppColors colors) {
-    if (colors.isDarkCanvas) {
-      return [
-        BoxShadow(
-          color: colors.primary.withValues(alpha: 0.35),
-          blurRadius: 14,
-          offset: Offset.zero,
-        ),
-        BoxShadow(
-          color: colors.shadowDark,
-          blurRadius: 8,
-          offset: const Offset(0, 3),
-        ),
-      ];
-    }
-
-    return [
-      BoxShadow(
-        color: colors.shadowDark,
-        blurRadius: 10,
-        offset: const Offset(2, 5),
-      ),
-    ];
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -117,7 +95,7 @@ class _ThemeSegmentedControl extends StatelessWidget {
           final segment = (constraints.maxWidth - _inset * 2) / options.length;
           return Stack(
             fit: StackFit.expand,
-            // El glow de la pastilla sale del raíl: sin recortar, como el del
+            // El halo de la pastilla sale del raíl: sin recortar, como el del
             // botón primario sobre el fondo.
             clipBehavior: Clip.none,
             children: [
@@ -133,23 +111,28 @@ class _ThemeSegmentedControl extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: colors.primary,
                       borderRadius: AppRadius.brPill,
-                      boxShadow: _pillGlow(colors),
+                      boxShadow: AppShadow.primaryGlow(colors),
                     ),
                   ),
                 ),
-              Row(
-                children: [
-                  for (var i = 0; i < options.length; i++)
-                    Expanded(
-                      child: _ThemeOption(
-                        icon: options[i].icon,
-                        label: options[i].label,
-                        selected: i == selectedIndex,
-                        enabled: enabled,
-                        onTap: () => onSelected(i),
-                      ),
-                    ),
-                ],
+              Positioned.fill(
+                child: Padding(
+                  padding: const EdgeInsets.all(_inset),
+                  child: Row(
+                    children: [
+                      for (var i = 0; i < options.length; i++)
+                        Expanded(
+                          child: _ThemeOption(
+                            icon: options[i].icon,
+                            label: options[i].label,
+                            selected: i == selectedIndex,
+                            enabled: enabled,
+                            onTap: () => onSelected(i),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ),
             ],
           );
@@ -159,7 +142,7 @@ class _ThemeSegmentedControl extends StatelessWidget {
   }
 }
 
-class _ThemeOption extends StatelessWidget {
+class _ThemeOption extends StatefulWidget {
   const _ThemeOption({
     required this.icon,
     required this.label,
@@ -168,10 +151,6 @@ class _ThemeOption extends StatelessWidget {
     required this.onTap,
   });
 
-  /// El color acompaña al deslizamiento: el texto pasa de tinta a `onPrimary`
-  /// mientras la pastilla llega.
-  static const Duration _colorFade = Duration(milliseconds: 220);
-
   final IconData icon;
   final String label;
   final bool selected;
@@ -179,50 +158,79 @@ class _ThemeOption extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  State<_ThemeOption> createState() => _ThemeOptionState();
+}
+
+class _ThemeOptionState extends State<_ThemeOption> {
+  static const double _iconSize = 18;
+
+  bool _focused = false;
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final idle = enabled ? colors.ink : colors.muted;
+    final idle = widget.enabled ? colors.ink : colors.muted;
+    // El anillo de foco va por delante: sobre la pastilla primaria el `ink` se
+    // perdería, así que usa el color con el que se escribe encima.
+    final ring = widget.selected ? colors.onPrimary : colors.ink;
 
     return Semantics(
       button: true,
-      selected: selected,
+      selected: widget.selected,
       child: Material(
         color: Colors.transparent,
         borderRadius: AppRadius.brPill,
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: enabled ? onTap : null,
+          onTap: widget.enabled ? widget.onTap : null,
+          onFocusChange: (focused) => setState(() => _focused = focused),
           // Sin onda ni resalte: la pastilla que se desliza ya es la respuesta
           // al toque, y el destello sobre el raíl ensuciaba el gesto.
           splashFactory: NoSplash.splashFactory,
           highlightColor: Colors.transparent,
           hoverColor: Colors.transparent,
           focusColor: Colors.transparent,
-          child: TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: selected ? 1 : 0),
-            duration: _colorFade,
-            curve: Curves.easeOut,
-            builder: (context, t, _) {
-              final color = Color.lerp(idle, colors.onPrimary, t)!;
-              return Center(
-                // Con texto muy grande o pantallas estrechas el contenido se
-                // encoge antes que desbordar el tercio que le toca.
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(icon, size: 16, color: color),
-                      const SizedBox(width: AppSpacing.xs),
-                      Text(
-                        label,
-                        style: AppTypography.bodySmStrong.copyWith(color: color),
-                      ),
-                    ],
+          child: Container(
+            foregroundDecoration: !_focused
+                ? null
+                : BoxDecoration(
+                    borderRadius: AppRadius.brPill,
+                    border: Border.all(
+                      color: ring,
+                      width: AppStroke.focused,
+                    ),
                   ),
-                ),
-              );
-            },
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(
+                begin: 0,
+                end: widget.selected ? 1 : 0,
+              ),
+              duration: _ThemeSegmentedControl._slide,
+              curve: _ThemeSegmentedControl._slideCurve,
+              builder: (context, t, _) {
+                final color = Color.lerp(idle, colors.onPrimary, t)!;
+                return Center(
+                  // Con texto muy grande o pantallas estrechas el contenido se
+                  // encoge antes que desbordar el tercio que le toca.
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(widget.icon, size: _iconSize, color: color),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text(
+                          widget.label,
+                          style: AppTypography.bodySmStrong.copyWith(
+                            color: color,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
         ),
       ),
