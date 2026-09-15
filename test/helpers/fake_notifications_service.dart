@@ -34,6 +34,8 @@ class FakeNotificationsService implements NotificationsService {
   @override
   Future<bool> requestNotificationPermission() async {
     requestNotificationPermissionCalls++;
+    // Como en el sistema: conceder el permiso hace que deje mostrar avisos.
+    if (notificationPermissionGranted) notificationsAllowed = true;
     return notificationPermissionGranted;
   }
 

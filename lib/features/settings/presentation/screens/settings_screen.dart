@@ -12,6 +12,7 @@ import '../providers/settings_provider.dart';
 import '../providers/settings_state.dart';
 import '../widgets/appointment_reminder_selector.dart';
 import '../widgets/appointments_completed_to_bottom_toggle.dart';
+import '../widgets/blocked_notifications_tile.dart';
 import '../widgets/appointments_completion_toggle.dart';
 import '../widgets/completed_to_bottom_toggle.dart';
 import '../widgets/exact_alarms_tile.dart';
@@ -58,6 +59,13 @@ class SettingsScreen extends ConsumerWidget {
     // cuenta como que falte, para que la fila no aparezca y se vaya sola.
     final exactAlarmsMissing =
         ref.watch(exactAlarmsGrantedProvider).value == false;
+    // El sistema puede bloquear los avisos aunque el ajuste esté encendido: el
+    // permiso sin conceder o los avisos de la app apagados desde los ajustes del
+    // sistema. `null` (el sistema todavía no ha contestado) no cuenta como
+    // bloqueo, para que la fila no aparezca y se vaya sola.
+    final notificationsBlocked =
+        notificationsEnabled == true &&
+        ref.watch(systemAllowsNotificationsProvider).value == false;
 
     return ListView(
       padding: EdgeInsets.fromLTRB(
@@ -88,6 +96,12 @@ class SettingsScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Sin los avisos del sistema no llega ninguno, así que el aviso
+                // va antes que el resto del grupo.
+                if (notificationsBlocked) ...[
+                  const SizedBox(height: AppSpacing.joined),
+                  const BlockedNotificationsTile(isFirst: false, isLast: false),
+                ],
                 const SizedBox(height: AppSpacing.joined),
                 AppointmentReminderSelector(
                   isFirst: false,

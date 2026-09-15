@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../helpers/fake_notifications_service.dart';
 import '../../../../helpers/fake_settings_repository.dart';
+import '../../../../helpers/test_helpers.dart';
 
 void main() {
   setUpAll(() async {
@@ -32,12 +33,12 @@ void main() {
 
   /// Switch de la fila con ese título.
   Finder switchOf(String title) => find.descendant(
-        of: find.ancestor(
-          of: find.text(title),
-          matching: find.byType(SettingsTile),
-        ),
-        matching: find.byType(AppSwitch),
-      );
+    of: find.ancestor(
+      of: find.text(title),
+      matching: find.byType(SettingsTile),
+    ),
+    matching: find.byType(AppSwitch),
+  );
 
   /// Bloque de despliegue de la fila con ese título. La pantalla tiene uno por
   /// cada ajuste que cuelga de otro, así que hay que decir de cuál.
@@ -74,8 +75,10 @@ void main() {
         ],
         child: MaterialApp(
           theme: AppTheme.light(),
-          home: const Center(
-            child: SizedBox(width: 390, child: SettingsScreen()),
+          // La pantalla vive dentro del Scaffold del shell, que es quien puede
+          // mostrar los avisos emergentes.
+          home: const Scaffold(
+            body: Center(child: SizedBox(width: 390, child: SettingsScreen())),
           ),
         ),
       ),
@@ -196,6 +199,87 @@ void main() {
     // mostrar, así que el ajuste no se guarda.
     expect(notifications.requestNotificationPermissionCalls, 1);
     expect(switchValue(tester, 'Notificaciones'), isFalse);
+  });
+
+  testWidgets('con el sistema bloqueando los avisos, la pantalla lo avisa', (
+    tester,
+  ) async {
+    final repo = FakeSettingsRepository(
+      settings: buildAppSettings(notificationsEnabled: true),
+    );
+    final notifications = FakeNotificationsService()
+      ..notificationsAllowed = false;
+    await pumpSettings(tester, repo, notifications: notifications);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Avisos bloqueados'), findsOneWidget);
+  });
+
+  testWidgets('con el sistema dejándolos pasar no hay nada que avisar', (
+    tester,
+  ) async {
+    final repo = FakeSettingsRepository(
+      settings: buildAppSettings(notificationsEnabled: true),
+    );
+    await pumpSettings(tester, repo);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Avisos bloqueados'), findsNothing);
+  });
+
+  testWidgets('el aviso se toca para pedir el permiso y desaparece', (
+    tester,
+  ) async {
+    final repo = FakeSettingsRepository(
+      settings: buildAppSettings(notificationsEnabled: true),
+    );
+    final notifications = FakeNotificationsService()
+      ..notificationsAllowed = false;
+    await pumpSettings(tester, repo, notifications: notifications);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Avisos bloqueados'));
+    await tester.pumpAndSettle();
+
+    expect(notifications.requestNotificationPermissionCalls, 1);
+    // Concedido: el sistema ya deja mostrarlos, así que no queda nada que
+    // avisar.
+    expect(find.text('Avisos bloqueados'), findsNothing);
+  });
+
+  testWidgets('si el sistema sigue bloqueando, lo dice y el aviso sigue', (
+    tester,
+  ) async {
+    final repo = FakeSettingsRepository(
+      settings: buildAppSettings(notificationsEnabled: true),
+    );
+    final notifications = FakeNotificationsService()
+      ..notificationsAllowed = false
+      ..notificationPermissionGranted = false;
+    await pumpSettings(tester, repo, notifications: notifications);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Avisos bloqueados'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Avisos bloqueados'), findsOneWidget);
+    expect(find.textContaining('Sigue bloqueado'), findsOneWidget);
+  });
+
+  testWidgets('con los avisos apagados no se avisa del sistema', (
+    tester,
+  ) async {
+    final repo = FakeSettingsRepository(
+      settings: buildAppSettings(notificationsEnabled: false),
+    );
+    final notifications = FakeNotificationsService()
+      ..notificationsAllowed = false;
+    await pumpSettings(tester, repo, notifications: notifications);
+    await tester.pumpAndSettle();
+
+    // Si los tiene apagados el usuario, el arreglo está en la fila de arriba y
+    // no en el sistema.
+    expect(find.text('Avisos bloqueados'), findsNothing);
   });
 
   testWidgets('con el permiso de alarmas exactas no hay nada que pedir', (
