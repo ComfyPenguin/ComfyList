@@ -80,6 +80,25 @@ void main() {
       expect((res as Err).failure, isA<AuthFailure>());
     });
 
+    test('el watcher vuelve a pedir la lista en cada tick', () async {
+      when(() => remote.listAppointments(uid: 'u1'))
+          .thenAnswer((_) async => <Appointment>[buildAppointment()]);
+
+      final polled = AppointmentsRepositoryImpl(
+        remote,
+        pollInterval: const Duration(milliseconds: 20),
+      );
+      addTearDown(polled.dispose);
+
+      final sub = polled.watchAppointments('u1').listen((_) {});
+
+      // Margen de sobra para el fetch inicial y varios ticks.
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      await sub.cancel();
+
+      verify(() => remote.listAppointments(uid: 'u1')).called(greaterThan(1));
+    });
+
     test('updateAppointment refreshes the watcher', () async {
       when(() => remote.listAppointments(uid: 'u1'))
           .thenAnswer((_) async => <Appointment>[buildAppointment()]);

@@ -11,6 +11,7 @@ import '../../../../shared/core/theme/app_shadow.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
+import '../../../../shared/core/time/clock.dart';
 import '../../../../shared/ui/lists/slide_flow.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../../settings/presentation/providers/settings_state.dart';
@@ -24,11 +25,7 @@ import '../widgets/empty_state.dart';
 /// Pantalla de lista de citas. El Scaffold, AppBar, FAB y BottomBar
 /// viven en [AppShell].
 class AppointmentsScreen extends ConsumerWidget {
-  const AppointmentsScreen({super.key, this.today});
-
-  /// Día que la lista toma por «hoy». Solo lo inyectan los tests: en la app va
-  /// `null` y manda el reloj.
-  final DateTime? today;
+  const AppointmentsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -62,7 +59,6 @@ class AppointmentsScreen extends ConsumerWidget {
               )
             : _AppointmentsList(
                 items: items,
-                today: today ?? DateTime.now(),
                 topPadding: topOffset,
                 bottomPadding: bottomOffset,
               ),
@@ -73,15 +69,11 @@ class AppointmentsScreen extends ConsumerWidget {
 class _AppointmentsList extends ConsumerStatefulWidget {
   const _AppointmentsList({
     required this.items,
-    required this.today,
     required this.topPadding,
     required this.bottomPadding,
   });
 
   final List<Appointment> items;
-
-  /// Día que cuenta como hoy, con la hora que traiga: dentro se normaliza.
-  final DateTime today;
   final double topPadding;
   final double bottomPadding;
 
@@ -364,9 +356,11 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
     );
   }
 
-  /// Medianoche del día que cuenta como hoy.
-  DateTime get _today =>
-      DateTime(widget.today.year, widget.today.month, widget.today.day);
+  /// Medianoche del día que cuenta como hoy, leída del reloj de la app.
+  DateTime get _today {
+    final now = ref.read(clockProvider)();
+    return DateTime(now.year, now.month, now.day);
+  }
 
   /// Formato de cabecera de fecha. Muestra "HOY" o "MAÑANA" cuando
   /// corresponde, y la fecha completa en otros casos.

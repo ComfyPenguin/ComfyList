@@ -1,26 +1,33 @@
 import 'package:comfy_list/shared/core/theme/app_theme.dart';
+import 'package:comfy_list/shared/core/time/clock.dart';
 import 'package:comfy_list/shared/ui/pickers/date_time_pickers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
-/// Pantalla mínima con un botón que abre el picker que le pasen.
+/// Pantalla mínima con un botón que abre el picker que le pasen, con el reloj
+/// de la app fijado en [now].
 class _Host extends StatelessWidget {
-  const _Host({required this.onOpen});
+  const _Host({required this.onOpen, required this.now});
 
   final void Function(BuildContext context) onOpen;
+  final DateTime now;
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      theme: AppTheme.light(),
-      home: Builder(
-        builder: (context) => Scaffold(
-          body: Center(
-            child: TextButton(
-              onPressed: () => onOpen(context),
-              child: const Text('abrir'),
+    return ProviderScope(
+      overrides: [clockProvider.overrideWithValue(() => now)],
+      child: MaterialApp(
+        theme: AppTheme.light(),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: TextButton(
+                onPressed: () => onOpen(context),
+                child: const Text('abrir'),
+              ),
             ),
           ),
         ),
@@ -51,19 +58,19 @@ void main() {
     return (material.shape! as CircleBorder).side;
   }
 
-  testWidgets('el calendario marca el día inyectado como hoy', (tester) async {
-    // El día inyectado no coincide con el que elige el calendario al abrir, que
+  testWidgets('el calendario marca el día del reloj como hoy', (tester) async {
+    // El día del reloj no coincide con el que elige el calendario al abrir, que
     // es el único que lleva el relleno primario.
-    final today = DateTime(2026, 3, 10, 18);
+    final now = DateTime(2026, 3, 10, 18);
 
     DateTime? picked;
     await tester.pumpWidget(
       _Host(
+        now: now,
         onOpen: (context) async {
           picked = await showAppDatePicker(
             context,
             initialDate: DateTime(2026, 3, 20),
-            today: today,
           );
         },
       ),
@@ -90,6 +97,7 @@ void main() {
     TimeOfDay? picked;
     await tester.pumpWidget(
       _Host(
+        now: DateTime(2026, 3, 10, 18),
         onOpen: (context) async {
           picked = await showAppTimePicker(
             context,
@@ -118,6 +126,7 @@ void main() {
     TimeOfDay? picked;
     await tester.pumpWidget(
       _Host(
+        now: DateTime(2026, 3, 10, 18),
         onOpen: (context) async {
           picked = await showAppTimePicker(
             context,

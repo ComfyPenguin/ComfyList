@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../shared/core/text/date_format.dart';
+import '../../../../shared/core/time/clock.dart';
 import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_stroke.dart';
@@ -23,13 +24,9 @@ import '../providers/appointments_state.dart';
 /// Pantalla unificada de creación y edición de citas.
 /// Si [id] es null → crear; si no → editar.
 class AppointmentEditScreen extends ConsumerStatefulWidget {
-  const AppointmentEditScreen({super.key, this.id, this.now});
+  const AppointmentEditScreen({super.key, this.id});
 
   final String? id;
-
-  /// Momento que la pantalla toma como «ahora» al crear una cita. Solo lo
-  /// inyectan los tests: en la app va `null` y manda el reloj.
-  final DateTime? now;
 
   @override
   ConsumerState<AppointmentEditScreen> createState() =>
@@ -40,7 +37,7 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
-  late DateTime _dateTime = widget.now ?? DateTime.now();
+  late DateTime _dateTime = ref.read(clockProvider)();
   String? _titleError;
   bool _hydrated = false;
   String _hydratedTitle = '';
@@ -80,11 +77,7 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
   };
 
   Future<void> _pickDateTime() async {
-    final pickedDate = await showAppDatePicker(
-      context,
-      initialDate: _dateTime,
-      today: widget.now,
-    );
+    final pickedDate = await showAppDatePicker(context, initialDate: _dateTime);
     if (pickedDate == null) return;
 
     if (!mounted) return;

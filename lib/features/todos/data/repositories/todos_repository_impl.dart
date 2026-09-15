@@ -16,9 +16,13 @@ import '../datasources/firestore_rest_remote.dart';
 ///
 /// Cada (uid, listId) tiene su propio watcher independiente.
 class TodosRepositoryImpl implements TodosRepository {
-  TodosRepositoryImpl(this._remote);
+  TodosRepositoryImpl(this._remote, {this.pollInterval = _pollInterval});
 
   final FirestoreRestRemote _remote;
+
+  /// Cada cuánto vuelve a pedir la lista cada watcher activo. Los tests lo
+  /// acortan para no esperar al tick real.
+  final Duration pollInterval;
 
   static const Duration _pollInterval = Duration(seconds: 15);
 
@@ -34,7 +38,7 @@ class TodosRepositoryImpl implements TodosRepository {
     final key = _WatcherKey(uid, listId);
     final w = _watchers.putIfAbsent(
       key,
-      () => _Watcher(uid, listId, _remote, _pollInterval),
+      () => _Watcher(uid, listId, _remote, pollInterval),
     );
     return w.stream;
   }

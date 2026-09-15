@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/text/capitalize.dart';
+import '../../core/time/clock.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_stroke.dart';
@@ -10,12 +12,11 @@ import '../../core/theme/app_typography.dart';
 import '../buttons/primary_button.dart';
 
 /// Abre el selector de fecha del DS y devuelve la fecha elegida, o `null` si
-/// se cancela. [today] es el día que el calendario marca como hoy: solo lo
-/// inyectan los tests, en la app va `null` y manda el reloj.
+/// se cancela. El día que el calendario marca como hoy lo pone el reloj de la
+/// app ([clockProvider]).
 Future<DateTime?> showAppDatePicker(
   BuildContext context, {
   required DateTime initialDate,
-  DateTime? today,
 }) {
   return showModalBottomSheet<DateTime>(
     context: context,
@@ -24,10 +25,7 @@ Future<DateTime?> showAppDatePicker(
     isScrollControlled: true,
     useSafeArea: true,
     showDragHandle: true,
-    builder: (context) => _DatePickerSheet(
-      initialDate: initialDate,
-      today: today ?? DateTime.now(),
-    ),
+    builder: (context) => _DatePickerSheet(initialDate: initialDate),
   );
 }
 
@@ -183,21 +181,21 @@ class _WheelPicker extends StatelessWidget {
 /// Calendario del DS: navegación por mes, semana empezando en lunes y día
 /// seleccionado en primary (hoy queda marcado con borde hairline).
 class _DatePickerSheet extends StatefulWidget {
-  const _DatePickerSheet({required this.initialDate, required this.today});
+  const _DatePickerSheet({required this.initialDate});
 
   final DateTime initialDate;
-
-  /// Día que cuenta como hoy, con la hora que traiga: dentro se normaliza.
-  final DateTime today;
 
   @override
   State<_DatePickerSheet> createState() => _DatePickerSheetState();
 }
 
 class _DatePickerSheetState extends State<_DatePickerSheet> {
-  /// Medianoche del día que cuenta como hoy.
-  DateTime get _today =>
-      DateTime(widget.today.year, widget.today.month, widget.today.day);
+  /// Medianoche del día que cuenta como hoy, leída del reloj de la app.
+  DateTime get _today {
+    final container = ProviderScope.containerOf(context, listen: false);
+    final now = container.read(clockProvider)();
+    return DateTime(now.year, now.month, now.day);
+  }
 
   /// Lunes de la semana de [_today] — solo para los nombres de los días.
   /// Con el constructor en vez de restar días: en los cambios de hora la

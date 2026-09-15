@@ -4,6 +4,7 @@ import 'package:comfy_list/features/appointments/presentation/providers/appointm
 import 'package:comfy_list/features/appointments/presentation/screens/appointments_screen.dart';
 import 'package:comfy_list/features/settings/presentation/providers/settings_provider.dart';
 import 'package:comfy_list/shared/core/theme/app_theme.dart';
+import 'package:comfy_list/shared/core/time/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -36,8 +37,8 @@ void main() {
     await loader.load();
   });
 
-  // Fechas fijas: la pantalla las recibe inyectadas, así que el test no depende
-  // del reloj de la máquina.
+  // Fechas fijas: el reloj de la app va sobrescrito, así que el test no
+  // depende del de la máquina.
   final today = DateTime(2026, 9, 15, 10);
   final yesterday = DateTime(2026, 9, 14, 9);
   final tomorrow = DateTime(2026, 9, 16, 11);
@@ -83,10 +84,11 @@ void main() {
             () => _FixedAppointmentsNotifier(items),
           ),
           settingsRepositoryProvider.overrideWithValue(repo),
+          clockProvider.overrideWithValue(() => today),
         ],
         child: MaterialApp(
           theme: AppTheme.light(),
-          home: AppointmentsScreen(today: today),
+          home: const AppointmentsScreen(),
         ),
       ),
     );

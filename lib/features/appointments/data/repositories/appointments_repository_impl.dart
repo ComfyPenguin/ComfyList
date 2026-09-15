@@ -16,9 +16,13 @@ import '../datasources/firestore_appointments_remote.dart';
 ///
 /// Cada uid tiene su propio watcher independiente.
 class AppointmentsRepositoryImpl implements AppointmentsRepository {
-  AppointmentsRepositoryImpl(this._remote);
+  AppointmentsRepositoryImpl(this._remote, {this.pollInterval = _pollInterval});
 
   final FirestoreAppointmentsRemote _remote;
+
+  /// Cada cuánto vuelve a pedir la lista cada watcher activo. Los tests lo
+  /// acortan para no esperar al tick real.
+  final Duration pollInterval;
 
   static const Duration _pollInterval = Duration(seconds: 15);
 
@@ -30,7 +34,7 @@ class AppointmentsRepositoryImpl implements AppointmentsRepository {
   Stream<List<Appointment>> watchAppointments(String uid) {
     final w = _watchers.putIfAbsent(
       uid,
-      () => _Watcher(uid, _remote, _pollInterval),
+      () => _Watcher(uid, _remote, pollInterval),
     );
     return w.stream;
   }
