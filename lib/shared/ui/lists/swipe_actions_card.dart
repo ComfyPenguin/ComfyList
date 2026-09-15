@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_stroke.dart';
 import '../../core/theme/app_theme.dart';
@@ -53,9 +54,6 @@ class SwipeActionsCard extends StatelessWidget {
   final double bottomSeparationProgress;
   final ValueChanged<double>? onRevealProgressChanged;
 
-  static const double joinedRadius = 6;
-  static const double outerRadius = 32;
-
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -73,8 +71,8 @@ class SwipeActionsCard extends StatelessWidget {
         borderRadius: cardRadius,
         side: side,
         contentPadding: EdgeInsets.only(
-          left: side == _ZoneSide.left ? 0 : SwipeActionsCard.outerRadius,
-          right: side == _ZoneSide.left ? SwipeActionsCard.outerRadius : 0,
+          left: side == _ZoneSide.left ? 0 : AppRadius.tile,
+          right: side == _ZoneSide.left ? AppRadius.tile : 0,
         ),
         icon: isDone ? const PendingCircleIcon() : const CompleteCircleIcon(),
         label: isDone ? 'Desmarcar' : 'Completar',
@@ -89,8 +87,8 @@ class SwipeActionsCard extends StatelessWidget {
         borderRadius: cardRadius,
         side: side,
         contentPadding: EdgeInsets.only(
-          left: side == _ZoneSide.left ? 0 : SwipeActionsCard.outerRadius,
-          right: side == _ZoneSide.left ? SwipeActionsCard.outerRadius : 0,
+          left: side == _ZoneSide.left ? 0 : AppRadius.tile,
+          right: side == _ZoneSide.left ? AppRadius.tile : 0,
         ),
         icon: const RecycleBinIcon(),
         label: 'Eliminar',
@@ -105,7 +103,7 @@ class SwipeActionsCard extends StatelessWidget {
         onSwipeRight: completeOnLeft ? onComplete : onDelete,
         onSwipeLeft: completeOnLeft ? onDelete : onComplete,
         onRevealProgressChanged: onRevealProgressChanged,
-        backgroundOverlap: SwipeActionsCard.outerRadius,
+        backgroundOverlap: AppRadius.tile,
         leftBackground: completeOnLeft
             ? completeZone(_ZoneSide.left)
             : deleteZone(_ZoneSide.left),
@@ -145,14 +143,25 @@ class SwipeActionsCard extends StatelessWidget {
     final isLast = groupIndex == groupSize - 1;
     final topProgress = topSeparationProgress.clamp(0.0, 1.0).toDouble();
     final bottomProgress = bottomSeparationProgress.clamp(0.0, 1.0).toDouble();
-    final topRadius = lerpDouble(joinedRadius, outerRadius, topProgress)!;
-    final bottomRadius = lerpDouble(joinedRadius, outerRadius, bottomProgress)!;
+
+    // El progreso anima la esquina entre los dos radios del grupo: en reposo
+    // queda en el radio de junta y al separarse abre hasta el exterior.
+    final topRadius = lerpDouble(
+      AppRadius.joined,
+      AppRadius.tile,
+      topProgress,
+    )!;
+    final bottomRadius = lerpDouble(
+      AppRadius.joined,
+      AppRadius.tile,
+      bottomProgress,
+    )!;
 
     return BorderRadius.only(
-      topLeft: Radius.circular(isFirst ? outerRadius : topRadius),
-      topRight: Radius.circular(isFirst ? outerRadius : topRadius),
-      bottomLeft: Radius.circular(isLast ? outerRadius : bottomRadius),
-      bottomRight: Radius.circular(isLast ? outerRadius : bottomRadius),
+      topLeft: Radius.circular(isFirst ? AppRadius.tile : topRadius),
+      topRight: Radius.circular(isFirst ? AppRadius.tile : topRadius),
+      bottomLeft: Radius.circular(isLast ? AppRadius.tile : bottomRadius),
+      bottomRight: Radius.circular(isLast ? AppRadius.tile : bottomRadius),
     );
   }
 }

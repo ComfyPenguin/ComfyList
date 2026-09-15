@@ -66,11 +66,7 @@ class _OrDivider extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: Text(
             text.toUpperCase(),
-            style: AppTypography.caption.copyWith(
-              color: colors.muted,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.6,
-            ),
+            style: AppTypography.sectionLabel(colors.muted),
           ),
         ),
         Expanded(

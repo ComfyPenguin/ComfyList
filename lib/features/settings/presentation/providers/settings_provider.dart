@@ -29,6 +29,10 @@ class SettingsNotifier extends Notifier<SettingsState> {
     return const SettingsInitial();
   }
 
+  /// Vuelve a leer las preferencias tras un fallo, para el reintento de la
+  /// pantalla de ajustes.
+  Future<void> reload() => _bootstrap();
+
   Future<void> _bootstrap() async {
     state = const SettingsLoading();
     final repo = ref.read(settingsRepositoryProvider);
@@ -81,5 +85,14 @@ final themeModeProvider = Provider<ThemeMode>((ref) {
   return switch (state) {
     SettingsData(:final settings) => settings.themeMode,
     _ => ThemeMode.system,
+  };
+});
+
+/// Formato de hora elegido — devuelve el por defecto mientras carga.
+final use24HourFormatProvider = Provider<bool>((ref) {
+  final state = ref.watch(settingsProvider);
+  return switch (state) {
+    SettingsData(:final settings) => settings.use24HourFormat,
+    _ => AppSettings.defaults.use24HourFormat,
   };
 });

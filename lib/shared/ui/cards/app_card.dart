@@ -5,8 +5,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 
 /// `card-content` del DESIGN.md — superficie `canvasSoft` con radio xl, sin
-/// sombra ni borde (Level 0 flat). Es el bloque de los ajustes y de los estados
-/// vacíos.
+/// sombra ni borde (Level 0 flat). Es el bloque de los estados vacíos.
 ///
 /// Las cards que van sobre el canvas con contorno y radio 32 son otra pieza
 /// (`SwipeActionsCard` y las previews de los formularios).

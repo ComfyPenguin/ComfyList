@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../../../shared/core/theme/app_radius.dart';
+import '../../../../shared/core/theme/app_shadow.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
@@ -244,10 +245,8 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
   Widget build(BuildContext context) {
     final notifier = ref.read(appointmentsProvider.notifier);
     final colors = context.colors;
-    final dateHeaderStyle = AppTypography.caption.copyWith(
-      color: Color.lerp(colors.muted, colors.body, 0.4),
-      fontWeight: FontWeight.w700,
-      letterSpacing: 0.6,
+    final dateHeaderStyle = AppTypography.sectionLabel(
+      Color.lerp(colors.muted, colors.body, 0.4),
     );
 
     // Leer preferencias de completado en citas.
@@ -379,8 +378,6 @@ class _AppointmentGroup extends StatelessWidget {
     required this.onRevealProgressChanged,
   });
 
-  static const double _joinedGap = 2;
-
   /// Días con más citas que esto se renderizan en Column simple (sin
   /// deslizamiento) para no mantener todas las filas montadas.
   static const int _maxGlideTiles = 60;
@@ -424,7 +421,7 @@ class _AppointmentGroup extends StatelessWidget {
       for (var i = 0; i < appointments.length; i++) {
         tiles.add(_appointmentTile(i));
         if (i < appointments.length - 1) {
-          tiles.add(const SizedBox(height: _joinedGap));
+          tiles.add(const SizedBox(height: AppSpacing.joined));
         }
       }
       return Column(
@@ -438,7 +435,7 @@ class _AppointmentGroup extends StatelessWidget {
       rows.add(
         SlideRow(
           key: ValueKey(appointments[i].id),
-          spacingAfter: i < appointments.length - 1 ? _joinedGap : 0,
+          spacingAfter: i < appointments.length - 1 ? AppSpacing.joined : 0,
           child: _appointmentTile(i),
         ),
       );
@@ -479,7 +476,6 @@ class _TodayPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = colors.isDarkCanvas;
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
@@ -488,28 +484,7 @@ class _TodayPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.primary,
         borderRadius: AppRadius.brPill,
-        boxShadow: isDark
-            ? [
-                // Modo oscuro: glow luminoso doble alrededor del FAB blanco
-                BoxShadow(
-                  color: colors.primary.withValues(alpha: 0.35),
-                  blurRadius: 14,
-                  offset: Offset.zero,
-                ),
-                BoxShadow(
-                  color: colors.shadowDark,
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ]
-            : [
-                // Modo claro: sombra oscura pronunciada
-                BoxShadow(
-                  color: colors.shadowDark,
-                  blurRadius: 10,
-                  offset: const Offset(2, 5),
-                ),
-              ],
+        boxShadow: AppShadow.primaryGlow(colors),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
