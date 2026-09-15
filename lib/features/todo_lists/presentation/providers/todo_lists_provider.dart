@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/core/failures/failure.dart';
+import '../../../../shared/core/time/clock.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/providers/auth_state.dart';
 import '../../data/datasources/firestore_lists_remote.dart';
@@ -15,7 +16,10 @@ final firestoreListsRemoteProvider = Provider<FirestoreListsRemote>((ref) {
 });
 
 final todoListsRepositoryProvider = Provider<TodoListsRepository>((ref) {
-  final repo = TodoListsRepositoryImpl(ref.watch(firestoreListsRemoteProvider));
+  final repo = TodoListsRepositoryImpl(
+    ref.watch(firestoreListsRemoteProvider),
+    pollInterval: ref.watch(pollIntervalProvider),
+  );
   ref.onDispose(repo.dispose);
   return repo;
 });
