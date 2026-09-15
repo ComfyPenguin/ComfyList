@@ -1,7 +1,6 @@
 import 'package:comfy_list/features/settings/presentation/providers/settings_provider.dart';
 import 'package:comfy_list/features/settings/presentation/widgets/appointment_reminder_selector.dart';
 import 'package:comfy_list/shared/core/theme/app_theme.dart';
-import 'package:comfy_list/shared/ui/buttons/primary_button.dart';
 import 'package:comfy_list/shared/ui/inputs/app_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -53,10 +52,6 @@ void main() {
       .map((chip) => chip.label)
       .toList();
 
-  bool canAdd(WidgetTester tester) =>
-      tester.widget<PrimaryButton>(find.byType(PrimaryButton)).onPressed !=
-      null;
-
   Future<void> openMenu(WidgetTester tester) async {
     await tester.tap(find.text('AÑADIR RECORDATORIO'));
     await tester.pumpAndSettle();
@@ -80,7 +75,6 @@ void main() {
 
     expect(chips(tester), isEmpty);
     expect(find.text('AÑADIR RECORDATORIO'), findsOneWidget);
-    expect(canAdd(tester), isTrue);
   });
 
   testWidgets('el botón abre el menú con los tiempos', (tester) async {
@@ -158,12 +152,11 @@ void main() {
     expect(chips(tester), ['45 min']);
   });
 
-  testWidgets('con los cinco puestos no se puede añadir', (tester) async {
+  testWidgets('con los cinco puestos el botón de añadir se va', (tester) async {
     // Aunque uno de los cinco sea personalizado: el tope lo cuentan todos.
     await pumpSelector(tester, minutes: const [5, 10, 15, 30, 45]);
 
-    expect(canAdd(tester), isFalse);
-    expect(find.textContaining('Máximo 5 recordatorios'), findsOneWidget);
+    expect(find.text('AÑADIR RECORDATORIO'), findsNothing);
   });
 
   testWidgets('el aviso a la hora que quedara guardado sigue leyéndose', (

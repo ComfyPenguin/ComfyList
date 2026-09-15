@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/core/theme/app_spacing.dart';
-import '../../../../shared/core/theme/app_theme.dart';
-import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/ui/buttons/primary_button.dart';
 import '../../../../shared/ui/inputs/app_chip.dart';
 import '../../domain/entities/app_settings.dart';
@@ -22,7 +20,8 @@ const int _defaultCustomMinutes = 20;
 /// un botón para añadir más hasta [maxAppointmentReminders].
 ///
 /// Se añaden desde el menú —no hay opciones sueltas que encender— y se quitan
-/// tocando su pastilla.
+/// tocando su pastilla. Con el máximo puesto el botón se va, que ya no queda
+/// nada que ofrecer.
 class AppointmentReminderSelector extends ConsumerWidget {
   const AppointmentReminderSelector({
     super.key,
@@ -95,21 +94,14 @@ class AppointmentReminderSelector extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
           ],
-          PrimaryButton(
-            label: 'Añadir recordatorio',
-            icon: Icons.add_rounded,
-            onPressed: canAdd ? add : null,
-            expand: true,
-            dense: true,
-          ),
-          if (!canAdd) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              'Máximo $maxAppointmentReminders recordatorios: quita uno para '
-              'añadir otro.',
-              style: AppTypography.bodySm.copyWith(color: context.colors.body),
+          if (canAdd)
+            PrimaryButton(
+              label: 'Añadir recordatorio',
+              icon: Icons.add_rounded,
+              onPressed: add,
+              expand: true,
+              dense: true,
             ),
-          ],
         ],
       ),
     );
