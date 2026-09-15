@@ -65,6 +65,25 @@ void main() {
       expect((res as Err).failure, isA<TimeoutFailure>());
     });
 
+    test('el watcher vuelve a pedir la lista en cada tick', () async {
+      when(() => remote.listLists('u1'))
+          .thenAnswer((_) async => <TodoList>[buildTodoList()]);
+
+      final polled = TodoListsRepositoryImpl(
+        remote,
+        pollInterval: const Duration(milliseconds: 20),
+      );
+      addTearDown(polled.dispose);
+
+      final sub = polled.watchLists('u1').listen((_) {});
+
+      // Margen de sobra para el fetch inicial y varios ticks.
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      await sub.cancel();
+
+      verify(() => remote.listLists('u1')).called(greaterThan(1));
+    });
+
     test('createList refreshes the watcher after success', () async {
       when(() => remote.listLists('u1'))
           .thenAnswer((_) async => <TodoList>[buildTodoList()]);

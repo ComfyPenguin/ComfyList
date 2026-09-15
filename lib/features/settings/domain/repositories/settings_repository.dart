@@ -20,6 +20,8 @@ abstract class SettingsRepository {
 
   Future<void> setAppointmentsCompletedToBottom(bool enabled);
 
+  Future<void> setAppointmentsTodayOnTop(bool enabled);
+
   Future<void> setInvertSwipeActions(bool enabled);
 
   Future<void> setUse24HourFormat(bool enabled);

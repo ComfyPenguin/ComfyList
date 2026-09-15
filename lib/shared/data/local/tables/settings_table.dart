@@ -23,6 +23,11 @@ class SettingsTable extends Table {
   BoolColumn get appointmentsCompletedToBottom =>
       boolean().withDefault(const Constant(true))();
 
+  /// Si `true`, el día de hoy va primero en la lista de citas, aunque haya
+  /// días pasados por delante.
+  BoolColumn get appointmentsTodayOnTop =>
+      boolean().withDefault(const Constant(true))();
+
   /// Si `true`, las acciones del deslizamiento se invierten: eliminar queda
   /// a la izquierda y completar a la derecha (y viceversa en `false`).
   BoolColumn get invertSwipeActions =>

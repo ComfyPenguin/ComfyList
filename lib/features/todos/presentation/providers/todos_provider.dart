@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/core/failures/failure.dart';
+import '../../../../shared/core/time/clock.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/providers/auth_state.dart';
 import '../../data/datasources/firestore_rest_remote.dart';
@@ -15,7 +16,10 @@ final firestoreRestRemoteProvider = Provider<FirestoreRestRemote>((ref) {
 });
 
 final todosRepositoryProvider = Provider<TodosRepository>((ref) {
-  final repo = TodosRepositoryImpl(ref.watch(firestoreRestRemoteProvider));
+  final repo = TodosRepositoryImpl(
+    ref.watch(firestoreRestRemoteProvider),
+    pollInterval: ref.watch(pollIntervalProvider),
+  );
   ref.onDispose(repo.dispose);
   return repo;
 });

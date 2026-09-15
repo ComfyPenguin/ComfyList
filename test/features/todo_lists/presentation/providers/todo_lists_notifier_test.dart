@@ -1,12 +1,15 @@
 import 'dart:async';
 
 import 'package:comfy_list/features/auth/presentation/providers/auth_state.dart';
+import 'package:comfy_list/features/todo_lists/data/datasources/firestore_lists_remote.dart';
+import 'package:comfy_list/features/todo_lists/data/repositories/todo_lists_repository_impl.dart';
 import 'package:comfy_list/features/todo_lists/domain/entities/todo_list.dart';
 import 'package:comfy_list/features/todo_lists/domain/repositories/todo_lists_repository.dart';
 import 'package:comfy_list/features/todo_lists/presentation/providers/todo_lists_provider.dart';
 import 'package:comfy_list/features/todo_lists/presentation/providers/todo_lists_state.dart';
 import 'package:comfy_list/shared/core/failures/failure.dart';
 import 'package:comfy_list/shared/core/result/result.dart';
+import 'package:comfy_list/shared/core/time/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -16,8 +19,24 @@ import '../../../../helpers/test_helpers.dart';
 
 class _MockRepo extends Mock implements TodoListsRepository {}
 
+class _MockRemote extends Mock implements FirestoreListsRemote {}
+
 void main() {
   late _MockRepo repo;
+
+  test('el repo de la app toma la cadencia del polling del provider', () {
+    final container = createTestContainer(
+      remoteOverrides: {FirestoreListsRemote: _MockRemote()},
+      extra: [
+        pollIntervalProvider.overrideWithValue(const Duration(seconds: 3)),
+      ],
+    );
+
+    final repo =
+        container.read(todoListsRepositoryProvider) as TodoListsRepositoryImpl;
+
+    expect(repo.pollInterval, const Duration(seconds: 3));
+  });
 
   setUp(() {
     repo = _MockRepo();

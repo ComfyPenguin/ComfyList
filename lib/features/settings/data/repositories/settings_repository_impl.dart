@@ -18,6 +18,7 @@ class SettingsRepositoryImpl implements SettingsRepository {
       appointmentsCompletionEnabled: row.appointmentsCompletionEnabled,
       completedToBottom: row.completedToBottom,
       appointmentsCompletedToBottom: row.appointmentsCompletedToBottom,
+      appointmentsTodayOnTop: row.appointmentsTodayOnTop,
       invertSwipeActions: row.invertSwipeActions,
       use24HourFormat: row.use24HourFormat,
     );
@@ -32,6 +33,7 @@ class SettingsRepositoryImpl implements SettingsRepository {
             appointmentsCompletionEnabled: row.appointmentsCompletionEnabled,
             completedToBottom: row.completedToBottom,
             appointmentsCompletedToBottom: row.appointmentsCompletedToBottom,
+            appointmentsTodayOnTop: row.appointmentsTodayOnTop,
             invertSwipeActions: row.invertSwipeActions,
             use24HourFormat: row.use24HourFormat,
           ),
@@ -61,6 +63,11 @@ class SettingsRepositoryImpl implements SettingsRepository {
   @override
   Future<void> setAppointmentsCompletedToBottom(bool enabled) {
     return _local.updateAppointmentsCompletedToBottom(enabled);
+  }
+
+  @override
+  Future<void> setAppointmentsTodayOnTop(bool enabled) {
+    return _local.updateAppointmentsTodayOnTop(enabled);
   }
 
   @override

@@ -94,6 +94,21 @@ class $SettingsTableTable extends SettingsTable
         ),
         defaultValue: const Constant(true),
       );
+  static const VerificationMeta _appointmentsTodayOnTopMeta =
+      const VerificationMeta('appointmentsTodayOnTop');
+  @override
+  late final GeneratedColumn<bool> appointmentsTodayOnTop =
+      GeneratedColumn<bool>(
+        'appointments_today_on_top',
+        aliasedName,
+        false,
+        type: DriftSqlType.bool,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("appointments_today_on_top" IN (0, 1))',
+        ),
+        defaultValue: const Constant(true),
+      );
   static const VerificationMeta _invertSwipeActionsMeta =
       const VerificationMeta('invertSwipeActions');
   @override
@@ -142,6 +157,7 @@ class $SettingsTableTable extends SettingsTable
     appointmentsCompletionEnabled,
     completedToBottom,
     appointmentsCompletedToBottom,
+    appointmentsTodayOnTop,
     invertSwipeActions,
     use24HourFormat,
     updatedAt,
@@ -200,6 +216,15 @@ class $SettingsTableTable extends SettingsTable
         appointmentsCompletedToBottom.isAcceptableOrUnknown(
           data['appointments_completed_to_bottom']!,
           _appointmentsCompletedToBottomMeta,
+        ),
+      );
+    }
+    if (data.containsKey('appointments_today_on_top')) {
+      context.handle(
+        _appointmentsTodayOnTopMeta,
+        appointmentsTodayOnTop.isAcceptableOrUnknown(
+          data['appointments_today_on_top']!,
+          _appointmentsTodayOnTopMeta,
         ),
       );
     }
@@ -262,6 +287,10 @@ class $SettingsTableTable extends SettingsTable
         DriftSqlType.bool,
         data['${effectivePrefix}appointments_completed_to_bottom'],
       )!,
+      appointmentsTodayOnTop: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}appointments_today_on_top'],
+      )!,
       invertSwipeActions: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}invert_swipe_actions'],
@@ -297,6 +326,10 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
   /// Si `true`, las citas completadas van al final de la lista de su día.
   final bool appointmentsCompletedToBottom;
 
+  /// Si `true`, el día de hoy va primero en la lista de citas, aunque haya
+  /// días pasados por delante.
+  final bool appointmentsTodayOnTop;
+
   /// Si `true`, las acciones del deslizamiento se invierten: eliminar queda
   /// a la izquierda y completar a la derecha (y viceversa en `false`).
   final bool invertSwipeActions;
@@ -312,6 +345,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     required this.appointmentsCompletionEnabled,
     required this.completedToBottom,
     required this.appointmentsCompletedToBottom,
+    required this.appointmentsTodayOnTop,
     required this.invertSwipeActions,
     required this.use24HourFormat,
     required this.updatedAt,
@@ -329,6 +363,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     map['appointments_completed_to_bottom'] = Variable<bool>(
       appointmentsCompletedToBottom,
     );
+    map['appointments_today_on_top'] = Variable<bool>(appointmentsTodayOnTop);
     map['invert_swipe_actions'] = Variable<bool>(invertSwipeActions);
     map['use24_hour_format'] = Variable<bool>(use24HourFormat);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -343,6 +378,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       appointmentsCompletionEnabled: Value(appointmentsCompletionEnabled),
       completedToBottom: Value(completedToBottom),
       appointmentsCompletedToBottom: Value(appointmentsCompletedToBottom),
+      appointmentsTodayOnTop: Value(appointmentsTodayOnTop),
       invertSwipeActions: Value(invertSwipeActions),
       use24HourFormat: Value(use24HourFormat),
       updatedAt: Value(updatedAt),
@@ -367,6 +403,9 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       appointmentsCompletedToBottom: serializer.fromJson<bool>(
         json['appointmentsCompletedToBottom'],
       ),
+      appointmentsTodayOnTop: serializer.fromJson<bool>(
+        json['appointmentsTodayOnTop'],
+      ),
       invertSwipeActions: serializer.fromJson<bool>(json['invertSwipeActions']),
       use24HourFormat: serializer.fromJson<bool>(json['use24HourFormat']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
@@ -386,6 +425,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       'appointmentsCompletedToBottom': serializer.toJson<bool>(
         appointmentsCompletedToBottom,
       ),
+      'appointmentsTodayOnTop': serializer.toJson<bool>(appointmentsTodayOnTop),
       'invertSwipeActions': serializer.toJson<bool>(invertSwipeActions),
       'use24HourFormat': serializer.toJson<bool>(use24HourFormat),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
@@ -399,6 +439,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     bool? appointmentsCompletionEnabled,
     bool? completedToBottom,
     bool? appointmentsCompletedToBottom,
+    bool? appointmentsTodayOnTop,
     bool? invertSwipeActions,
     bool? use24HourFormat,
     DateTime? updatedAt,
@@ -411,6 +452,8 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     completedToBottom: completedToBottom ?? this.completedToBottom,
     appointmentsCompletedToBottom:
         appointmentsCompletedToBottom ?? this.appointmentsCompletedToBottom,
+    appointmentsTodayOnTop:
+        appointmentsTodayOnTop ?? this.appointmentsTodayOnTop,
     invertSwipeActions: invertSwipeActions ?? this.invertSwipeActions,
     use24HourFormat: use24HourFormat ?? this.use24HourFormat,
     updatedAt: updatedAt ?? this.updatedAt,
@@ -431,6 +474,9 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       appointmentsCompletedToBottom: data.appointmentsCompletedToBottom.present
           ? data.appointmentsCompletedToBottom.value
           : this.appointmentsCompletedToBottom,
+      appointmentsTodayOnTop: data.appointmentsTodayOnTop.present
+          ? data.appointmentsTodayOnTop.value
+          : this.appointmentsTodayOnTop,
       invertSwipeActions: data.invertSwipeActions.present
           ? data.invertSwipeActions.value
           : this.invertSwipeActions,
@@ -454,6 +500,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
           ..write(
             'appointmentsCompletedToBottom: $appointmentsCompletedToBottom, ',
           )
+          ..write('appointmentsTodayOnTop: $appointmentsTodayOnTop, ')
           ..write('invertSwipeActions: $invertSwipeActions, ')
           ..write('use24HourFormat: $use24HourFormat, ')
           ..write('updatedAt: $updatedAt')
@@ -469,6 +516,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     appointmentsCompletionEnabled,
     completedToBottom,
     appointmentsCompletedToBottom,
+    appointmentsTodayOnTop,
     invertSwipeActions,
     use24HourFormat,
     updatedAt,
@@ -485,6 +533,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
           other.completedToBottom == this.completedToBottom &&
           other.appointmentsCompletedToBottom ==
               this.appointmentsCompletedToBottom &&
+          other.appointmentsTodayOnTop == this.appointmentsTodayOnTop &&
           other.invertSwipeActions == this.invertSwipeActions &&
           other.use24HourFormat == this.use24HourFormat &&
           other.updatedAt == this.updatedAt);
@@ -497,6 +546,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
   final Value<bool> appointmentsCompletionEnabled;
   final Value<bool> completedToBottom;
   final Value<bool> appointmentsCompletedToBottom;
+  final Value<bool> appointmentsTodayOnTop;
   final Value<bool> invertSwipeActions;
   final Value<bool> use24HourFormat;
   final Value<DateTime> updatedAt;
@@ -507,6 +557,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     this.appointmentsCompletionEnabled = const Value.absent(),
     this.completedToBottom = const Value.absent(),
     this.appointmentsCompletedToBottom = const Value.absent(),
+    this.appointmentsTodayOnTop = const Value.absent(),
     this.invertSwipeActions = const Value.absent(),
     this.use24HourFormat = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -518,6 +569,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     this.appointmentsCompletionEnabled = const Value.absent(),
     this.completedToBottom = const Value.absent(),
     this.appointmentsCompletedToBottom = const Value.absent(),
+    this.appointmentsTodayOnTop = const Value.absent(),
     this.invertSwipeActions = const Value.absent(),
     this.use24HourFormat = const Value.absent(),
     required DateTime updatedAt,
@@ -529,6 +581,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     Expression<bool>? appointmentsCompletionEnabled,
     Expression<bool>? completedToBottom,
     Expression<bool>? appointmentsCompletedToBottom,
+    Expression<bool>? appointmentsTodayOnTop,
     Expression<bool>? invertSwipeActions,
     Expression<bool>? use24HourFormat,
     Expression<DateTime>? updatedAt,
@@ -543,6 +596,8 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
       if (completedToBottom != null) 'completed_to_bottom': completedToBottom,
       if (appointmentsCompletedToBottom != null)
         'appointments_completed_to_bottom': appointmentsCompletedToBottom,
+      if (appointmentsTodayOnTop != null)
+        'appointments_today_on_top': appointmentsTodayOnTop,
       if (invertSwipeActions != null)
         'invert_swipe_actions': invertSwipeActions,
       if (use24HourFormat != null) 'use24_hour_format': use24HourFormat,
@@ -557,6 +612,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     Value<bool>? appointmentsCompletionEnabled,
     Value<bool>? completedToBottom,
     Value<bool>? appointmentsCompletedToBottom,
+    Value<bool>? appointmentsTodayOnTop,
     Value<bool>? invertSwipeActions,
     Value<bool>? use24HourFormat,
     Value<DateTime>? updatedAt,
@@ -570,6 +626,8 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
       completedToBottom: completedToBottom ?? this.completedToBottom,
       appointmentsCompletedToBottom:
           appointmentsCompletedToBottom ?? this.appointmentsCompletedToBottom,
+      appointmentsTodayOnTop:
+          appointmentsTodayOnTop ?? this.appointmentsTodayOnTop,
       invertSwipeActions: invertSwipeActions ?? this.invertSwipeActions,
       use24HourFormat: use24HourFormat ?? this.use24HourFormat,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -601,6 +659,11 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
         appointmentsCompletedToBottom.value,
       );
     }
+    if (appointmentsTodayOnTop.present) {
+      map['appointments_today_on_top'] = Variable<bool>(
+        appointmentsTodayOnTop.value,
+      );
+    }
     if (invertSwipeActions.present) {
       map['invert_swipe_actions'] = Variable<bool>(invertSwipeActions.value);
     }
@@ -626,6 +689,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
           ..write(
             'appointmentsCompletedToBottom: $appointmentsCompletedToBottom, ',
           )
+          ..write('appointmentsTodayOnTop: $appointmentsTodayOnTop, ')
           ..write('invertSwipeActions: $invertSwipeActions, ')
           ..write('use24HourFormat: $use24HourFormat, ')
           ..write('updatedAt: $updatedAt')
@@ -979,6 +1043,7 @@ typedef $$SettingsTableTableCreateCompanionBuilder =
       Value<bool> appointmentsCompletionEnabled,
       Value<bool> completedToBottom,
       Value<bool> appointmentsCompletedToBottom,
+      Value<bool> appointmentsTodayOnTop,
       Value<bool> invertSwipeActions,
       Value<bool> use24HourFormat,
       required DateTime updatedAt,
@@ -991,6 +1056,7 @@ typedef $$SettingsTableTableUpdateCompanionBuilder =
       Value<bool> appointmentsCompletionEnabled,
       Value<bool> completedToBottom,
       Value<bool> appointmentsCompletedToBottom,
+      Value<bool> appointmentsTodayOnTop,
       Value<bool> invertSwipeActions,
       Value<bool> use24HourFormat,
       Value<DateTime> updatedAt,
@@ -1032,6 +1098,11 @@ class $$SettingsTableTableFilterComposer
 
   ColumnFilters<bool> get appointmentsCompletedToBottom => $composableBuilder(
     column: $table.appointmentsCompletedToBottom,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get appointmentsTodayOnTop => $composableBuilder(
+    column: $table.appointmentsTodayOnTop,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1090,6 +1161,11 @@ class $$SettingsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get appointmentsTodayOnTop => $composableBuilder(
+    column: $table.appointmentsTodayOnTop,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get invertSwipeActions => $composableBuilder(
     column: $table.invertSwipeActions,
     builder: (column) => ColumnOrderings(column),
@@ -1138,6 +1214,11 @@ class $$SettingsTableTableAnnotationComposer
 
   GeneratedColumn<bool> get appointmentsCompletedToBottom => $composableBuilder(
     column: $table.appointmentsCompletedToBottom,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get appointmentsTodayOnTop => $composableBuilder(
+    column: $table.appointmentsTodayOnTop,
     builder: (column) => column,
   );
 
@@ -1194,6 +1275,7 @@ class $$SettingsTableTableTableManager
                 Value<bool> completedToBottom = const Value.absent(),
                 Value<bool> appointmentsCompletedToBottom =
                     const Value.absent(),
+                Value<bool> appointmentsTodayOnTop = const Value.absent(),
                 Value<bool> invertSwipeActions = const Value.absent(),
                 Value<bool> use24HourFormat = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
@@ -1204,6 +1286,7 @@ class $$SettingsTableTableTableManager
                 appointmentsCompletionEnabled: appointmentsCompletionEnabled,
                 completedToBottom: completedToBottom,
                 appointmentsCompletedToBottom: appointmentsCompletedToBottom,
+                appointmentsTodayOnTop: appointmentsTodayOnTop,
                 invertSwipeActions: invertSwipeActions,
                 use24HourFormat: use24HourFormat,
                 updatedAt: updatedAt,
@@ -1218,6 +1301,7 @@ class $$SettingsTableTableTableManager
                 Value<bool> completedToBottom = const Value.absent(),
                 Value<bool> appointmentsCompletedToBottom =
                     const Value.absent(),
+                Value<bool> appointmentsTodayOnTop = const Value.absent(),
                 Value<bool> invertSwipeActions = const Value.absent(),
                 Value<bool> use24HourFormat = const Value.absent(),
                 required DateTime updatedAt,
@@ -1228,6 +1312,7 @@ class $$SettingsTableTableTableManager
                 appointmentsCompletionEnabled: appointmentsCompletionEnabled,
                 completedToBottom: completedToBottom,
                 appointmentsCompletedToBottom: appointmentsCompletedToBottom,
+                appointmentsTodayOnTop: appointmentsTodayOnTop,
                 invertSwipeActions: invertSwipeActions,
                 use24HourFormat: use24HourFormat,
                 updatedAt: updatedAt,

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../shared/core/text/date_format.dart';
+import '../../../../shared/core/time/clock.dart';
 import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_stroke.dart';
@@ -36,7 +37,7 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
-  DateTime _dateTime = DateTime.now();
+  late DateTime _dateTime = ref.read(clockProvider)();
   String? _titleError;
   bool _hydrated = false;
   String _hydratedTitle = '';

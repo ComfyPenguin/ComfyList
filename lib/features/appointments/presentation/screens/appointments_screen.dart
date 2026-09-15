@@ -11,6 +11,7 @@ import '../../../../shared/core/theme/app_shadow.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
+import '../../../../shared/core/time/clock.dart';
 import '../../../../shared/ui/lists/slide_flow.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../../settings/presentation/providers/settings_state.dart';
@@ -258,6 +259,8 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
     final completionEnabled = settings?.appointmentsCompletionEnabled ?? false;
     // Si el ajuste está activado, las completadas van al final de su día.
     final completedToBottom = settings?.appointmentsCompletedToBottom ?? true;
+    // Y el día de hoy va primero, por delante de los días pasados.
+    final todayOnTop = settings?.appointmentsTodayOnTop ?? true;
 
     // Ordenar por fecha ascendente (más próximas primero).
     // Separar las completadas al final de su día solo con el ajuste activo.
@@ -281,6 +284,8 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
     }
 
     final sortedDates = grouped.keys.toList()..sort();
+    if (todayOnTop) _anchorNearDays(sortedDates);
+
     final visibleDates = sortedDates.toSet();
     _tileRevealProgressByDate.removeWhere(
       (date, _) => !visibleDates.contains(date),
@@ -299,6 +304,9 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
 
       listChildren.add(
         _AppointmentGroup(
+          // La lista puede reordenarse al anclar hoy: la clave mantiene cada
+          // grupo —y el estado de sus filas— pegado a su día.
+          key: ValueKey(date),
           dateLabel: _formatDateHeader(date),
           isToday: _isToday(date),
           dateHeaderStyle: dateHeaderStyle,
@@ -343,29 +351,47 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
     );
   }
 
+  /// Medianoche del día que cuenta como hoy, leída del reloj de la app.
+  DateTime get _today {
+    final now = ref.read(clockProvider)();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  /// Sube hoy al principio y deja mañana justo debajo. Sin esto los días
+  /// pasados se cuelan entre los dos, porque el resto va en ascendente.
+  void _anchorNearDays(List<DateTime> dates) {
+    final today = _today;
+    final todayIndex = dates.indexOf(today);
+    if (todayIndex < 0) return;
+    if (todayIndex > 0) dates.insert(0, dates.removeAt(todayIndex));
+
+    final tomorrowIndex = dates.indexOf(_dayAfter(today));
+    if (tomorrowIndex > 1) dates.insert(1, dates.removeAt(tomorrowIndex));
+  }
+
+  /// Día siguiente. Constructor en vez de sumar 24 h: en los cambios de hora el
+  /// día siguiente no cae justo a medianoche.
+  static DateTime _dayAfter(DateTime date) =>
+      DateTime(date.year, date.month, date.day + 1);
+
   /// Formato de cabecera de fecha. Muestra "HOY" o "MAÑANA" cuando
   /// corresponde, y la fecha completa en otros casos.
   String _formatDateHeader(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final tomorrow = today.add(const Duration(days: 1));
+    final today = _today;
 
     if (date == today) return 'CITAS DE HOY';
-    if (date == tomorrow) return 'MAÑANA';
+    if (date == _dayAfter(today)) return 'MAÑANA';
 
     return DateFormat('EEEE, d MMM', 'es_ES').format(date).toUpperCase();
   }
 
   /// Usado para diferenciar la cabecera de "hoy" (píldora negra) del resto (texto plano).
-  bool _isToday(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    return date == today;
-  }
+  bool _isToday(DateTime date) => date == _today;
 }
 
 class _AppointmentGroup extends StatelessWidget {
   const _AppointmentGroup({
+    super.key,
     required this.dateLabel,
     required this.isToday,
     required this.dateHeaderStyle,

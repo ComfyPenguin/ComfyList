@@ -101,6 +101,26 @@ void main() {
       expect((res as Err).failure, isA<AuthFailure>());
     });
 
+    test('el watcher vuelve a pedir la lista en cada tick', () async {
+      when(() => remote.listTodos(uid: 'u1', listId: 'L1'))
+          .thenAnswer((_) async => <Todo>[buildTodo()]);
+
+      final polled = TodosRepositoryImpl(
+        remote,
+        pollInterval: const Duration(milliseconds: 20),
+      );
+      addTearDown(polled.dispose);
+
+      final sub = polled.watchTodos(uid: 'u1', listId: 'L1').listen((_) {});
+
+      // Margen de sobra para el fetch inicial y varios ticks.
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      await sub.cancel();
+
+      verify(() => remote.listTodos(uid: 'u1', listId: 'L1'))
+          .called(greaterThan(1));
+    });
+
     test('fetchTodos returns Err(NetworkFailure) on connectionError', () async {
       when(() => remote.listTodos(uid: 'u1', listId: 'L1')).thenThrow(
         DioException(

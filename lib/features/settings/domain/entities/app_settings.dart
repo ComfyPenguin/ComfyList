@@ -9,6 +9,7 @@ class AppSettings {
     required this.appointmentsCompletionEnabled,
     required this.completedToBottom,
     required this.appointmentsCompletedToBottom,
+    required this.appointmentsTodayOnTop,
     required this.invertSwipeActions,
     required this.use24HourFormat,
   });
@@ -22,6 +23,10 @@ class AppSettings {
 
   /// Si es `true`, las citas completadas se mueven al final de su día.
   final bool appointmentsCompletedToBottom;
+
+  /// Si es `true`, el día de hoy va primero en la lista de citas, aunque haya
+  /// días pasados por delante.
+  final bool appointmentsTodayOnTop;
 
   /// Si es `true`, las acciones del deslizamiento se invierten: eliminar a la
   /// izquierda y completar a la derecha (por defecto es al revés).
@@ -37,6 +42,7 @@ class AppSettings {
     appointmentsCompletionEnabled: false,
     completedToBottom: true,
     appointmentsCompletedToBottom: true,
+    appointmentsTodayOnTop: true,
     invertSwipeActions: false,
     use24HourFormat: true,
   );
@@ -47,6 +53,7 @@ class AppSettings {
     bool? appointmentsCompletionEnabled,
     bool? completedToBottom,
     bool? appointmentsCompletedToBottom,
+    bool? appointmentsTodayOnTop,
     bool? invertSwipeActions,
     bool? use24HourFormat,
   }) {
@@ -58,6 +65,8 @@ class AppSettings {
       completedToBottom: completedToBottom ?? this.completedToBottom,
       appointmentsCompletedToBottom:
           appointmentsCompletedToBottom ?? this.appointmentsCompletedToBottom,
+      appointmentsTodayOnTop:
+          appointmentsTodayOnTop ?? this.appointmentsTodayOnTop,
       invertSwipeActions: invertSwipeActions ?? this.invertSwipeActions,
       use24HourFormat: use24HourFormat ?? this.use24HourFormat,
     );

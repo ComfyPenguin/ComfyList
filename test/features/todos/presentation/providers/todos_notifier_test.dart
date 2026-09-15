@@ -1,12 +1,15 @@
 import 'dart:async';
 
 import 'package:comfy_list/features/auth/presentation/providers/auth_state.dart';
+import 'package:comfy_list/features/todos/data/datasources/firestore_rest_remote.dart';
+import 'package:comfy_list/features/todos/data/repositories/todos_repository_impl.dart';
 import 'package:comfy_list/features/todos/domain/entities/todo.dart';
 import 'package:comfy_list/features/todos/domain/repositories/todos_repository.dart';
 import 'package:comfy_list/features/todos/presentation/providers/todos_provider.dart';
 import 'package:comfy_list/features/todos/presentation/providers/todos_state.dart';
 import 'package:comfy_list/shared/core/failures/failure.dart';
 import 'package:comfy_list/shared/core/result/result.dart';
+import 'package:comfy_list/shared/core/time/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -15,11 +18,26 @@ import '../../../../helpers/test_helpers.dart';
 
 class _MockRepo extends Mock implements TodosRepository {}
 
+class _MockRemote extends Mock implements FirestoreRestRemote {}
+
 void main() {
   late _MockRepo repo;
 
   setUp(() {
     repo = _MockRepo();
+  });
+
+  test('el repo de la app toma la cadencia del polling del provider', () {
+    final container = createTestContainer(
+      remoteOverrides: {FirestoreRestRemote: _MockRemote()},
+      extra: [
+        pollIntervalProvider.overrideWithValue(const Duration(seconds: 3)),
+      ],
+    );
+
+    final repo = container.read(todosRepositoryProvider) as TodosRepositoryImpl;
+
+    expect(repo.pollInterval, const Duration(seconds: 3));
   });
 
   test('build returns TodosInitial when auth is not Authenticated', () async {

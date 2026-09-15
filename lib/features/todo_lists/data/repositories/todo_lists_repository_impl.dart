@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 
 import '../../../../shared/core/failures/failure.dart';
 import '../../../../shared/core/result/result.dart';
+import '../../../../shared/core/time/clock.dart';
 import '../../domain/entities/todo_list.dart';
 import '../../domain/repositories/todo_lists_repository.dart';
 import '../datasources/firestore_lists_remote.dart';
@@ -11,11 +12,16 @@ import '../datasources/firestore_lists_remote.dart';
 /// Implementación REST con polling 15s + refresh inmediato tras mutación.
 /// Mismo patrón que TodosRepositoryImpl.
 class TodoListsRepositoryImpl implements TodoListsRepository {
-  TodoListsRepositoryImpl(this._remote);
+  TodoListsRepositoryImpl(
+    this._remote, {
+    this.pollInterval = defaultPollInterval,
+  });
 
   final FirestoreListsRemote _remote;
 
-  static const Duration _pollInterval = Duration(seconds: 15);
+  /// Cada cuánto vuelve a pedir la lista cada watcher activo. En la app lo fija
+  /// [pollIntervalProvider]; los tests lo acortan para no esperar al tick real.
+  final Duration pollInterval;
 
   final Map<String, _Watcher> _watchers = {};
 
@@ -23,7 +29,7 @@ class TodoListsRepositoryImpl implements TodoListsRepository {
   Stream<List<TodoList>> watchLists(String uid) {
     final w = _watchers.putIfAbsent(
       uid,
-      () => _Watcher(uid, _remote, _pollInterval),
+      () => _Watcher(uid, _remote, pollInterval),
     );
     return w.stream;
   }

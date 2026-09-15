@@ -25,6 +25,7 @@ void main() {
     bool appointmentsCompletionEnabled = false,
     bool completedToBottom = true,
     bool appointmentsCompletedToBottom = true,
+    bool appointmentsTodayOnTop = true,
     bool invertSwipeActions = false,
     bool use24HourFormat = true,
   }) {
@@ -35,6 +36,7 @@ void main() {
       appointmentsCompletionEnabled: appointmentsCompletionEnabled,
       completedToBottom: completedToBottom,
       appointmentsCompletedToBottom: appointmentsCompletedToBottom,
+      appointmentsTodayOnTop: appointmentsTodayOnTop,
       invertSwipeActions: invertSwipeActions,
       use24HourFormat: use24HourFormat,
       updatedAt: DateTime.utc(2026, 6, 30, 12),
@@ -52,6 +54,7 @@ void main() {
       expect(result.appointmentsCompletionEnabled, isFalse);
       expect(result.completedToBottom, isTrue);
       expect(result.appointmentsCompletedToBottom, isTrue);
+      expect(result.appointmentsTodayOnTop, isTrue);
       expect(result.invertSwipeActions, isFalse);
       expect(result.use24HourFormat, isTrue);
     });
@@ -123,6 +126,8 @@ void main() {
       when(() => local.updateCompletedToBottom(any())).thenAnswer((_) async {});
       when(() => local.updateAppointmentsCompletedToBottom(any()))
           .thenAnswer((_) async {});
+      when(() => local.updateAppointmentsTodayOnTop(any()))
+          .thenAnswer((_) async {});
       when(() => local.updateInvertSwipeActions(any()))
           .thenAnswer((_) async {});
       when(() => local.updateUse24HourFormat(any())).thenAnswer((_) async {});
@@ -131,6 +136,7 @@ void main() {
       await repo.setAppointmentsCompletionEnabled(true);
       await repo.setCompletedToBottom(false);
       await repo.setAppointmentsCompletedToBottom(false);
+      await repo.setAppointmentsTodayOnTop(false);
       await repo.setInvertSwipeActions(true);
       await repo.setUse24HourFormat(false);
 
@@ -138,6 +144,7 @@ void main() {
       verify(() => local.updateAppointmentsCompletionEnabled(true)).called(1);
       verify(() => local.updateCompletedToBottom(false)).called(1);
       verify(() => local.updateAppointmentsCompletedToBottom(false)).called(1);
+      verify(() => local.updateAppointmentsTodayOnTop(false)).called(1);
       verify(() => local.updateInvertSwipeActions(true)).called(1);
       verify(() => local.updateUse24HourFormat(false)).called(1);
     });

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/text/capitalize.dart';
+import '../../core/time/clock.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_stroke.dart';
@@ -10,7 +12,8 @@ import '../../core/theme/app_typography.dart';
 import '../buttons/primary_button.dart';
 
 /// Abre el selector de fecha del DS y devuelve la fecha elegida, o `null` si
-/// se cancela.
+/// se cancela. El día que el calendario marca como hoy lo pone el reloj de la
+/// app ([clockProvider]).
 Future<DateTime?> showAppDatePicker(
   BuildContext context, {
   required DateTime initialDate,
@@ -187,20 +190,18 @@ class _DatePickerSheet extends StatefulWidget {
 }
 
 class _DatePickerSheetState extends State<_DatePickerSheet> {
-  /// Lunes de la semana actual — solo para los nombres de los días.
-  static final DateTime _weekStart = () {
-    final now = DateTime.now();
-    return DateTime(
-      now.year,
-      now.month,
-      now.day,
-    ).subtract(Duration(days: now.weekday - 1));
-  }();
-
-  static final DateTime _today = () {
-    final now = DateTime.now();
+  /// Medianoche del día que cuenta como hoy, leída del reloj de la app.
+  DateTime get _today {
+    final container = ProviderScope.containerOf(context, listen: false);
+    final now = container.read(clockProvider)();
     return DateTime(now.year, now.month, now.day);
-  }();
+  }
+
+  /// Lunes de la semana de [_today] — solo para los nombres de los días.
+  /// Con el constructor en vez de restar días: en los cambios de hora la
+  /// medianoche se desplaza.
+  DateTime get _weekStart =>
+      DateTime(_today.year, _today.month, _today.day - (_today.weekday - 1));
 
   late DateTime _month;
   late DateTime _selected;
