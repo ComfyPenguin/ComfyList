@@ -16,12 +16,17 @@ import 'settings_tile.dart';
 /// salen entre los presets y es un punto de partida razonable.
 const int _defaultCustomMinutes = 20;
 
+/// Ritmo del botón de añadir al aparecer y desaparecer, el mismo que el de las
+/// filas que se despliegan en Ajustes.
+const Duration _revealDuration = Duration(milliseconds: 260);
+const Curve _revealCurve = Curves.easeOutCubic;
+
 /// Recordatorios de una cita: los que tenga puestos, cada uno en su pastilla, y
 /// un botón para añadir más hasta [maxAppointmentReminders].
 ///
 /// Se añaden desde el menú —no hay opciones sueltas que encender— y se quitan
 /// tocando su pastilla. Con el máximo puesto el botón se va, que ya no queda
-/// nada que ofrecer.
+/// nada que ofrecer: entra y sale con el hueco, no apagado.
 class AppointmentReminderSelector extends ConsumerWidget {
   const AppointmentReminderSelector({
     super.key,
@@ -75,7 +80,7 @@ class AppointmentReminderSelector extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (selected.isNotEmpty) ...[
+          if (selected.isNotEmpty)
             Wrap(
               alignment: WrapAlignment.center,
               spacing: AppSpacing.sm,
@@ -92,16 +97,41 @@ class AppointmentReminderSelector extends ConsumerWidget {
                   ),
               ],
             ),
-            const SizedBox(height: AppSpacing.lg),
-          ],
-          if (canAdd)
-            PrimaryButton(
-              label: 'Añadir recordatorio',
-              icon: Icons.add_rounded,
-              onPressed: add,
-              expand: true,
-              dense: true,
+          // El botón entra y sale con su hueco: vuelve al quitar una pastilla y
+          // se va al poner la quinta. Se animan el hueco y el fundido, no un
+          // despliegue recortado como el de las filas que cuelgan de un ajuste:
+          // el recorte le cortaría el halo al botón.
+          AnimatedAlign(
+            alignment: Alignment.topCenter,
+            heightFactor: canAdd ? 1 : 0,
+            duration: _revealDuration,
+            curve: _revealCurve,
+            child: ExcludeSemantics(
+              excluding: !canAdd,
+              child: IgnorePointer(
+                ignoring: !canAdd,
+                child: AnimatedOpacity(
+                  opacity: canAdd ? 1 : 0,
+                  duration: _revealDuration,
+                  curve: _revealCurve,
+                  child: Padding(
+                    // Con pastillas puestas va separado de ellas; sin ninguna,
+                    // pegado al título.
+                    padding: EdgeInsets.only(
+                      top: selected.isEmpty ? 0 : AppSpacing.lg,
+                    ),
+                    child: PrimaryButton(
+                      label: 'Añadir recordatorio',
+                      icon: Icons.add_rounded,
+                      onPressed: add,
+                      expand: true,
+                      dense: true,
+                    ),
+                  ),
+                ),
+              ),
             ),
+          ),
         ],
       ),
     );

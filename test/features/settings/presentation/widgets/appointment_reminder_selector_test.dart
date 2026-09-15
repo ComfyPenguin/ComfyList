@@ -1,6 +1,7 @@
 import 'package:comfy_list/features/settings/presentation/providers/settings_provider.dart';
 import 'package:comfy_list/features/settings/presentation/widgets/appointment_reminder_selector.dart';
 import 'package:comfy_list/shared/core/theme/app_theme.dart';
+import 'package:comfy_list/shared/ui/buttons/primary_button.dart';
 import 'package:comfy_list/shared/ui/inputs/app_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -152,11 +153,36 @@ void main() {
     expect(chips(tester), ['45 min']);
   });
 
-  testWidgets('con los cinco puestos el botón de añadir se va', (tester) async {
+  testWidgets('con los cinco puestos el botón se va y no deja hueco', (
+    tester,
+  ) async {
     // Aunque uno de los cinco sea personalizado: el tope lo cuentan todos.
     await pumpSelector(tester, minutes: const [5, 10, 15, 30, 45]);
+    await tester.pumpAndSettle();
 
-    expect(find.text('AÑADIR RECORDATORIO'), findsNothing);
+    // El botón sigue montado —es lo que le permite volver con su fundido—, así
+    // que lo que se mira es que no ocupe alto y que no responda.
+    final block = find.ancestor(
+      of: find.byType(PrimaryButton),
+      matching: find.byType(AnimatedAlign),
+    );
+    expect(tester.getSize(block).height, 0);
+
+    await tester.tap(find.byType(PrimaryButton), warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(find.text('10 minutos antes'), findsNothing);
+
+    // Y al quitar una pastilla vuelve abriendo el hueco, no de golpe.
+    await tester.tap(find.text('45 min'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    final midway = tester.getSize(block).height;
+
+    await tester.pumpAndSettle();
+    final expanded = tester.getSize(block).height;
+
+    expect(midway, greaterThan(0));
+    expect(midway, lessThan(expanded));
   });
 
   testWidgets('el aviso a la hora que quedara guardado sigue leyéndose', (
