@@ -20,6 +20,7 @@ import '../../../settings/presentation/providers/settings_state.dart';
 import '../../domain/entities/appointment.dart';
 import '../providers/appointments_provider.dart';
 import '../providers/appointments_state.dart';
+import '../widgets/reminder_warning.dart';
 
 /// Pantalla unificada de creación y edición de citas.
 /// Si [id] es null → crear; si no → editar.
@@ -256,6 +257,8 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
             ),
             onTap: _pickDateTime,
           ),
+          // Justo debajo de la hora, que es lo que avisa el recordatorio.
+          const ReminderWarning(),
           const SizedBox(height: AppSpacing.xxxl),
           PrimaryButton(
             label: _isEditing ? 'Guardar' : 'Crear',

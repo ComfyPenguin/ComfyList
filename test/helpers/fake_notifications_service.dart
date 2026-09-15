@@ -41,8 +41,18 @@ class FakeNotificationsService implements NotificationsService {
   /// caso en el que la app no tiene nada que pedir.
   bool exactAlarmsGranted = true;
 
+  /// Si el sistema deja mostrar avisos: permiso de notificaciones concedido y
+  /// sin bloqueo por parte del usuario.
+  bool notificationsAllowed = true;
+
   @override
   bool get supportsExactAlarms => true;
+
+  @override
+  bool get supportsNotifications => true;
+
+  @override
+  Future<bool> systemAllowsNotifications() async => notificationsAllowed;
 
   @override
   Future<bool> canScheduleExact() async => exactAlarmsGranted;

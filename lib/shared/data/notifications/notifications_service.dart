@@ -122,6 +122,26 @@ class NotificationsService {
   /// él los avisos caen en una alarma aproximada y pueden llegar tarde.
   bool get supportsExactAlarms => _isAndroid;
 
+  /// Si esta plataforma muestra avisos. Fuera de Android el plugin no tiene
+  /// implementación, así que no hay nada que consultar ni que avisar.
+  bool get supportsNotifications => _isAndroid;
+
+  /// Si el sistema deja que la app muestre avisos: el permiso de notificaciones
+  /// (Android 13+) y que el usuario no los haya bloqueado para la app.
+  Future<bool> systemAllowsNotifications() async {
+    if (!supportsNotifications) return false;
+    try {
+      return await _plugin
+              .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin
+              >()
+              ?.areNotificationsEnabled() ??
+          false;
+    } catch (e) {
+      return false;
+    }
+  }
+
   /// Si el sistema deja programar avisos exactos ahora mismo.
   Future<bool> canScheduleExact() async {
     if (!_isAndroid) return false;

@@ -50,9 +50,10 @@ final appointmentRemindersProvider = Provider<void>((ref) {
   ref.listen(appointmentsProvider, (_, _) => sync());
   ref.listen(settingsProvider, (_, _) => sync());
   // Conceder las alarmas exactas cambia cómo se programa cada aviso, pero el
-  // plan sigue igual: hay que reescribirlo a propósito.
-  ref.listen(exactAlarmsGrantedProvider, (_, next) {
-    if (next.value == true) sync(force: true);
+  // plan sigue igual: hay que reescribirlo a propósito. Solo cuando el valor
+  // cambia de verdad, que volver a preguntarlo es cosa de cada resume.
+  ref.listen(exactAlarmsGrantedProvider, (previous, next) {
+    if (previous?.value != next.value && next.value == true) sync(force: true);
   });
   sync();
 });

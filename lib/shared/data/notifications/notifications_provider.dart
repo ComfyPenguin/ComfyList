@@ -24,3 +24,14 @@ final exactAlarmsGrantedProvider = FutureProvider<bool>((ref) async {
   if (!service.supportsExactAlarms) return true;
   return service.canScheduleExact();
 });
+
+/// Si el sistema deja que la app muestre avisos ahora mismo.
+///
+/// Se descarta al dejar de mirarlo para no arrastrar una respuesta vieja: el
+/// permiso se concede desde los ajustes del sistema y cambia sin que la app se
+/// entere.
+final systemAllowsNotificationsProvider = FutureProvider<bool>((ref) async {
+  final service = ref.watch(notificationsServiceProvider);
+  if (!service.supportsNotifications) return true;
+  return service.systemAllowsNotifications();
+}, isAutoDispose: true);

@@ -105,6 +105,22 @@ void main() {
     verifyNever(() => android.requestNotificationsPermission());
   });
 
+  test('pregunta al sistema si deja mostrar avisos', () async {
+    when(
+      () => android.areNotificationsEnabled(),
+    ).thenAnswer((_) async => false);
+
+    expect(await service.systemAllowsNotifications(), isFalse);
+  });
+
+  test('si el sistema no contesta no se da por permitido', () async {
+    when(
+      () => android.areNotificationsEnabled(),
+    ).thenThrow(MissingPluginException('sin soporte'));
+
+    expect(await service.systemAllowsNotifications(), isFalse);
+  });
+
   test('el permiso de notificaciones lo concede el sistema', () async {
     when(
       () => android.requestNotificationsPermission(),
