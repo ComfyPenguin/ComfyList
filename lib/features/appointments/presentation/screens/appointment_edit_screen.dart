@@ -23,9 +23,13 @@ import '../providers/appointments_state.dart';
 /// Pantalla unificada de creación y edición de citas.
 /// Si [id] es null → crear; si no → editar.
 class AppointmentEditScreen extends ConsumerStatefulWidget {
-  const AppointmentEditScreen({super.key, this.id});
+  const AppointmentEditScreen({super.key, this.id, this.now});
 
   final String? id;
+
+  /// Momento que la pantalla toma como «ahora» al crear una cita. Solo lo
+  /// inyectan los tests: en la app va `null` y manda el reloj.
+  final DateTime? now;
 
   @override
   ConsumerState<AppointmentEditScreen> createState() =>
@@ -36,7 +40,7 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
-  DateTime _dateTime = DateTime.now();
+  late DateTime _dateTime = widget.now ?? DateTime.now();
   String? _titleError;
   bool _hydrated = false;
   String _hydratedTitle = '';
@@ -76,7 +80,11 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
   };
 
   Future<void> _pickDateTime() async {
-    final pickedDate = await showAppDatePicker(context, initialDate: _dateTime);
+    final pickedDate = await showAppDatePicker(
+      context,
+      initialDate: _dateTime,
+      today: widget.now,
+    );
     if (pickedDate == null) return;
 
     if (!mounted) return;

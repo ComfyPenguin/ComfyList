@@ -10,10 +10,12 @@ import '../../core/theme/app_typography.dart';
 import '../buttons/primary_button.dart';
 
 /// Abre el selector de fecha del DS y devuelve la fecha elegida, o `null` si
-/// se cancela.
+/// se cancela. [today] es el día que el calendario marca como hoy: solo lo
+/// inyectan los tests, en la app va `null` y manda el reloj.
 Future<DateTime?> showAppDatePicker(
   BuildContext context, {
   required DateTime initialDate,
+  DateTime? today,
 }) {
   return showModalBottomSheet<DateTime>(
     context: context,
@@ -22,7 +24,10 @@ Future<DateTime?> showAppDatePicker(
     isScrollControlled: true,
     useSafeArea: true,
     showDragHandle: true,
-    builder: (context) => _DatePickerSheet(initialDate: initialDate),
+    builder: (context) => _DatePickerSheet(
+      initialDate: initialDate,
+      today: today ?? DateTime.now(),
+    ),
   );
 }
 
@@ -178,29 +183,27 @@ class _WheelPicker extends StatelessWidget {
 /// Calendario del DS: navegación por mes, semana empezando en lunes y día
 /// seleccionado en primary (hoy queda marcado con borde hairline).
 class _DatePickerSheet extends StatefulWidget {
-  const _DatePickerSheet({required this.initialDate});
+  const _DatePickerSheet({required this.initialDate, required this.today});
 
   final DateTime initialDate;
+
+  /// Día que cuenta como hoy, con la hora que traiga: dentro se normaliza.
+  final DateTime today;
 
   @override
   State<_DatePickerSheet> createState() => _DatePickerSheetState();
 }
 
 class _DatePickerSheetState extends State<_DatePickerSheet> {
-  /// Lunes de la semana actual — solo para los nombres de los días.
-  static final DateTime _weekStart = () {
-    final now = DateTime.now();
-    return DateTime(
-      now.year,
-      now.month,
-      now.day,
-    ).subtract(Duration(days: now.weekday - 1));
-  }();
+  /// Medianoche del día que cuenta como hoy.
+  DateTime get _today =>
+      DateTime(widget.today.year, widget.today.month, widget.today.day);
 
-  static final DateTime _today = () {
-    final now = DateTime.now();
-    return DateTime(now.year, now.month, now.day);
-  }();
+  /// Lunes de la semana de [_today] — solo para los nombres de los días.
+  /// Con el constructor en vez de restar días: en los cambios de hora la
+  /// medianoche se desplaza.
+  DateTime get _weekStart =>
+      DateTime(_today.year, _today.month, _today.day - (_today.weekday - 1));
 
   late DateTime _month;
   late DateTime _selected;
