@@ -15,6 +15,8 @@ void main() {
       expect(defaults.appointmentsTodayOnTop, isTrue);
       expect(defaults.invertSwipeActions, isFalse);
       expect(defaults.use24HourFormat, isTrue);
+      expect(defaults.appointmentReminderLead,
+          AppointmentReminderLead.thirtyMinutes);
     });
   });
 
@@ -34,6 +36,7 @@ void main() {
       expect(updated.appointmentsTodayOnTop, baseline.appointmentsTodayOnTop);
       expect(updated.invertSwipeActions, baseline.invertSwipeActions);
       expect(updated.use24HourFormat, baseline.use24HourFormat);
+      expect(updated.appointmentReminderLead, baseline.appointmentReminderLead);
     });
 
     test('devuelve una instancia nueva (inmutable)', () {
@@ -56,6 +59,7 @@ void main() {
         appointmentsCompletedToBottom: false,
         appointmentsTodayOnTop: false,
         invertSwipeActions: true,
+        appointmentReminderLead: AppointmentReminderLead.atTime,
       );
 
       expect(updated.themeMode, ThemeMode.light);
@@ -64,9 +68,29 @@ void main() {
       expect(updated.appointmentsCompletedToBottom, isFalse);
       expect(updated.appointmentsTodayOnTop, isFalse);
       expect(updated.invertSwipeActions, isTrue);
+      expect(updated.appointmentReminderLead, AppointmentReminderLead.atTime);
       expect(updated.notificationsEnabled, baseline.notificationsEnabled);
       expect(updated.appointmentsCompletionEnabled,
           baseline.appointmentsCompletionEnabled);
+    });
+  });
+
+  group('AppointmentReminderLead.fromMinutes', () {
+    test('mapea cada opción por sus minutos', () {
+      for (final lead in AppointmentReminderLead.values) {
+        expect(AppointmentReminderLead.fromMinutes(lead.minutes), lead);
+      }
+    });
+
+    test('cae a 30 minutos con un valor que no es de ninguna opción', () {
+      expect(
+        AppointmentReminderLead.fromMinutes(7),
+        AppointmentReminderLead.thirtyMinutes,
+      );
+      expect(
+        AppointmentReminderLead.fromMinutes(null),
+        AppointmentReminderLead.thirtyMinutes,
+      );
     });
   });
 

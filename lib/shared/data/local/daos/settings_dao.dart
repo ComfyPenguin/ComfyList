@@ -110,4 +110,14 @@ class SettingsDao extends DatabaseAccessor<AppDatabase> with _$SettingsDaoMixin 
       ),
     );
   }
+
+  Future<void> updateAppointmentReminderMinutes(int minutes) async {
+    await getOrCreate();
+    await (update(settingsTable)..where((t) => t.id.equals(1))).write(
+      SettingsTableCompanion(
+        appointmentReminderMinutes: Value(minutes),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+  }
 }

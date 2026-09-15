@@ -77,6 +77,9 @@ class SettingsNotifier extends Notifier<SettingsState> {
 
   Future<void> setUse24HourFormat(bool enabled) =>
       ref.read(settingsRepositoryProvider).setUse24HourFormat(enabled);
+
+  Future<void> setAppointmentReminderLead(AppointmentReminderLead lead) =>
+      ref.read(settingsRepositoryProvider).setAppointmentReminderLead(lead);
 }
 
 final settingsProvider =
@@ -99,3 +102,14 @@ final use24HourFormatProvider = Provider<bool>((ref) {
     _ => AppSettings.defaults.use24HourFormat,
   };
 });
+
+/// Antelación del recordatorio de citas — la de por defecto mientras carga.
+final appointmentReminderLeadProvider = Provider<AppointmentReminderLead>(
+  (ref) {
+    final state = ref.watch(settingsProvider);
+    return switch (state) {
+      SettingsData(:final settings) => settings.appointmentReminderLead,
+      _ => AppSettings.defaults.appointmentReminderLead,
+    };
+  },
+);

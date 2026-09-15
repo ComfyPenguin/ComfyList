@@ -92,6 +92,7 @@ AppSettings buildAppSettings({
   bool? appointmentsTodayOnTop,
   bool? invertSwipeActions,
   bool? use24HourFormat,
+  AppointmentReminderLead? appointmentReminderLead,
 }) {
   return AppSettings(
     themeMode: themeMode ?? AppSettings.defaults.themeMode,
@@ -108,6 +109,8 @@ AppSettings buildAppSettings({
     invertSwipeActions:
         invertSwipeActions ?? AppSettings.defaults.invertSwipeActions,
     use24HourFormat: use24HourFormat ?? AppSettings.defaults.use24HourFormat,
+    appointmentReminderLead:
+        appointmentReminderLead ?? AppSettings.defaults.appointmentReminderLead,
   );
 }
 
@@ -123,6 +126,7 @@ SettingsRow buildSettingsRow({
   bool appointmentsTodayOnTop = true,
   bool invertSwipeActions = false,
   bool use24HourFormat = true,
+  int appointmentReminderMinutes = 30,
   DateTime? updatedAt,
 }) {
   return SettingsRow(
@@ -135,6 +139,7 @@ SettingsRow buildSettingsRow({
     appointmentsTodayOnTop: appointmentsTodayOnTop,
     invertSwipeActions: invertSwipeActions,
     use24HourFormat: use24HourFormat,
+    appointmentReminderMinutes: appointmentReminderMinutes,
     updatedAt: updatedAt ?? DateTime.now().toUtc(),
   );
 }

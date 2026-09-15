@@ -9,6 +9,7 @@ import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/ui/animations/unfold_down.dart';
 import '../providers/settings_provider.dart';
 import '../providers/settings_state.dart';
+import '../widgets/appointment_reminder_selector.dart';
 import '../widgets/appointments_completed_to_bottom_toggle.dart';
 import '../widgets/appointments_completion_toggle.dart';
 import '../widgets/completed_to_bottom_toggle.dart';
@@ -46,6 +47,10 @@ class SettingsScreen extends ConsumerWidget {
       SettingsData(:final settings) => settings.appointmentsCompletionEnabled,
       _ => null,
     };
+    final notificationsEnabled = switch (state) {
+      SettingsData(:final settings) => settings.notificationsEnabled,
+      _ => null,
+    };
 
     return ListView(
       padding: EdgeInsets.fromLTRB(
@@ -63,7 +68,24 @@ class SettingsScreen extends ConsumerWidget {
         const SizedBox(height: AppSpacing.joined),
         const InvertSwipeActionsToggle(isFirst: false, isLast: false),
         const SizedBox(height: AppSpacing.joined),
-        const NotificationsToggle(isFirst: false, isLast: true),
+        NotificationsToggle(
+          isFirst: false,
+          // Con el recordatorio recogido, la del switch es la fila que cierra
+          // el grupo.
+          isLast: notificationsEnabled != true,
+        ),
+        if (notificationsEnabled != null)
+          UnfoldDown(
+            open: notificationsEnabled,
+            // La junta va dentro del bloque para que también abra con él.
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(height: AppSpacing.joined),
+                AppointmentReminderSelector(isFirst: false, isLast: true),
+              ],
+            ),
+          ),
         const SizedBox(height: AppSpacing.xxxl),
         _SectionHeader(label: 'CITAS', style: sectionStyle),
         const HourFormatSelector(isFirst: true, isLast: false),

@@ -40,6 +40,8 @@ dependencies:
 
   # Notificaciones locales
   flutter_local_notifications: ^21.0.0
+  # Zonas horarias: `zonedSchedule` recibe la hora como TZDateTime
+  timezone: ^0.11.0
 
   # Animaciones / assets
   flutter_animate: ^4.5.2

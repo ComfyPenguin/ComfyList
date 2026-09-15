@@ -12,6 +12,7 @@ class AppSettings {
     required this.appointmentsTodayOnTop,
     required this.invertSwipeActions,
     required this.use24HourFormat,
+    required this.appointmentReminderLead,
   });
 
   final ThemeMode themeMode;
@@ -36,6 +37,9 @@ class AppSettings {
   /// Si es `false`, se muestran en formato 12H con AM/PM.
   final bool use24HourFormat;
 
+  /// Cuánto antes de la cita suena el recordatorio.
+  final AppointmentReminderLead appointmentReminderLead;
+
   static const AppSettings defaults = AppSettings(
     themeMode: ThemeMode.system,
     notificationsEnabled: true,
@@ -45,6 +49,7 @@ class AppSettings {
     appointmentsTodayOnTop: true,
     invertSwipeActions: false,
     use24HourFormat: true,
+    appointmentReminderLead: AppointmentReminderLead.thirtyMinutes,
   );
 
   AppSettings copyWith({
@@ -56,6 +61,7 @@ class AppSettings {
     bool? appointmentsTodayOnTop,
     bool? invertSwipeActions,
     bool? use24HourFormat,
+    AppointmentReminderLead? appointmentReminderLead,
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -69,6 +75,8 @@ class AppSettings {
           appointmentsTodayOnTop ?? this.appointmentsTodayOnTop,
       invertSwipeActions: invertSwipeActions ?? this.invertSwipeActions,
       use24HourFormat: use24HourFormat ?? this.use24HourFormat,
+      appointmentReminderLead:
+          appointmentReminderLead ?? this.appointmentReminderLead,
     );
   }
 
@@ -83,4 +91,27 @@ class AppSettings {
         ThemeMode.dark => 'dark',
         ThemeMode.system => 'system',
       };
+}
+
+/// Margen con el que avisa el recordatorio de una cita, antes de su hora.
+///
+/// En la base de datos se guardan los minutos; el enum mantiene el conjunto
+/// cerrado de opciones que ofrece Ajustes.
+enum AppointmentReminderLead {
+  atTime(0),
+  tenMinutes(10),
+  thirtyMinutes(30),
+  oneHour(60),
+  oneDay(1440);
+
+  const AppointmentReminderLead(this.minutes);
+
+  final int minutes;
+
+  /// Valor guardado en otro momento (o editado a mano) que ya no corresponde a
+  /// ninguna opción: se vuelve al valor por defecto.
+  static AppointmentReminderLead fromMinutes(int? minutes) => values.firstWhere(
+        (lead) => lead.minutes == minutes,
+        orElse: () => AppointmentReminderLead.thirtyMinutes,
+      );
 }

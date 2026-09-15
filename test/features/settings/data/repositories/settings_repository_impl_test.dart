@@ -28,6 +28,7 @@ void main() {
     bool appointmentsTodayOnTop = true,
     bool invertSwipeActions = false,
     bool use24HourFormat = true,
+    int appointmentReminderMinutes = 30,
   }) {
     return SettingsRow(
       id: 1,
@@ -39,6 +40,7 @@ void main() {
       appointmentsTodayOnTop: appointmentsTodayOnTop,
       invertSwipeActions: invertSwipeActions,
       use24HourFormat: use24HourFormat,
+      appointmentReminderMinutes: appointmentReminderMinutes,
       updatedAt: DateTime.utc(2026, 6, 30, 12),
     );
   }
@@ -57,6 +59,19 @@ void main() {
       expect(result.appointmentsTodayOnTop, isTrue);
       expect(result.invertSwipeActions, isFalse);
       expect(result.use24HourFormat, isTrue);
+      expect(
+        result.appointmentReminderLead,
+        AppointmentReminderLead.thirtyMinutes,
+      );
+    });
+
+    test('traduce los minutos guardados a su opción de recordatorio', () async {
+      when(() => local.getOrCreate())
+          .thenAnswer((_) async => buildRow(appointmentReminderMinutes: 1440));
+
+      final result = await repo.load();
+
+      expect(result.appointmentReminderLead, AppointmentReminderLead.oneDay);
     });
 
     test('parsea themeMode "dark" como ThemeMode.dark', () async {
@@ -147,6 +162,17 @@ void main() {
       verify(() => local.updateAppointmentsTodayOnTop(false)).called(1);
       verify(() => local.updateInvertSwipeActions(true)).called(1);
       verify(() => local.updateUse24HourFormat(false)).called(1);
+    });
+  });
+
+  group('SettingsRepositoryImpl.setAppointmentReminderLead', () {
+    test('guarda los minutos de la opción elegida', () async {
+      when(() => local.updateAppointmentReminderMinutes(any()))
+          .thenAnswer((_) async {});
+
+      await repo.setAppointmentReminderLead(AppointmentReminderLead.oneHour);
+
+      verify(() => local.updateAppointmentReminderMinutes(60)).called(1);
     });
   });
 }

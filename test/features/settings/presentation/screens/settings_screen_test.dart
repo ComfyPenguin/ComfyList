@@ -28,6 +28,20 @@ void main() {
         .length;
   }
 
+  /// Switch de la fila con ese título.
+  Finder switchOf(String title) => find.descendant(
+        of: find.ancestor(
+          of: find.text(title),
+          matching: find.byType(SettingsTile),
+        ),
+        matching: find.byType(AppSwitch),
+      );
+
+  /// Bloque de despliegue de la fila con ese título. La pantalla tiene uno por
+  /// cada ajuste que cuelga de otro, así que hay que decir de cuál.
+  Finder unfoldFor(String title) =>
+      find.ancestor(of: find.text(title), matching: find.byType(UnfoldDown));
+
   Future<void> pumpSettings(
     WidgetTester tester,
     FakeSettingsRepository repo,
@@ -91,32 +105,44 @@ void main() {
     // puede pulsar y su bloque mide cero.
     final row = find.text('Citas completadas al final');
     final rowTop = tester.getTopLeft(row);
+    final unfold = unfoldFor('Citas completadas al final');
     expect(row.hitTestable(), findsNothing);
-    expect(tester.getSize(find.byType(UnfoldDown)).height, 0);
+    expect(tester.getSize(unfold).height, 0);
 
-    await tester.tap(
-      find.descendant(
-        of: find.ancestor(
-          of: find.text('Completar citas'),
-          matching: find.byType(SettingsTile),
-        ),
-        matching: find.byType(AppSwitch),
-      ),
-    );
+    await tester.tap(switchOf('Completar citas'));
     await tester.pump();
 
     // A media animación el bloque ya ocupa, pero menos que la fila entera, y la
     // fila sigue donde estaba: el despliegue la descubre, no la desplaza.
     await tester.pump(const Duration(milliseconds: 80));
-    final revealing = tester.getSize(find.byType(UnfoldDown)).height;
+    final revealing = tester.getSize(unfold).height;
     expect(revealing, greaterThan(0));
     expect(tester.getTopLeft(row), rowTop);
 
     await tester.pumpAndSettle();
     expect(row.hitTestable(), findsOneWidget);
-    expect(
-      tester.getSize(find.byType(UnfoldDown)).height,
-      greaterThan(revealing),
-    );
+    expect(tester.getSize(unfold).height, greaterThan(revealing));
+  });
+
+  testWidgets('las notificaciones despliegan el recordatorio de citas', (
+    tester,
+  ) async {
+    final repo = FakeSettingsRepository();
+    await pumpSettings(tester, repo);
+    await tester.pumpAndSettle();
+
+    // Por defecto las notificaciones vienen activadas, así que el recordatorio
+    // ya está desplegado y responde al toque.
+    final row = find.text('Recordatorio');
+    final unfold = unfoldFor('Recordatorio');
+    expect(row.hitTestable(), findsOneWidget);
+
+    await tester.tap(switchOf('Notificaciones'));
+    await tester.pumpAndSettle();
+
+    // Con las notificaciones apagadas no hay nada que programar: la fila se
+    // recoge y no deja hueco.
+    expect(row.hitTestable(), findsNothing);
+    expect(tester.getSize(unfold).height, 0);
   });
 }

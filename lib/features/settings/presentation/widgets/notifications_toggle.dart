@@ -20,7 +20,7 @@ class NotificationsToggle extends ConsumerWidget {
     return SettingsTile(
       icon: Icons.notifications_none_rounded,
       title: 'Notificaciones',
-      description: 'Recibir avisos en este dispositivo cuando estén disponibles.',
+      description: 'Avisos de tus citas en este dispositivo.',
       enabled: state is! SettingsError,
       isFirst: isFirst,
       isLast: isLast,

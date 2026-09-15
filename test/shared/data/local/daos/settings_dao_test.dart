@@ -27,6 +27,7 @@ void main() {
       expect(row.appointmentsTodayOnTop, isTrue);
       expect(row.invertSwipeActions, isFalse);
       expect(row.use24HourFormat, isTrue);
+      expect(row.appointmentReminderMinutes, 30);
     });
 
     test('devuelve la misma fila en llamadas sucesivas y deja una sola row',
@@ -40,6 +41,18 @@ void main() {
 
       final count = await db.managers.settingsTable.count();
       expect(count, 1, reason: 'La tabla singleton no debe tener duplicados.');
+    });
+  });
+
+  group('SettingsDao.updateAppointmentReminderMinutes', () {
+    test('persiste los minutos y watch emite el valor nuevo', () async {
+      final dao = db.settingsDao;
+      await dao.getOrCreate();
+
+      await dao.updateAppointmentReminderMinutes(1440);
+
+      final streamed = await dao.watch().first;
+      expect(streamed.appointmentReminderMinutes, 1440);
     });
   });
 

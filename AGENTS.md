@@ -45,7 +45,7 @@ flutter analyze             # Análisis estático
 
 ## Modelo de datos (Drift)
 
-- Schema v7 con migraciones `onUpgrade` secuenciales (una condición `if (from < N)` por columna añadida, y `schemaVersion` a juego)
+- Schema v8 con migraciones `onUpgrade` secuenciales (una condición `if (from < N)` por columna añadida, y `schemaVersion` a juego)
 - **Tablas**: `settings_table` (singleton id=1), `account_cache_table`
 - `AppDatabase` se instancia en `main()` y se inyecta via `ProviderScope` override
 - Tests: `AppDatabase.forTesting(NativeDatabase.memory())`
@@ -95,5 +95,6 @@ flutter analyze             # Análisis estático
 - **Dos clientes Dio**: `instance` (con auth interceptor) y `authClient` (sin interceptor, para signUp/signIn).
 - **copyWith con flags**: Entidades usan `clearDescription`/`clearLocation` booleanas (no nullable fields) para distinguir "no tocar" de "poner a null".
 - **Google Sign-In**: Solo Android en `main()` con `Platform.isAndroid`.
-- **Notificaciones**: `NotificationsService.init()` dentro de try-catch (best-effort, falla silenciosamente en Linux).
+- **Notificaciones**: `NotificationsService.init()` dentro de try-catch (best-effort, falla silenciosamente en Linux). El scheduling (`schedule`/`cancelAll`) también es best-effort.
+- **Recordatorios de citas**: `appointmentRemindersProvider` (activado en `app.dart`) escucha citas y ajustes y reescribe el plan entero con `AppointmentRemindersScheduler`. La lógica de qué avisar es pura (`buildAppointmentReminders`).
 - **DB override en tests**: `ProviderScope` con `overrideWithValue` en test permite inyectar DB en memoria.

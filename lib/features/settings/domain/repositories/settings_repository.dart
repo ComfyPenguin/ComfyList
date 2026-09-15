@@ -25,4 +25,6 @@ abstract class SettingsRepository {
   Future<void> setInvertSwipeActions(bool enabled);
 
   Future<void> setUse24HourFormat(bool enabled);
+
+  Future<void> setAppointmentReminderLead(AppointmentReminderLead lead);
 }
