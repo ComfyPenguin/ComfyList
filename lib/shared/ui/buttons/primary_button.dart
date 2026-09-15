@@ -29,9 +29,9 @@ class PrimaryButton extends StatelessWidget {
   final bool isLoading;
   final bool expand;
 
-  /// Versión compacta: menos relleno vertical, para el botón que vive dentro de
-  /// un bloque de contenido en vez de ser la acción de la pantalla. Deja el alto
-  /// en los 44 px del botón secundario.
+  /// Versión compacta: menos relleno vertical y etiqueta más pequeña, para el
+  /// botón que vive dentro de un bloque de contenido en vez de ser la acción de
+  /// la pantalla.
   final bool dense;
 
   /// Sobrescribe el fondo del pill (p. ej. [AppColors.error] en acciones destructivas).
@@ -47,6 +47,9 @@ class PrimaryButton extends StatelessWidget {
     final disabled = onPressed == null && !isLoading;
     final bg = backgroundColor ?? (disabled ? colors.muted : colors.primary);
     final fg = foregroundColor ?? colors.onPrimary;
+    final labelStyle = dense
+        ? AppTypography.bodySmStrong
+        : AppTypography.buttonMd;
 
     final body = isLoading
         ? SizedBox(
@@ -63,7 +66,7 @@ class PrimaryButton extends StatelessWidget {
             children: [
               Text(
                 label.toUpperCase(),
-                style: AppTypography.buttonMd.copyWith(
+                style: labelStyle.copyWith(
                   color: fg,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.4,

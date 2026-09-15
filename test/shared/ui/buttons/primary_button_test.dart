@@ -63,14 +63,19 @@ void main() {
     expect(find.text('AÑADIR'), findsOneWidget);
   });
 
-  testWidgets('dense deja el alto del botón secundario', (tester) async {
+  testWidgets('dense encoge la etiqueta y el alto', (tester) async {
+    double labelSize(WidgetTester tester) =>
+        tester.widget<Text>(find.text('AÑADIR')).style!.fontSize!;
+
     await pumpButton(tester, onPressed: () {}, dense: true);
     final denseHeight = tester.getSize(find.byType(PrimaryButton)).height;
+    final denseLabel = labelSize(tester);
 
     await pumpButton(tester, onPressed: () {});
     final regularHeight = tester.getSize(find.byType(PrimaryButton)).height;
+    final regularLabel = labelSize(tester);
 
-    expect(denseHeight, 44);
+    expect(denseLabel, lessThan(regularLabel));
     expect(denseHeight, lessThan(regularHeight));
   });
 }
