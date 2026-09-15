@@ -77,6 +77,8 @@ class AppointmentDetailSheet extends ConsumerWidget {
       _ => false,
     };
 
+    // El 85 % es un tope, no la altura de la hoja: quien la mide es el contenido,
+    // así que las ramas sin contenido no lo llenan (`heightFactor: 1`).
     return ConstrainedBox(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.85,
@@ -84,11 +86,15 @@ class AppointmentDetailSheet extends ConsumerWidget {
       child: switch (state) {
         AppointmentsInitial() || AppointmentsLoading() => const Padding(
           padding: EdgeInsets.symmetric(vertical: AppSpacing.xxxl),
-          child: Center(child: CircularProgressIndicator()),
+          child: Center(
+            heightFactor: 1,
+            child: CircularProgressIndicator(),
+          ),
         ),
         AppointmentsError(:final failure) => Padding(
           padding: const EdgeInsets.all(AppSpacing.xxxl),
           child: Center(
+            heightFactor: 1,
             child: Text(
               failure.message,
               textAlign: TextAlign.center,
@@ -124,6 +130,7 @@ class AppointmentDetailSheet extends ConsumerWidget {
       return Padding(
         padding: const EdgeInsets.all(AppSpacing.xxxl),
         child: Center(
+          heightFactor: 1,
           child: Text(
             'Cita no encontrada.',
             textAlign: TextAlign.center,
