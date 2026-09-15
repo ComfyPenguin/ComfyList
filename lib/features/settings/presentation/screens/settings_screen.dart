@@ -6,6 +6,7 @@ import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_stroke.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
+import '../../../../shared/data/notifications/notifications_provider.dart';
 import '../../../../shared/ui/animations/unfold_down.dart';
 import '../providers/settings_provider.dart';
 import '../providers/settings_state.dart';
@@ -13,6 +14,7 @@ import '../widgets/appointment_reminder_selector.dart';
 import '../widgets/appointments_completed_to_bottom_toggle.dart';
 import '../widgets/appointments_completion_toggle.dart';
 import '../widgets/completed_to_bottom_toggle.dart';
+import '../widgets/exact_alarms_tile.dart';
 import '../widgets/hour_format_selector.dart';
 import '../widgets/invert_swipe_actions_toggle.dart';
 import '../widgets/notifications_toggle.dart';
@@ -51,6 +53,11 @@ class SettingsScreen extends ConsumerWidget {
       SettingsData(:final settings) => settings.notificationsEnabled,
       _ => null,
     };
+    // El permiso de alarmas exactas lo concede el sistema, no la app: solo se
+    // ofrece mientras falte, y `null` (el sistema todavía no ha contestado) no
+    // cuenta como que falte, para que la fila no aparezca y se vaya sola.
+    final exactAlarmsMissing =
+        ref.watch(exactAlarmsGrantedProvider).value == false;
 
     return ListView(
       padding: EdgeInsets.fromLTRB(
@@ -78,11 +85,20 @@ class SettingsScreen extends ConsumerWidget {
           UnfoldDown(
             open: notificationsEnabled,
             // La junta va dentro del bloque para que también abra con él.
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                SizedBox(height: AppSpacing.joined),
-                AppointmentReminderSelector(isFirst: false, isLast: true),
+                const SizedBox(height: AppSpacing.joined),
+                AppointmentReminderSelector(
+                  isFirst: false,
+                  // Con la fila de alarmas exactas debajo, el recordatorio deja
+                  // de cerrar el grupo.
+                  isLast: !exactAlarmsMissing,
+                ),
+                if (exactAlarmsMissing) ...[
+                  const SizedBox(height: AppSpacing.joined),
+                  const ExactAlarmsTile(isFirst: false, isLast: true),
+                ],
               ],
             ),
           ),

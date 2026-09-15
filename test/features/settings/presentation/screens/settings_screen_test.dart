@@ -2,6 +2,7 @@ import 'package:comfy_list/features/settings/presentation/providers/settings_pro
 import 'package:comfy_list/features/settings/presentation/screens/settings_screen.dart';
 import 'package:comfy_list/features/settings/presentation/widgets/settings_tile.dart';
 import 'package:comfy_list/shared/core/theme/app_theme.dart';
+import 'package:comfy_list/shared/data/notifications/notifications_provider.dart';
 import 'package:comfy_list/shared/ui/animations/unfold_down.dart';
 import 'package:comfy_list/shared/ui/inputs/app_switch.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../../helpers/fake_notifications_service.dart';
 import '../../../../helpers/fake_settings_repository.dart';
 
 void main() {
@@ -44,8 +46,9 @@ void main() {
 
   Future<void> pumpSettings(
     WidgetTester tester,
-    FakeSettingsRepository repo,
-  ) async {
+    FakeSettingsRepository repo, {
+    FakeNotificationsService? notifications,
+  }) async {
     tester.view.physicalSize = const Size(1170, 4200);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
@@ -53,7 +56,12 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [settingsRepositoryProvider.overrideWithValue(repo)],
+        overrides: [
+          settingsRepositoryProvider.overrideWithValue(repo),
+          notificationsServiceProvider.overrideWithValue(
+            notifications ?? FakeNotificationsService(),
+          ),
+        ],
         child: MaterialApp(
           theme: AppTheme.light(),
           home: const Center(
@@ -144,5 +152,39 @@ void main() {
     // recoge y no deja hueco.
     expect(row.hitTestable(), findsNothing);
     expect(tester.getSize(unfold).height, 0);
+  });
+
+  testWidgets('con el permiso de alarmas exactas no hay nada que pedir', (
+    tester,
+  ) async {
+    final repo = FakeSettingsRepository();
+    // Por defecto el fake lo da por concedido, como el sistema tras concederlo.
+    await pumpSettings(tester, repo);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Alarmas exactas'), findsNothing);
+  });
+
+  testWidgets('concede las alarmas exactas y la fila desaparece', (
+    tester,
+  ) async {
+    final notifications = FakeNotificationsService()
+      ..exactAlarmsGranted = false;
+    final repo = FakeSettingsRepository();
+    await pumpSettings(tester, repo, notifications: notifications);
+    await tester.pumpAndSettle();
+
+    // Sin el permiso la fila está debajo del recordatorio, que ya no cierra el
+    // grupo.
+    expect(find.text('Alarmas exactas'), findsOneWidget);
+
+    await tester.tap(find.text('Alarmas exactas'));
+    await tester.pumpAndSettle();
+
+    // El toque lleva a la pantalla del sistema; al volver, el permiso ya está y
+    // la fila no tiene nada que ofrecer.
+    expect(notifications.requestExactAlarmsCalls, 1);
+    expect(find.text('Alarmas exactas'), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 }

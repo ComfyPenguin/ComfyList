@@ -76,6 +76,48 @@ void main() {
     expect(notifications.cancelCalls, greaterThan(0));
   });
 
+  test('al conceder las alarmas exactas reescribe los avisos', () async {
+    final notifications = FakeNotificationsService()
+      ..exactAlarmsGranted = false;
+    final repo = FakeSettingsRepository();
+    addTearDown(repo.close);
+
+    final items = [
+      buildAppointment(
+        id: 'a1',
+        title: 'Análisis',
+        dateTime: DateTime.now().add(const Duration(hours: 3)),
+      ),
+    ];
+
+    final container = createTestContainer(
+      repositoryOverrides: {SettingsRepository: repo},
+      extra: [
+        notificationsServiceProvider.overrideWithValue(notifications),
+        appointmentsProvider.overrideWith(
+          () => _FixedAppointmentsNotifier(items),
+        ),
+      ],
+    );
+
+    container.listen(appointmentRemindersProvider, (_, _) {});
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+
+    expect(notifications.scheduleCalls, 1);
+    expect(container.read(exactAlarmsGrantedProvider).value, isFalse);
+
+    // El usuario lo concede en los ajustes del sistema y la app vuelve a
+    // preguntar: los avisos ya programados quedaron en modo aproximado, así que
+    // hay que volver a escribirlos aunque el plan sea el mismo.
+    notifications.exactAlarmsGranted = true;
+    container.invalidate(exactAlarmsGrantedProvider);
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+
+    expect(notifications.scheduleCalls, 2);
+  });
+
   test('sin citas cargadas no toca el servicio', () async {
     final notifications = FakeNotificationsService();
     final repo = FakeSettingsRepository();

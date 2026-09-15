@@ -29,11 +29,13 @@ void main() {
     List<Appointment> items = const [],
     AppSettings? settings,
     DateTime? at,
+    bool force = false,
   }) {
     return scheduler.sync(
       items: items,
       settings: settings ?? buildAppSettings(),
       now: at ?? now,
+      force: force,
     );
   }
 
@@ -61,6 +63,18 @@ void main() {
     await sync(items: [item]);
 
     expect(notifications.cancelCalls, 1);
+    expect(notifications.scheduleCalls, 1);
+    expect(notifications.scheduled, hasLength(1));
+  });
+
+  test('con force reescribe el plan aunque sea el mismo', () async {
+    await sync(items: [item]);
+    await sync(items: [item], force: true);
+
+    // El mismo id se vuelve a programar —el plugin reemplaza el aviso— y no
+    // hay nada que quitar, porque el aviso no ha salido del plan.
+    expect(notifications.scheduleCalls, 2);
+    expect(notifications.cancelled, isEmpty);
     expect(notifications.scheduled, hasLength(1));
   });
 

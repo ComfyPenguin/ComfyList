@@ -1,4 +1,5 @@
 import 'package:comfy_list/shared/data/notifications/notifications_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,18 +8,34 @@ import 'package:timezone/timezone.dart' as tz;
 
 class _MockPlugin extends Mock implements FlutterLocalNotificationsPlugin {}
 
+class _MockAndroidPlugin extends Mock
+    implements AndroidFlutterLocalNotificationsPlugin {}
+
 void main() {
   late _MockPlugin plugin;
+  late _MockAndroidPlugin android;
   late NotificationsService service;
 
   setUpAll(() {
+    // Los avisos son cosa de Android: con el reloj de la plataforma en Android
+    // los caminos que pregunta al plugin se recorren de verdad.
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
     registerFallbackValue(const NotificationDetails());
     registerFallbackValue(tz.TZDateTime.from(DateTime.utc(2026), tz.UTC));
     registerFallbackValue(AndroidScheduleMode.inexactAllowWhileIdle);
   });
 
+  tearDownAll(() => debugDefaultTargetPlatformOverride = null);
+
   setUp(() {
     plugin = _MockPlugin();
+    android = _MockAndroidPlugin();
+    when(
+      () => plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >(),
+    ).thenReturn(android);
     service = NotificationsService(plugin: plugin);
   });
 
@@ -74,6 +91,69 @@ void main() {
     await service.cancel(7);
 
     verify(() => plugin.cancel(id: 7)).called(1);
+  });
+
+  test('sin el permiso del sistema el aviso se programa aproximado', () async {
+    when(
+      () => android.canScheduleExactNotifications(),
+    ).thenAnswer((_) async => false);
+    stubSchedule();
+
+    await service.schedule(id: 1, title: 'x', body: 'y', when: DateTime(2030));
+
+    verify(
+      () => plugin.zonedSchedule(
+        id: 1,
+        title: 'x',
+        body: 'y',
+        scheduledDate: any(named: 'scheduledDate'),
+        notificationDetails: any(named: 'notificationDetails'),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      ),
+    ).called(1);
+  });
+
+  test('al concederlo, los avisos siguientes ya van exactos', () async {
+    when(
+      () => android.canScheduleExactNotifications(),
+    ).thenAnswer((_) async => false);
+    when(
+      () => android.requestExactAlarmsPermission(),
+    ).thenAnswer((_) async => true);
+    stubSchedule();
+
+    await service.schedule(id: 1, title: 'x', body: 'y', when: DateTime(2030));
+    expect(await service.requestExactAlarms(), isTrue);
+    await service.schedule(id: 2, title: 'x', body: 'y', when: DateTime(2030));
+
+    // El modo se resuelve una vez por sesión: si no se olvidara la respuesta
+    // anterior, el segundo aviso seguiría saliendo aproximado.
+    verify(
+      () => plugin.zonedSchedule(
+        id: 2,
+        title: 'x',
+        body: 'y',
+        scheduledDate: any(named: 'scheduledDate'),
+        notificationDetails: any(named: 'notificationDetails'),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      ),
+    ).called(1);
+  });
+
+  test('si el sistema no lo concede no se da por hecho', () async {
+    when(
+      () => android.requestExactAlarmsPermission(),
+    ).thenAnswer((_) async => false);
+
+    expect(await service.requestExactAlarms(), isFalse);
+  });
+
+  test('preguntar por el permiso no rompe donde no hay plugin', () async {
+    when(
+      () => android.canScheduleExactNotifications(),
+    ).thenThrow(MissingPluginException('sin soporte'));
+
+    expect(await service.canScheduleExact(), isFalse);
   });
 
   test('limpia los avisos sin tocar los ya mostrados', () async {

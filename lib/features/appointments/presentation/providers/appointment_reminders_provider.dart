@@ -26,7 +26,7 @@ final appointmentRemindersSchedulerProvider =
 final appointmentRemindersProvider = Provider<void>((ref) {
   final scheduler = ref.watch(appointmentRemindersSchedulerProvider);
 
-  void sync() {
+  void sync({bool force = false}) {
     final items = switch (ref.read(appointmentsProvider)) {
       AppointmentsData(:final items) => items,
       _ => null,
@@ -42,11 +42,17 @@ final appointmentRemindersProvider = Provider<void>((ref) {
         items: items,
         settings: settings,
         now: ref.read(clockProvider)(),
+        force: force,
       ),
     );
   }
 
   ref.listen(appointmentsProvider, (_, _) => sync());
   ref.listen(settingsProvider, (_, _) => sync());
+  // Conceder las alarmas exactas cambia cómo se programa cada aviso, pero el
+  // plan sigue igual: hay que reescribirlo a propósito.
+  ref.listen(exactAlarmsGrantedProvider, (_, next) {
+    if (next.value == true) sync(force: true);
+  });
   sync();
 });

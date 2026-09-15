@@ -110,15 +110,12 @@ class NotificationsService {
   bool get _isAndroid =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
-  /// Alarma exacta si el sistema la concede; si no, el plugin la aproxima.
-  Future<AndroidScheduleMode> _scheduleMode() async {
-    _canScheduleExact ??= await _resolveCanScheduleExact();
-    return _canScheduleExact!
-        ? AndroidScheduleMode.exactAllowWhileIdle
-        : AndroidScheduleMode.inexactAllowWhileIdle;
-  }
+  /// Si en esta plataforma hay un permiso de alarmas exactas que conceder. Sin
+  /// él los avisos caen en una alarma aproximada y pueden llegar tarde.
+  bool get supportsExactAlarms => _isAndroid;
 
-  Future<bool> _resolveCanScheduleExact() async {
+  /// Si el sistema deja programar avisos exactos ahora mismo.
+  Future<bool> canScheduleExact() async {
     if (!_isAndroid) return false;
     try {
       return await _plugin
@@ -130,5 +127,36 @@ class NotificationsService {
     } catch (e) {
       return false;
     }
+  }
+
+  /// Manda al usuario a la pantalla del sistema donde se concede el permiso de
+  /// alarmas exactas y devuelve si quedó concedido. La app no puede concederlo
+  /// por su cuenta: es un acceso especial que se da a mano.
+  Future<bool> requestExactAlarms() async {
+    if (!_isAndroid) return false;
+    try {
+      final granted =
+          await _plugin
+              .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin
+              >()
+              ?.requestExactAlarmsPermission() ??
+          false;
+      // El modo de programación se resuelve una sola vez por sesión, así que la
+      // respuesta anterior deja de valer en cuanto el permiso cambia.
+      _canScheduleExact = granted;
+      return granted;
+    } catch (e) {
+      debugPrint('No se pudo pedir el permiso de alarmas exactas: $e');
+      return false;
+    }
+  }
+
+  /// Alarma exacta si el sistema la concede; si no, el plugin la aproxima.
+  Future<AndroidScheduleMode> _scheduleMode() async {
+    _canScheduleExact ??= await canScheduleExact();
+    return _canScheduleExact!
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
   }
 }

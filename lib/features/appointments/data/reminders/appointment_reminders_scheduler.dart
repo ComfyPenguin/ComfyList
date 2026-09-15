@@ -21,17 +21,21 @@ class AppointmentRemindersScheduler {
   /// resultado no depende de lo que dejara otra sesión o de antes de reiniciar
   /// el dispositivo. A partir de ahí se quita aviso por aviso: lo que sale del
   /// plan casi siempre es un aviso que ya llegó a su hora, y esos no se tocan.
+  /// [force] reescribe el plan aunque sea el mismo de antes. Lo necesita quien
+  /// sabe que ha cambiado algo que no está en el plan —el permiso de alarmas
+  /// exactas, p. ej.—: los avisos ya programados lo están con el modo anterior.
   Future<void> sync({
     required List<Appointment> items,
     required AppSettings settings,
     required DateTime now,
+    bool force = false,
   }) async {
     final reminders = buildAppointmentReminders(
       items: items,
       settings: settings,
       now: now,
     );
-    if (listEquals(reminders, _lastPlan)) return;
+    if (!force && listEquals(reminders, _lastPlan)) return;
 
     await _discard(previous: _lastPlan, planned: reminders, now: now);
     for (final reminder in reminders) {

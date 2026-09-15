@@ -7,7 +7,11 @@ import 'settings_tile.dart';
 
 /// Toggle para activar o desactivar las notificaciones.
 class NotificationsToggle extends ConsumerWidget {
-  const NotificationsToggle({super.key, this.isFirst = true, this.isLast = true});
+  const NotificationsToggle({
+    super.key,
+    this.isFirst = true,
+    this.isLast = true,
+  });
 
   final bool isFirst;
   final bool isLast;
@@ -20,7 +24,6 @@ class NotificationsToggle extends ConsumerWidget {
     return SettingsTile(
       icon: Icons.notifications_none_rounded,
       title: 'Notificaciones',
-      description: 'Avisos de tus citas en este dispositivo.',
       enabled: state is! SettingsError,
       isFirst: isFirst,
       isLast: isLast,

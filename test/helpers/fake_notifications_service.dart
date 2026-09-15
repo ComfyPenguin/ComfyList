@@ -19,6 +19,30 @@ class FakeNotificationsService implements NotificationsService {
   /// Veces que se ha limpiado el plan entero.
   int cancelCalls = 0;
 
+  /// Veces que se ha programado algo, aunque después se reemplace el aviso.
+  int scheduleCalls = 0;
+
+  /// Veces que se ha llevado al usuario a conceder el permiso del sistema.
+  int requestExactAlarmsCalls = 0;
+
+  /// Permiso de alarmas exactas del sistema. Por defecto concedido, que es el
+  /// caso en el que la app no tiene nada que pedir.
+  bool exactAlarmsGranted = true;
+
+  @override
+  bool get supportsExactAlarms => true;
+
+  @override
+  Future<bool> canScheduleExact() async => exactAlarmsGranted;
+
+  @override
+  Future<bool> requestExactAlarms() async {
+    requestExactAlarmsCalls++;
+    // La pantalla del sistema es de mentira: el usuario siempre lo concede.
+    exactAlarmsGranted = true;
+    return true;
+  }
+
   @override
   Future<void> schedule({
     required int id,
@@ -26,6 +50,7 @@ class FakeNotificationsService implements NotificationsService {
     required String body,
     required DateTime when,
   }) async {
+    scheduleCalls++;
     // El plugin identifica cada aviso por su id, así que volver a programarlo
     // reemplaza al anterior en lugar de añadir otro.
     scheduled.removeWhere((notification) => notification.id == id);

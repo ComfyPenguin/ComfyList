@@ -13,3 +13,14 @@ final notificationsServiceProvider = Provider<NotificationsService>(
     'inicializada.',
   ),
 );
+
+/// Si los avisos pueden sonar a su hora.
+///
+/// En Android eso depende del permiso de alarmas exactas, que es del sistema y
+/// concede el usuario a mano; donde no hay nada que conceder cuenta como
+/// concedido, para que la app no pida lo que no existe.
+final exactAlarmsGrantedProvider = FutureProvider<bool>((ref) async {
+  final service = ref.watch(notificationsServiceProvider);
+  if (!service.supportsExactAlarms) return true;
+  return service.canScheduleExact();
+});
