@@ -6,9 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// Lo que devolvió el selector, que llega cuando el sheet se cierra.
 class _Result {
-  ReminderLeadChoice? choice;
-
-  int get minutes => (choice! as ReminderLeadChosen).minutes;
+  int? minutes;
+  bool opened = false;
 }
 
 /// Pantalla mínima con un botón que abre el selector que le pidan.
@@ -40,16 +39,15 @@ void main() {
   Future<_Result> open(
     WidgetTester tester, {
     required int initialMinutes,
-    bool removable = false,
   }) async {
     final result = _Result();
     await tester.pumpWidget(
       _Host(
         onOpen: (context) async {
-          result.choice = await showReminderLeadPicker(
+          result.opened = true;
+          result.minutes = await showReminderLeadPicker(
             context,
             initialMinutes: initialMinutes,
-            removable: removable,
           );
         },
       ),
@@ -99,8 +97,6 @@ void main() {
   });
 
   testWidgets('el margen de 10 minutos sigue abriendo en 10', (tester) async {
-    // Ya no se ofrece entre los presets, pero quien lo tuviera guardado tiene
-    // que poder abrirlo sin que se le cambie solo.
     final result = await open(tester, initialMinutes: 10);
 
     expect(find.text('10'), findsOneWidget);
@@ -144,23 +140,6 @@ void main() {
     expect(result.minutes, 60);
   });
 
-  testWidgets('quitar solo se ofrece cuando hay un personalizado puesto', (
-    tester,
-  ) async {
-    await open(tester, initialMinutes: 45, removable: false);
-
-    expect(find.text('Quitar'), findsNothing);
-  });
-
-  testWidgets('quitar devuelve que se retire el personalizado', (tester) async {
-    final result = await open(tester, initialMinutes: 45, removable: true);
-
-    await tester.tap(find.text('Quitar'));
-    await tester.pumpAndSettle();
-
-    expect(result.choice, isA<ReminderLeadCleared>());
-  });
-
   testWidgets('cerrarlo sin aceptar no devuelve nada', (tester) async {
     final result = await open(tester, initialMinutes: 45);
 
@@ -168,6 +147,7 @@ void main() {
     await tester.tapAt(const Offset(10, 10));
     await tester.pumpAndSettle();
 
-    expect(result.choice, isNull);
+    expect(result.opened, isTrue);
+    expect(result.minutes, isNull);
   });
 }

@@ -5,23 +5,6 @@ import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/ui/pickers/picker_sheet.dart';
 import '../../../../shared/ui/pickers/wheel_picker.dart';
 
-/// Lo que devuelve el selector de recordatorio personalizado.
-sealed class ReminderLeadChoice {
-  const ReminderLeadChoice();
-}
-
-/// El usuario eligió un margen, en minutos antes de la cita.
-class ReminderLeadChosen extends ReminderLeadChoice {
-  const ReminderLeadChosen(this.minutes);
-
-  final int minutes;
-}
-
-/// El usuario quiso dejar la cita sin recordatorio personalizado.
-class ReminderLeadCleared extends ReminderLeadChoice {
-  const ReminderLeadCleared();
-}
-
 /// Unidad de la rueda de cantidad. Los minutos van de 5 en 5 —para un aviso da
 /// igual 43 que 45— y las horas y los días no pasan de lo que tiene sentido
 /// avisar por adelantado.
@@ -44,28 +27,20 @@ enum _ReminderUnit {
   };
 }
 
-/// Abre el selector de recordatorio personalizado —cantidad y unidad— y devuelve
-/// lo que eligió el usuario, o `null` si se cierra sin aceptar.
-///
-/// Con [removable] —cuando la cita ya tiene un personalizado puesto— el sheet
-/// ofrece quitarlo, que es la única forma de deshacerlo: el chip de Ajustes
-/// abre este selector tanto si hay valor como si no.
-Future<ReminderLeadChoice?> showReminderLeadPicker(
+/// Abre el selector de cantidad personalizada —dos ruedas, cantidad y unidad— y
+/// devuelve el margen elegido en minutos, o `null` si se cierra sin aceptar.
+Future<int?> showReminderLeadPicker(
   BuildContext context, {
   required int initialMinutes,
-  required bool removable,
 }) {
-  return showModalBottomSheet<ReminderLeadChoice>(
+  return showModalBottomSheet<int>(
     context: context,
     // Sobre el Navigator raíz para que el sheet tape el TopBar del shell.
     useRootNavigator: true,
     isScrollControlled: true,
     useSafeArea: true,
     showDragHandle: true,
-    builder: (context) => _ReminderLeadPickerSheet(
-      initialMinutes: initialMinutes,
-      removable: removable,
-    ),
+    builder: (context) => _ReminderLeadPickerSheet(initialMinutes),
   );
 }
 
@@ -93,13 +68,9 @@ Future<ReminderLeadChoice?> showReminderLeadPicker(
 }
 
 class _ReminderLeadPickerSheet extends StatefulWidget {
-  const _ReminderLeadPickerSheet({
-    required this.initialMinutes,
-    required this.removable,
-  });
+  const _ReminderLeadPickerSheet(this.initialMinutes);
 
   final int initialMinutes;
-  final bool removable;
 
   @override
   State<_ReminderLeadPickerSheet> createState() =>
@@ -164,11 +135,7 @@ class _ReminderLeadPickerSheetState extends State<_ReminderLeadPickerSheet> {
 
     return PickerSheet(
       title: 'Recordatorio',
-      onConfirm: () => Navigator.of(context).pop(ReminderLeadChosen(_minutes)),
-      secondaryLabel: widget.removable ? 'Quitar' : null,
-      onSecondary: widget.removable
-          ? () => Navigator.of(context).pop(const ReminderLeadCleared())
-          : null,
+      onConfirm: () => Navigator.of(context).pop(_minutes),
       child: SizedBox(
         height: WheelPicker.itemExtent * 5,
         child: Stack(

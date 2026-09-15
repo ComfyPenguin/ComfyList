@@ -4,22 +4,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
-import '../../../../shared/ui/inputs/app_filter_chip.dart';
+import '../../../../shared/ui/inputs/app_chip.dart';
 import '../../domain/entities/app_settings.dart';
 import '../providers/settings_provider.dart';
 import '../providers/settings_state.dart';
+import 'reminder_lead_labels.dart';
+import 'reminder_lead_menu.dart';
 import 'reminder_lead_picker.dart';
 import 'settings_tile.dart';
 
 /// Cantidad con la que se abre el personalizado cuando todavía no hay ninguno:
-/// un aviso de cuarto de hora es un punto de partida razonable.
-const int _defaultCustomMinutes = 15;
+/// veinte minutos no salen entre los presets y es un punto de partida razonable.
+const int _defaultCustomMinutes = 20;
 
-/// Recordatorios de una cita: hasta [maxAppointmentReminders] márgenes, cada uno
-/// en su chip.
+/// Recordatorios de una cita: los que tenga puestos, cada uno en su pastilla, y
+/// un botón para añadir más hasta [maxAppointmentReminders].
 ///
-/// Los que no caben —con el límite alcanzado— se quedan sin responder, así que
-/// nunca cambia sola una elección ya hecha: para meter otro hay que quitar uno.
+/// Se añaden desde el menú —no hay opciones sueltas que encender— y se quitan
+/// tocando su pastilla.
 class AppointmentReminderSelector extends ConsumerWidget {
   const AppointmentReminderSelector({
     super.key,
@@ -33,42 +35,44 @@ class AppointmentReminderSelector extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(appointmentReminderMinutesProvider);
-    // Sin preferencias leídas no sabemos qué márgenes hay: los chips se quedan
-    // sin responder.
+    // Sin preferencias leídas no sabemos qué márgenes hay: ni se quitan ni se
+    // añaden.
     final loadFailed = ref.watch(settingsProvider) is SettingsError;
     final custom = customReminderMinutes(selected);
-    final atLimit = selected.length >= maxAppointmentReminders;
-
-    /// Un margen que ya está puesto siempre se puede quitar; uno nuevo solo si
-    /// queda hueco.
-    bool canPick(int minutes) =>
-        !loadFailed && (selected.contains(minutes) || !atLimit);
+    // Con los cinco puestos no cabe ninguno más, pero el menú sigue sirviendo
+    // para cambiar el personalizado si lo hay.
+    final canAdd =
+        !loadFailed &&
+        (selected.length < maxAppointmentReminders || custom != null);
 
     void setMinutes(List<int> minutes) => ref
         .read(settingsProvider.notifier)
         .setAppointmentReminderMinutes(minutes);
 
-    Future<void> pickCustom() async {
-      final choice = await showReminderLeadPicker(
+    Future<void> add() async {
+      final option = await showReminderLeadMenu(
         context,
-        initialMinutes: custom ?? _defaultCustomMinutes,
-        removable: custom != null,
+        taken: selected,
+        custom: custom,
       );
-      if (choice == null) return;
+      if (option == null || !context.mounted) return;
 
-      // El valor de partida es el que haya guardado ahora, no el que tenía la
-      // fila cuando se abrió el selector.
+      // Lo que haya guardado ahora, que puede no ser lo que la fila tenía al
+      // abrir el menú.
       final current = ref.read(appointmentReminderMinutesProvider);
-      setMinutes(switch (choice) {
-        ReminderLeadCleared() =>
-          current
-              .where((minutes) => minutes != customReminderMinutes(current))
-              .toList(),
-        ReminderLeadChosen(:final minutes) => setCustomReminderMinutes(
-          current,
-          minutes,
-        ),
-      });
+      switch (option) {
+        case PresetReminderLead(:final minutes):
+          setMinutes(addReminderMinutes(current, minutes));
+        case CustomReminderLead():
+          final minutes = await showReminderLeadPicker(
+            context,
+            initialMinutes:
+                customReminderMinutes(current) ?? _defaultCustomMinutes,
+          );
+          if (minutes != null) {
+            setMinutes(setCustomReminderMinutes(current, minutes));
+          }
+      }
     }
 
     return SettingsTile(
@@ -78,39 +82,35 @@ class AppointmentReminderSelector extends ConsumerWidget {
       isFirst: isFirst,
       isLast: isLast,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              for (final preset in AppointmentReminderPreset.values)
-                AppFilterChip(
-                  label: formatReminderLead(preset.minutes),
-                  selected: selected.contains(preset.minutes),
-                  onTap: canPick(preset.minutes)
-                      ? () => setMinutes(
-                          toggleReminderMinutes(selected, preset.minutes),
-                        )
-                      : null,
-                ),
-              AppFilterChip(
-                // Con valor, el chip dice cuál es y de dónde sale: si solo
-                // pusiera «45 min» parecería un preset más.
-                label: custom == null
-                    ? 'Personalizado'
-                    : 'Personalizado: ${formatReminderLead(custom)}',
-                selected: custom != null,
-                // El personalizado puesto siempre se puede tocar —es la única
-                // forma de cambiarlo o de quitarlo—; uno sin poner solo si
-                // queda hueco.
-                onTap: !loadFailed && (custom != null || !atLimit)
-                    ? pickCustom
-                    : null,
-              ),
-            ],
+          if (selected.isNotEmpty) ...[
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
+                for (final minutes in selected)
+                  AppChip(
+                    label: formatReminderChip(minutes),
+                    onDelete: loadFailed
+                        ? null
+                        : () => setMinutes(
+                            removeReminderMinutes(selected, minutes),
+                          ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.lg),
+          ],
+          OutlinedButton.icon(
+            onPressed: canAdd ? add : null,
+            icon: const Icon(Icons.add_rounded, size: 18),
+            label: const Text('Añadir recordatorio'),
+            style: OutlinedButton.styleFrom(
+              disabledForegroundColor: context.colors.muted,
+            ),
           ),
-          if (atLimit) ...[
+          if (!canAdd) ...[
             const SizedBox(height: AppSpacing.sm),
             Text(
               'Máximo $maxAppointmentReminders recordatorios: quita uno para '
@@ -122,19 +122,4 @@ class AppointmentReminderSelector extends ConsumerWidget {
       ),
     );
   }
-}
-
-/// Cómo se lee un margen en Ajustes: «10 min», «1 h», «3 días».
-///
-/// El cero ya no se ofrece —el aviso a la hora de la cita se quitó de los
-/// presets—, pero sigue leyéndose así: es el margen que quedó guardado en quien
-/// lo tuviera puesto.
-String formatReminderLead(int minutes) {
-  if (minutes <= 0) return 'A la hora';
-  if (minutes % 1440 == 0) {
-    final days = minutes ~/ 1440;
-    return days == 1 ? '1 día' : '$days días';
-  }
-  if (minutes % 60 == 0) return '${minutes ~/ 60} h';
-  return '$minutes min';
 }

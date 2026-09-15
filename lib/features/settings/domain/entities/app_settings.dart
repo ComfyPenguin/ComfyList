@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Cuántos recordatorios puede llevar una cita.
-const int maxAppointmentReminders = 3;
+const int maxAppointmentReminders = 5;
 
 /// Configuración local de la app (tema y preferencias de usuario).
 @immutable
@@ -131,6 +131,7 @@ class AppSettings {
 enum AppointmentReminderPreset {
   fiveMinutes(5),
   tenMinutes(10),
+  fifteenMinutes(15),
   thirtyMinutes(30),
   oneHour(60),
   oneDay(1440);
@@ -140,22 +141,24 @@ enum AppointmentReminderPreset {
   final int minutes;
 }
 
-/// Márgenes de [minutes] con [lead] encendido o apagado, en su forma canónica.
-List<int> toggleReminderMinutes(List<int> minutes, int lead) {
-  final next = minutes.toList();
-  if (next.contains(lead)) {
-    next.remove(lead);
-  } else {
-    next.add(lead);
-  }
-  return AppSettings.normalizeReminderMinutes(next);
-}
+/// Márgenes de [minutes] con [lead] añadido, en su forma canónica.
+List<int> addReminderMinutes(List<int> minutes, int lead) =>
+    AppSettings.normalizeReminderMinutes([...minutes, lead]);
+
+/// Márgenes de [minutes] sin [lead].
+List<int> removeReminderMinutes(List<int> minutes, int lead) =>
+    minutes.where((minutes) => minutes != lead).toList();
+
+/// Si [minutes] es uno de los márgenes que ofrece Ajustes. Lo que no lo sea es
+/// el personalizado.
+bool isReminderPreset(int minutes) =>
+    AppointmentReminderPreset.values.any((preset) => preset.minutes == minutes);
 
 /// El margen personalizado de [minutes]: el que no es ninguno de los presets.
 /// `null` si todos los que hay salen en Ajustes.
 int? customReminderMinutes(List<int> minutes) {
   for (final lead in minutes) {
-    if (!_isPresetMinutes(lead)) return lead;
+    if (!isReminderPreset(lead)) return lead;
   }
   return null;
 }
@@ -164,9 +167,6 @@ int? customReminderMinutes(List<int> minutes) {
 /// sale el que hubiera y entra el nuevo. Si el elegido es uno de los presets,
 /// solo se enciende ese y desaparece el personalizado.
 List<int> setCustomReminderMinutes(List<int> minutes, int lead) {
-  final presets = minutes.where(_isPresetMinutes);
+  final presets = minutes.where(isReminderPreset);
   return AppSettings.normalizeReminderMinutes([...presets, lead]);
 }
-
-bool _isPresetMinutes(int minutes) =>
-    AppointmentReminderPreset.values.any((preset) => preset.minutes == minutes);
