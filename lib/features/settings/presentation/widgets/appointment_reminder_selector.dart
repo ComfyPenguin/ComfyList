@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
+import '../../../../shared/ui/buttons/primary_button.dart';
 import '../../../../shared/ui/inputs/app_chip.dart';
 import '../../domain/entities/app_settings.dart';
 import '../providers/settings_provider.dart';
@@ -86,6 +87,7 @@ class AppointmentReminderSelector extends ConsumerWidget {
         children: [
           if (selected.isNotEmpty) ...[
             Wrap(
+              alignment: WrapAlignment.center,
               spacing: AppSpacing.sm,
               runSpacing: AppSpacing.sm,
               children: [
@@ -102,13 +104,12 @@ class AppointmentReminderSelector extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
           ],
-          OutlinedButton.icon(
+          PrimaryButton(
+            label: 'Añadir recordatorio',
+            icon: Icons.add_rounded,
             onPressed: canAdd ? add : null,
-            icon: const Icon(Icons.add_rounded, size: 18),
-            label: const Text('Añadir recordatorio'),
-            style: OutlinedButton.styleFrom(
-              disabledForegroundColor: context.colors.muted,
-            ),
+            expand: true,
+            dense: true,
           ),
           if (!canAdd) ...[
             const SizedBox(height: AppSpacing.sm),

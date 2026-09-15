@@ -1,6 +1,7 @@
 import 'package:comfy_list/features/settings/presentation/providers/settings_provider.dart';
 import 'package:comfy_list/features/settings/presentation/widgets/appointment_reminder_selector.dart';
 import 'package:comfy_list/shared/core/theme/app_theme.dart';
+import 'package:comfy_list/shared/ui/buttons/primary_button.dart';
 import 'package:comfy_list/shared/ui/inputs/app_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -50,20 +51,12 @@ void main() {
   List<String> chips(WidgetTester tester) => tester
       .widgetList<AppChip>(find.byType(AppChip))
       .map((chip) => chip.label)
-      .toList();
-
-  /// `OutlinedButton.icon` no es exactamente un `OutlinedButton`, así que la
-  /// búsqueda va por tipo, no por `byType`.
-  bool canAdd(WidgetTester tester) =>
-      tester
-          .widget<OutlinedButton>(
-            find.byWidgetPredicate((widget) => widget is OutlinedButton),
-          )
-          .onPressed !=
+      .toList();  bool canAdd(WidgetTester tester) =>
+      tester.widget<PrimaryButton>(find.byType(PrimaryButton)).onPressed !=
       null;
 
   Future<void> openMenu(WidgetTester tester) async {
-    await tester.tap(find.text('Añadir recordatorio'));
+    await tester.tap(find.text('AÑADIR RECORDATORIO'));
     await tester.pumpAndSettle();
   }
 
@@ -73,13 +66,18 @@ void main() {
     await pumpSelector(tester, minutes: const [5, 45]);
 
     expect(chips(tester), ['5 min', 'Personalizado: 45 min']);
+    // Centradas en la fila, no pegadas a la izquierda.
+    expect(
+      tester.widget<Wrap>(find.byType(Wrap)).alignment,
+      WrapAlignment.center,
+    );
   });
 
   testWidgets('sin recordatorios solo está el botón de añadir', (tester) async {
     await pumpSelector(tester, minutes: const []);
 
     expect(chips(tester), isEmpty);
-    expect(find.text('Añadir recordatorio'), findsOneWidget);
+    expect(find.text('AÑADIR RECORDATORIO'), findsOneWidget);
     expect(canAdd(tester), isTrue);
   });
 
