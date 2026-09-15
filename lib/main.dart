@@ -10,6 +10,7 @@ import 'app.dart';
 import 'shared/core/env/firebase_endpoints.dart';
 import 'shared/data/local/app_database.dart';
 import 'shared/data/local/database_provider.dart';
+import 'shared/data/notifications/notifications_provider.dart';
 import 'shared/data/notifications/notifications_service.dart';
 
 Future<void> main() async {
@@ -43,6 +44,7 @@ Future<void> main() async {
     ProviderScope(
       overrides: [
         appDatabaseProvider.overrideWithValue(database),
+        notificationsServiceProvider.overrideWithValue(notifications),
       ],
       child: const ComfyListApp(),
     ),

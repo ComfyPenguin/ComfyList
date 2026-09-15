@@ -110,4 +110,15 @@ class SettingsDao extends DatabaseAccessor<AppDatabase> with _$SettingsDaoMixin 
       ),
     );
   }
+
+  /// [minutes] es la lista de márgenes ya serializada (separada por comas).
+  Future<void> updateAppointmentReminderMinutes(String minutes) async {
+    await getOrCreate();
+    await (update(settingsTable)..where((t) => t.id.equals(1))).write(
+      SettingsTableCompanion(
+        appointmentReminderMinutes: Value(minutes),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+  }
 }

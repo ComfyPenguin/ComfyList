@@ -7,6 +7,9 @@ import '../../core/theme/app_theme.dart';
 import '../../core/theme/app_typography.dart';
 
 /// Canonical primary button: pill, primary background, onPrimary uppercase bold text, dual light/dark shadow.
+///
+/// Sin acción queda apagado en lugar de desaparecer: relleno `muted` y sin halo,
+/// que el halo es lo que lo pone por delante del contenido.
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
     super.key,
@@ -15,6 +18,7 @@ class PrimaryButton extends StatelessWidget {
     this.icon,
     this.isLoading = false,
     this.expand = false,
+    this.dense = false,
     this.backgroundColor,
     this.foregroundColor,
   });
@@ -24,6 +28,11 @@ class PrimaryButton extends StatelessWidget {
   final IconData? icon;
   final bool isLoading;
   final bool expand;
+
+  /// Versión compacta: menos relleno vertical y etiqueta más pequeña, para el
+  /// botón que vive dentro de un bloque de contenido en vez de ser la acción de
+  /// la pantalla.
+  final bool dense;
 
   /// Sobrescribe el fondo del pill (p. ej. [AppColors.error] en acciones destructivas).
   final Color? backgroundColor;
@@ -35,8 +44,12 @@ class PrimaryButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
 
-    final bg = backgroundColor ?? colors.primary;
+    final disabled = onPressed == null && !isLoading;
+    final bg = backgroundColor ?? (disabled ? colors.muted : colors.primary);
     final fg = foregroundColor ?? colors.onPrimary;
+    final labelStyle = dense
+        ? AppTypography.bodySmStrong
+        : AppTypography.buttonMd;
 
     final body = isLoading
         ? SizedBox(
@@ -53,7 +66,7 @@ class PrimaryButton extends StatelessWidget {
             children: [
               Text(
                 label.toUpperCase(),
-                style: AppTypography.buttonMd.copyWith(
+                style: labelStyle.copyWith(
                   color: fg,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.4,
@@ -70,7 +83,7 @@ class PrimaryButton extends StatelessWidget {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: AppRadius.brPill,
-        boxShadow: AppShadow.primaryGlow(colors, bg),
+        boxShadow: disabled ? null : AppShadow.primaryGlow(colors, bg),
       ),
       child: Material(
         color: Colors.transparent,
@@ -79,8 +92,12 @@ class PrimaryButton extends StatelessWidget {
         child: InkWell(
           onTap: isLoading ? null : onPressed,
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-            child: Center(child: body),
+            padding: EdgeInsets.symmetric(
+              vertical: dense ? AppSpacing.md : AppSpacing.lg,
+            ),
+            // `heightFactor: 1` para que en un alto acotado no se estire a lo
+            // alto: la píldora mide lo que mide su contenido.
+            child: Center(heightFactor: 1, child: body),
           ),
         ),
       ),

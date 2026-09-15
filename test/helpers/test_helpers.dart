@@ -92,22 +92,28 @@ AppSettings buildAppSettings({
   bool? appointmentsTodayOnTop,
   bool? invertSwipeActions,
   bool? use24HourFormat,
+  List<int>? appointmentReminderMinutes,
 }) {
   return AppSettings(
     themeMode: themeMode ?? AppSettings.defaults.themeMode,
     notificationsEnabled:
         notificationsEnabled ?? AppSettings.defaults.notificationsEnabled,
-    appointmentsCompletionEnabled: appointmentsCompletionEnabled ??
+    appointmentsCompletionEnabled:
+        appointmentsCompletionEnabled ??
         AppSettings.defaults.appointmentsCompletionEnabled,
     completedToBottom:
         completedToBottom ?? AppSettings.defaults.completedToBottom,
-    appointmentsCompletedToBottom: appointmentsCompletedToBottom ??
+    appointmentsCompletedToBottom:
+        appointmentsCompletedToBottom ??
         AppSettings.defaults.appointmentsCompletedToBottom,
     appointmentsTodayOnTop:
         appointmentsTodayOnTop ?? AppSettings.defaults.appointmentsTodayOnTop,
     invertSwipeActions:
         invertSwipeActions ?? AppSettings.defaults.invertSwipeActions,
     use24HourFormat: use24HourFormat ?? AppSettings.defaults.use24HourFormat,
+    appointmentReminderMinutes:
+        appointmentReminderMinutes ??
+        AppSettings.defaults.appointmentReminderMinutes,
   );
 }
 
@@ -123,6 +129,7 @@ SettingsRow buildSettingsRow({
   bool appointmentsTodayOnTop = true,
   bool invertSwipeActions = false,
   bool use24HourFormat = true,
+  String appointmentReminderMinutes = '30',
   DateTime? updatedAt,
 }) {
   return SettingsRow(
@@ -135,6 +142,7 @@ SettingsRow buildSettingsRow({
     appointmentsTodayOnTop: appointmentsTodayOnTop,
     invertSwipeActions: invertSwipeActions,
     use24HourFormat: use24HourFormat,
+    appointmentReminderMinutes: appointmentReminderMinutes,
     updatedAt: updatedAt ?? DateTime.now().toUtc(),
   );
 }

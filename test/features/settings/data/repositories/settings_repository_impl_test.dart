@@ -28,6 +28,7 @@ void main() {
     bool appointmentsTodayOnTop = true,
     bool invertSwipeActions = false,
     bool use24HourFormat = true,
+    String appointmentReminderMinutes = '30',
   }) {
     return SettingsRow(
       id: 1,
@@ -39,6 +40,7 @@ void main() {
       appointmentsTodayOnTop: appointmentsTodayOnTop,
       invertSwipeActions: invertSwipeActions,
       use24HourFormat: use24HourFormat,
+      appointmentReminderMinutes: appointmentReminderMinutes,
       updatedAt: DateTime.utc(2026, 6, 30, 12),
     );
   }
@@ -57,11 +59,33 @@ void main() {
       expect(result.appointmentsTodayOnTop, isTrue);
       expect(result.invertSwipeActions, isFalse);
       expect(result.use24HourFormat, isTrue);
+      expect(result.appointmentReminderMinutes, [30]);
+    });
+
+    test('lee la lista de márgenes guardada', () async {
+      when(
+        () => local.getOrCreate(),
+      ).thenAnswer((_) async => buildRow(appointmentReminderMinutes: '0,60'));
+
+      final result = await repo.load();
+
+      expect(result.appointmentReminderMinutes, [0, 60]);
+    });
+
+    test('un valor guardado sin márgenes deja la cita sin avisos', () async {
+      when(
+        () => local.getOrCreate(),
+      ).thenAnswer((_) async => buildRow(appointmentReminderMinutes: ''));
+
+      final result = await repo.load();
+
+      expect(result.appointmentReminderMinutes, isEmpty);
     });
 
     test('parsea themeMode "dark" como ThemeMode.dark', () async {
-      when(() => local.getOrCreate())
-          .thenAnswer((_) async => buildRow(themeMode: 'dark'));
+      when(
+        () => local.getOrCreate(),
+      ).thenAnswer((_) async => buildRow(themeMode: 'dark'));
 
       final result = await repo.load();
 
@@ -69,8 +93,9 @@ void main() {
     });
 
     test('parsea themeMode "light" como ThemeMode.light', () async {
-      when(() => local.getOrCreate())
-          .thenAnswer((_) async => buildRow(themeMode: 'light'));
+      when(
+        () => local.getOrCreate(),
+      ).thenAnswer((_) async => buildRow(themeMode: 'light'));
 
       final result = await repo.load();
 
@@ -99,14 +124,16 @@ void main() {
   });
 
   group('SettingsRepositoryImpl.setThemeMode', () {
-    test('serializa ThemeMode.dark a "dark" vía AppSettings.themeModeToString',
-        () async {
-      when(() => local.updateThemeMode(any())).thenAnswer((_) async {});
+    test(
+      'serializa ThemeMode.dark a "dark" vía AppSettings.themeModeToString',
+      () async {
+        when(() => local.updateThemeMode(any())).thenAnswer((_) async {});
 
-      await repo.setThemeMode(ThemeMode.dark);
+        await repo.setThemeMode(ThemeMode.dark);
 
-      verify(() => local.updateThemeMode('dark')).called(1);
-    });
+        verify(() => local.updateThemeMode('dark')).called(1);
+      },
+    );
 
     test('serializa ThemeMode.system a "system"', () async {
       when(() => local.updateThemeMode(any())).thenAnswer((_) async {});
@@ -119,17 +146,22 @@ void main() {
 
   group('SettingsRepositoryImpl setters booleanos', () {
     test('delegan en los métodos del local sin transformación', () async {
-      when(() => local.updateNotificationsEnabled(any()))
-          .thenAnswer((_) async {});
-      when(() => local.updateAppointmentsCompletionEnabled(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => local.updateNotificationsEnabled(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => local.updateAppointmentsCompletionEnabled(any()),
+      ).thenAnswer((_) async {});
       when(() => local.updateCompletedToBottom(any())).thenAnswer((_) async {});
-      when(() => local.updateAppointmentsCompletedToBottom(any()))
-          .thenAnswer((_) async {});
-      when(() => local.updateAppointmentsTodayOnTop(any()))
-          .thenAnswer((_) async {});
-      when(() => local.updateInvertSwipeActions(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => local.updateAppointmentsCompletedToBottom(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => local.updateAppointmentsTodayOnTop(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => local.updateInvertSwipeActions(any()),
+      ).thenAnswer((_) async {});
       when(() => local.updateUse24HourFormat(any())).thenAnswer((_) async {});
 
       await repo.setNotificationsEnabled(false);
@@ -147,6 +179,18 @@ void main() {
       verify(() => local.updateAppointmentsTodayOnTop(false)).called(1);
       verify(() => local.updateInvertSwipeActions(true)).called(1);
       verify(() => local.updateUse24HourFormat(false)).called(1);
+    });
+  });
+
+  group('SettingsRepositoryImpl.setAppointmentReminderMinutes', () {
+    test('guarda la lista de márgenes en su forma canónica', () async {
+      when(
+        () => local.updateAppointmentReminderMinutes(any()),
+      ).thenAnswer((_) async {});
+
+      await repo.setAppointmentReminderMinutes(const [1440, 30, 30]);
+
+      verify(() => local.updateAppointmentReminderMinutes('30,1440')).called(1);
     });
   });
 }

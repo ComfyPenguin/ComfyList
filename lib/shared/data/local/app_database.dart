@@ -19,7 +19,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -58,6 +58,27 @@ class AppDatabase extends _$AppDatabase {
             await migrator.addColumn(
               settingsTable,
               settingsTable.appointmentsTodayOnTop,
+            );
+          }
+          if (from < 8) {
+            await migrator.addColumn(
+              settingsTable,
+              settingsTable.appointmentReminderMinutes,
+            );
+          }
+          if (from < 9) {
+            // El recordatorio pasa de uno a tres, así que la columna deja de ser
+            // un entero y guarda la lista separada por comas. Cambiar el tipo
+            // obliga a recrear la tabla, y el margen que hubiera se conserva
+            // como el único de la lista.
+            await migrator.alterTable(
+              TableMigration(
+                settingsTable,
+                columnTransformer: {
+                  settingsTable.appointmentReminderMinutes:
+                      settingsTable.appointmentReminderMinutes.cast<String>(),
+                },
+              ),
             );
           }
         },

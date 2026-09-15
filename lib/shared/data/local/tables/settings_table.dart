@@ -9,8 +9,10 @@ class SettingsTable extends Table {
   TextColumn get themeMode =>
       text().withDefault(const Constant('system')).withLength(min: 4, max: 8)();
 
+  /// Los avisos vienen apagados de fábrica: el permiso del sistema se pide al
+  /// encenderlos (ver `NotificationsService`).
   BoolColumn get notificationsEnabled =>
-      boolean().withDefault(const Constant(true))();
+      boolean().withDefault(const Constant(false))();
 
   BoolColumn get appointmentsCompletionEnabled =>
       boolean().withDefault(const Constant(false))();
@@ -37,6 +39,11 @@ class SettingsTable extends Table {
   /// Si `false`, se muestran en formato 12H con AM/PM.
   BoolColumn get use24HourFormat =>
       boolean().withDefault(const Constant(true))();
+
+  /// Minutos de antelación de los recordatorios de una cita (0 = a su hora),
+  /// separados por comas y como mucho tres. Un valor vacío es «sin avisos».
+  TextColumn get appointmentReminderMinutes =>
+      text().withDefault(const Constant('30'))();
 
   DateTimeColumn get updatedAt => dateTime()();
 

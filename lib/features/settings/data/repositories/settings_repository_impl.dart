@@ -21,6 +21,9 @@ class SettingsRepositoryImpl implements SettingsRepository {
       appointmentsTodayOnTop: row.appointmentsTodayOnTop,
       invertSwipeActions: row.invertSwipeActions,
       use24HourFormat: row.use24HourFormat,
+      appointmentReminderMinutes: AppSettings.parseReminderMinutes(
+        row.appointmentReminderMinutes,
+      ),
     );
   }
 
@@ -36,6 +39,9 @@ class SettingsRepositoryImpl implements SettingsRepository {
             appointmentsTodayOnTop: row.appointmentsTodayOnTop,
             invertSwipeActions: row.invertSwipeActions,
             use24HourFormat: row.use24HourFormat,
+            appointmentReminderMinutes: AppSettings.parseReminderMinutes(
+              row.appointmentReminderMinutes,
+            ),
           ),
         );
   }
@@ -78,5 +84,12 @@ class SettingsRepositoryImpl implements SettingsRepository {
   @override
   Future<void> setUse24HourFormat(bool enabled) {
     return _local.updateUse24HourFormat(enabled);
+  }
+
+  @override
+  Future<void> setAppointmentReminderMinutes(List<int> minutes) {
+    return _local.updateAppointmentReminderMinutes(
+      AppSettings.reminderMinutesToString(minutes),
+    );
   }
 }

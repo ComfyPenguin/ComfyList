@@ -36,6 +36,8 @@ class TodoDetailSheet extends ConsumerWidget {
     final state = ref.watch(todosProvider(listId));
     final colors = context.colors;
 
+    // El 85 % es un tope, no la altura de la hoja: quien la mide es el contenido,
+    // así que las ramas sin contenido no lo llenan (`heightFactor: 1`).
     return ConstrainedBox(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.85,
@@ -43,11 +45,15 @@ class TodoDetailSheet extends ConsumerWidget {
       child: switch (state) {
         TodosInitial() || TodosLoading() => const Padding(
           padding: EdgeInsets.symmetric(vertical: AppSpacing.xxxl),
-          child: Center(child: CircularProgressIndicator()),
+          child: Center(
+            heightFactor: 1,
+            child: CircularProgressIndicator(),
+          ),
         ),
         TodosError(:final failure) => Padding(
           padding: const EdgeInsets.all(AppSpacing.xxxl),
           child: Center(
+            heightFactor: 1,
             child: Text(
               failure.message,
               textAlign: TextAlign.center,
@@ -75,6 +81,7 @@ class TodoDetailSheet extends ConsumerWidget {
       return Padding(
         padding: const EdgeInsets.all(AppSpacing.xxxl),
         child: Center(
+          heightFactor: 1,
           child: Text(
             'Tarea no encontrada.',
             textAlign: TextAlign.center,

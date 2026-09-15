@@ -6,12 +6,16 @@ import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_stroke.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
+import '../../../../shared/data/notifications/notifications_provider.dart';
 import '../../../../shared/ui/animations/unfold_down.dart';
 import '../providers/settings_provider.dart';
 import '../providers/settings_state.dart';
+import '../widgets/appointment_reminder_selector.dart';
 import '../widgets/appointments_completed_to_bottom_toggle.dart';
+import '../widgets/blocked_notifications_tile.dart';
 import '../widgets/appointments_completion_toggle.dart';
 import '../widgets/completed_to_bottom_toggle.dart';
+import '../widgets/exact_alarms_tile.dart';
 import '../widgets/hour_format_selector.dart';
 import '../widgets/invert_swipe_actions_toggle.dart';
 import '../widgets/notifications_toggle.dart';
@@ -46,6 +50,22 @@ class SettingsScreen extends ConsumerWidget {
       SettingsData(:final settings) => settings.appointmentsCompletionEnabled,
       _ => null,
     };
+    final notificationsEnabled = switch (state) {
+      SettingsData(:final settings) => settings.notificationsEnabled,
+      _ => null,
+    };
+    // El permiso de alarmas exactas lo concede el sistema, no la app: solo se
+    // ofrece mientras falte, y `null` (el sistema todavía no ha contestado) no
+    // cuenta como que falte, para que la fila no aparezca y se vaya sola.
+    final exactAlarmsMissing =
+        ref.watch(exactAlarmsGrantedProvider).value == false;
+    // El sistema puede bloquear los avisos aunque el ajuste esté encendido: el
+    // permiso sin conceder o los avisos de la app apagados desde los ajustes del
+    // sistema. `null` (el sistema todavía no ha contestado) no cuenta como
+    // bloqueo, para que la fila no aparezca y se vaya sola.
+    final notificationsBlocked =
+        notificationsEnabled == true &&
+        ref.watch(systemAllowsNotificationsProvider).value == false;
 
     return ListView(
       padding: EdgeInsets.fromLTRB(
@@ -63,7 +83,39 @@ class SettingsScreen extends ConsumerWidget {
         const SizedBox(height: AppSpacing.joined),
         const InvertSwipeActionsToggle(isFirst: false, isLast: false),
         const SizedBox(height: AppSpacing.joined),
-        const NotificationsToggle(isFirst: false, isLast: true),
+        NotificationsToggle(
+          isFirst: false,
+          // Con el recordatorio recogido, la del switch es la fila que cierra
+          // el grupo.
+          isLast: notificationsEnabled != true,
+        ),
+        if (notificationsEnabled != null)
+          UnfoldDown(
+            open: notificationsEnabled,
+            // La junta va dentro del bloque para que también abra con él.
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Sin los avisos del sistema no llega ninguno, así que el aviso
+                // va antes que el resto del grupo.
+                if (notificationsBlocked) ...[
+                  const SizedBox(height: AppSpacing.joined),
+                  const BlockedNotificationsTile(isFirst: false, isLast: false),
+                ],
+                const SizedBox(height: AppSpacing.joined),
+                AppointmentReminderSelector(
+                  isFirst: false,
+                  // Con la fila de alarmas exactas debajo, el recordatorio deja
+                  // de cerrar el grupo.
+                  isLast: !exactAlarmsMissing,
+                ),
+                if (exactAlarmsMissing) ...[
+                  const SizedBox(height: AppSpacing.joined),
+                  const ExactAlarmsTile(isFirst: false, isLast: true),
+                ],
+              ],
+            ),
+          ),
         const SizedBox(height: AppSpacing.xxxl),
         _SectionHeader(label: 'CITAS', style: sectionStyle),
         const HourFormatSelector(isFirst: true, isLast: false),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'features/appointments/presentation/providers/appointment_reminders_provider.dart';
 import 'features/settings/presentation/providers/settings_provider.dart';
 import 'routing/app_router.dart';
 import 'shared/core/lifecycle/app_lifecycle_controller.dart';
@@ -15,6 +16,7 @@ class ComfyListApp extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
     final router = ref.watch(routerProvider);
     ref.watch(appLifecycleControllerProvider);
+    ref.watch(appointmentRemindersProvider);
 
     return MaterialApp.router(
       title: 'Comfy List',

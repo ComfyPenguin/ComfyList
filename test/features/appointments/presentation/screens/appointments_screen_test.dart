@@ -2,6 +2,7 @@ import 'package:comfy_list/features/appointments/domain/entities/appointment.dar
 import 'package:comfy_list/features/appointments/presentation/providers/appointments_provider.dart';
 import 'package:comfy_list/features/appointments/presentation/providers/appointments_state.dart';
 import 'package:comfy_list/features/appointments/presentation/screens/appointments_screen.dart';
+import 'package:comfy_list/features/appointments/presentation/widgets/appointment_tile.dart';
 import 'package:comfy_list/features/settings/presentation/providers/settings_provider.dart';
 import 'package:comfy_list/shared/core/theme/app_theme.dart';
 import 'package:comfy_list/shared/core/time/clock.dart';
@@ -67,13 +68,14 @@ void main() {
     WidgetTester tester, {
     required List<Appointment> items,
     required bool todayOnTop,
+    Size physicalSize = const Size(1170, 2400),
   }) async {
     final repo = FakeSettingsRepository(
       settings: buildAppSettings(appointmentsTodayOnTop: todayOnTop),
     );
     addTearDown(repo.close);
 
-    tester.view.physicalSize = const Size(1170, 2400);
+    tester.view.physicalSize = physicalSize;
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
 
@@ -151,7 +153,9 @@ void main() {
     // de mañana, ayer se cuela entre los dos.
     final headerToday = tester.getTopLeft(find.text('CITAS DE HOY')).dy;
     final headerTomorrow = tester.getTopLeft(find.text('MAÑANA')).dy;
-    final headerYesterday = tester.getTopLeft(find.text(headerOf(yesterday))).dy;
+    final headerYesterday = tester
+        .getTopLeft(find.text(headerOf(yesterday)))
+        .dy;
 
     expect(headerToday, lessThan(headerTomorrow));
     expect(headerTomorrow, lessThan(headerYesterday));
@@ -167,6 +171,37 @@ void main() {
     expect(
       tester.getTopLeft(find.text(headerOf(yesterday))).dy,
       lessThan(tester.getTopLeft(find.text('MAÑANA')).dy),
+    );
+  });
+
+  testWidgets('en un móvil estrecho con contenido largo no desborda', (
+    tester,
+  ) async {
+    await pumpScreen(
+      tester,
+      // 320 x 640 lógicos: lo más estrecho que se sigue usando.
+      physicalSize: const Size(960, 1920),
+      items: [
+        buildAppointment(
+          id: 'largo',
+          title:
+              'Reunión con el equipo de producto para revisar la hoja de '
+              'ruta del trimestre',
+          location: 'Calle de Alcalá 123, 4º izquierda, Madrid',
+          dateTime: today,
+        ),
+        tomorrowAppointment,
+      ],
+      todayOnTop: true,
+    );
+
+    // Un desborde llega aquí como excepción: no haberla es la comprobación.
+    expect(tester.takeException(), isNull);
+    // Y el alto de la fila lo pone su contenido: con un `Center` estirado por
+    // dentro, la fila mediría la lista entera.
+    expect(
+      tester.getSize(find.byType(AppointmentTile).first).height,
+      lessThan(200),
     );
   });
 }
