@@ -136,7 +136,34 @@ void main() {
     expect(find.text('MAÑANA'), findsOneWidget);
     // Y no con la fecha formateada: la que entra es la rama de «mañana».
     expect(find.text(headerOf(tomorrow)), findsNothing);
-    // Los días que no son hoy siguen en ascendente: ayer por delante de mañana.
+  });
+
+  testWidgets('con «Citas de hoy arriba» mañana va justo debajo de hoy', (
+    tester,
+  ) async {
+    await pumpScreen(
+      tester,
+      items: [yesterdayAppointment, todayAppointment, tomorrowAppointment],
+      todayOnTop: true,
+    );
+
+    // Hoy encabeza, mañana le sigue y el día pasado queda detrás: sin el anclaje
+    // de mañana, ayer se cuela entre los dos.
+    final headerToday = tester.getTopLeft(find.text('CITAS DE HOY')).dy;
+    final headerTomorrow = tester.getTopLeft(find.text('MAÑANA')).dy;
+    final headerYesterday = tester.getTopLeft(find.text(headerOf(yesterday))).dy;
+
+    expect(headerToday, lessThan(headerTomorrow));
+    expect(headerTomorrow, lessThan(headerYesterday));
+  });
+
+  testWidgets('con el ajuste apagado mañana no se adelanta', (tester) async {
+    await pumpScreen(
+      tester,
+      items: [yesterdayAppointment, todayAppointment, tomorrowAppointment],
+      todayOnTop: false,
+    );
+
     expect(
       tester.getTopLeft(find.text(headerOf(yesterday))).dy,
       lessThan(tester.getTopLeft(find.text('MAÑANA')).dy),
