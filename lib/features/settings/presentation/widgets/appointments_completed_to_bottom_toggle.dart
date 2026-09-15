@@ -32,10 +32,9 @@ class AppointmentsCompletedToBottomToggle extends ConsumerWidget {
     return SettingsTile(
       icon: Icons.vertical_align_bottom_rounded,
       title: 'Citas completadas al final',
-      description: enabled
-          ? 'Las citas que marques como completadas se mueven al final de '
-                'la lista de ese día automáticamente.'
-          : 'Disponible al activar «Completar citas».',
+      // Con el ajuste apagado la fila se queda sin explicación: la línea solo
+      // aparece para justificar por qué el switch no responde.
+      description: enabled ? null : 'Disponible al activar «Completar citas».',
       enabled: enabled && state is! SettingsError,
       isFirst: isFirst,
       isLast: isLast,

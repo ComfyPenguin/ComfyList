@@ -24,7 +24,6 @@ class AppointmentsCompletionToggle extends ConsumerWidget {
     return SettingsTile(
       icon: Icons.check_circle_outline_rounded,
       title: 'Completar citas',
-      description: 'Permite marcar las citas como completadas con un checkbox.',
       enabled: state is! SettingsError,
       isFirst: isFirst,
       isLast: isLast,

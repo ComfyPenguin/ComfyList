@@ -20,9 +20,6 @@ class HourFormatToggle extends ConsumerWidget {
     return SettingsTile(
       icon: Icons.schedule_rounded,
       title: 'Formato 24 horas',
-      description:
-          'Muestra las horas en formato 24H (ej. 14:00) en lugar de 12H '
-          '(ej. 02:00 PM).',
       enabled: state is! SettingsError,
       isFirst: isFirst,
       isLast: isLast,

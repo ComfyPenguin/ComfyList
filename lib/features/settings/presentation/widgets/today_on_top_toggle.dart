@@ -16,9 +16,6 @@ class TodayOnTopToggle extends StatelessWidget {
     return SettingsTile(
       icon: Icons.vertical_align_top_rounded,
       title: 'Citas de hoy arriba',
-      description:
-          'Mantiene las citas de hoy fijadas en la parte superior '
-          'de la lista de citas.',
       enabled: false,
       isFirst: isFirst,
       isLast: isLast,

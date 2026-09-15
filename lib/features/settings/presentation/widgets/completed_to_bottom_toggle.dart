@@ -24,9 +24,6 @@ class CompletedToBottomToggle extends ConsumerWidget {
     return SettingsTile(
       icon: Icons.vertical_align_bottom_rounded,
       title: 'Tareas completadas al final',
-      description:
-          'Las tareas que marques como hechas se mueven al final '
-          'de la lista automáticamente.',
       enabled: state is! SettingsError,
       isFirst: isFirst,
       isLast: isLast,

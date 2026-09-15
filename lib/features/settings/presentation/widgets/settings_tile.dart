@@ -106,8 +106,8 @@ class SettingsTile extends StatelessWidget {
   final IconData icon;
   final String title;
 
-  /// Línea de apoyo bajo el título. Opcional: las filas cuyo control ya se
-  /// explica solo (el selector de tema) van solo con el título.
+  /// Línea de apoyo bajo el título. Opcional: solo la llevan las filas que
+  /// necesitan decir algo que el título no puede explicar por sí solo.
   final String? description;
 
   /// Control al final de la fila — el switch de la preferencia.
