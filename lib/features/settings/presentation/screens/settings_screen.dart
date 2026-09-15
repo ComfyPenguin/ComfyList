@@ -11,7 +11,7 @@ import '../providers/settings_state.dart';
 import '../widgets/appointments_completed_to_bottom_toggle.dart';
 import '../widgets/appointments_completion_toggle.dart';
 import '../widgets/completed_to_bottom_toggle.dart';
-import '../widgets/hour_format_toggle.dart';
+import '../widgets/hour_format_selector.dart';
 import '../widgets/invert_swipe_actions_toggle.dart';
 import '../widgets/notifications_toggle.dart';
 import '../widgets/theme_mode_selector.dart';
@@ -55,7 +55,7 @@ class SettingsScreen extends ConsumerWidget {
         const NotificationsToggle(isFirst: false, isLast: true),
         const SizedBox(height: AppSpacing.xxxl),
         _SectionHeader(label: 'CITAS', style: sectionStyle),
-        const HourFormatToggle(isFirst: true, isLast: false),
+        const HourFormatSelector(isFirst: true, isLast: false),
         const SizedBox(height: AppSpacing.joined),
         const AppointmentsCompletionToggle(isFirst: false, isLast: false),
         const SizedBox(height: AppSpacing.joined),

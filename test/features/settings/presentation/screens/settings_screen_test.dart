@@ -90,7 +90,7 @@ void main() {
 
     expect(repo.loadCalls, 1);
     expect(find.text('No se han podido leer tus ajustes.'), findsOneWidget);
-    expect(disabledSwitches(tester), 6);
+    expect(disabledSwitches(tester), 5);
 
     repo.fail = false;
     await tester.tap(find.text('Reintentar'));

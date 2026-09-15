@@ -113,8 +113,8 @@ class SettingsTile extends StatelessWidget {
   /// Control al final de la fila — el switch de la preferencia.
   final Widget? trailing;
 
-  /// Contenido a lo ancho bajo el título, para las filas que no caben en una
-  /// línea (el selector de tema).
+  /// Contenido a lo ancho bajo el título, para las filas cuyo control no cabe
+  /// en una línea (los selectores de tema y de formato de hora).
   final Widget? child;
 
   final bool enabled;

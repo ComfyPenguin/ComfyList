@@ -87,3 +87,12 @@ final themeModeProvider = Provider<ThemeMode>((ref) {
     _ => ThemeMode.system,
   };
 });
+
+/// Formato de hora elegido — devuelve el por defecto mientras carga.
+final use24HourFormatProvider = Provider<bool>((ref) {
+  final state = ref.watch(settingsProvider);
+  return switch (state) {
+    SettingsData(:final settings) => settings.use24HourFormat,
+    _ => AppSettings.defaults.use24HourFormat,
+  };
+});
