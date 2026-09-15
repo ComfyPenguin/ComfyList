@@ -34,7 +34,16 @@ class SettingsScreen extends ConsumerWidget {
     // (iconButton + padding del AppBar) más un margen hasta la primera sección.
     final topOffset = MediaQuery.paddingOf(context).top + 56 + AppSpacing.md;
 
-    final loadFailed = ref.watch(settingsProvider) is SettingsError;
+    final state = ref.watch(settingsProvider);
+    final loadFailed = state is SettingsError;
+    // Mientras no sepamos el valor, `null`: el bloque no se monta, así que al
+    // llegar las preferencias la fila aparece de golpe con el resto de la
+    // pantalla —no es una acción del usuario— y solo se desliza cuando se
+    // enciende el ajuste del que cuelga.
+    final completionEnabled = switch (state) {
+      SettingsData(:final settings) => settings.appointmentsCompletionEnabled,
+      _ => null,
+    };
 
     return ListView(
       padding: EdgeInsets.fromLTRB(
@@ -58,14 +67,90 @@ class SettingsScreen extends ConsumerWidget {
         const HourFormatSelector(isFirst: true, isLast: false),
         const SizedBox(height: AppSpacing.joined),
         const AppointmentsCompletionToggle(isFirst: false, isLast: false),
-        const SizedBox(height: AppSpacing.joined),
-        const AppointmentsCompletedToBottomToggle(isFirst: false, isLast: false),
+        if (completionEnabled != null)
+          _UnfoldDown(
+            visible: completionEnabled,
+            // La junta va dentro del bloque para que también abra con él.
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(height: AppSpacing.joined),
+                AppointmentsCompletedToBottomToggle(
+                  isFirst: false,
+                  isLast: false,
+                ),
+              ],
+            ),
+          ),
         const SizedBox(height: AppSpacing.joined),
         const TodayOnTopToggle(isFirst: false, isLast: true),
         const SizedBox(height: AppSpacing.xxxl),
         _SectionHeader(label: 'TAREAS', style: sectionStyle),
         const CompletedToBottomToggle(),
       ],
+    );
+  }
+}
+
+/// Despliega su contenido hacia abajo: el hueco se abre justo debajo de la
+/// fila de la que cuelga y el contenido se descubre desde su borde superior,
+/// mientras las filas de abajo bajan lo que crece. Con el ajuste apagado el
+/// bloque se cierra y la fila se esconde por el mismo sitio.
+///
+/// No anima en su primer build: cuando se monta ya trae su valor y lo aplica
+/// tal cual, con el resto de la pantalla.
+class _UnfoldDown extends StatefulWidget {
+  const _UnfoldDown({required this.visible, required this.child});
+
+  final bool visible;
+  final Widget child;
+
+  @override
+  State<_UnfoldDown> createState() => _UnfoldDownState();
+}
+
+class _UnfoldDownState extends State<_UnfoldDown>
+    with SingleTickerProviderStateMixin {
+  static const Duration _duration = Duration(milliseconds: 260);
+
+  late final AnimationController _controller = AnimationController(
+    duration: _duration,
+    vsync: this,
+    value: widget.visible ? 1 : 0,
+  );
+
+  late final Animation<double> _reveal = CurvedAnimation(
+    parent: _controller,
+    curve: Curves.easeOutCubic,
+    reverseCurve: Curves.easeInCubic,
+  );
+
+  @override
+  void didUpdateWidget(covariant _UnfoldDown oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.visible == oldWidget.visible) return;
+    widget.visible ? _controller.forward() : _controller.reverse();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizeTransition(
+      sizeFactor: _reveal,
+      // Anclado arriba: el hueco crece hacia abajo y el contenido se descubre
+      // desde arriba. El contenido no se desplaza — si lo hiciera, asomaría
+      // primero su borde de abajo, que es el que no se ve venir.
+      alignment: Alignment.topCenter,
+      // Recogida no se pulsa ni se anuncia: solo queda el hueco, que es cero.
+      child: ExcludeSemantics(
+        excluding: !widget.visible,
+        child: IgnorePointer(ignoring: !widget.visible, child: widget.child),
+      ),
     );
   }
 }

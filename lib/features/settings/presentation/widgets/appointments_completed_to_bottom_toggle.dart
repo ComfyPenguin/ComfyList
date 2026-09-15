@@ -6,8 +6,8 @@ import '../providers/settings_state.dart';
 import 'settings_tile.dart';
 
 /// Toggle para decidir si las citas completadas se mueven al final de la
-/// lista de su día. Solo tiene efecto cuando «Completar citas» está activo,
-/// por eso el switch se deshabilita si no lo está.
+/// lista de su día. La pantalla solo monta esta fila cuando «Completar citas»
+/// está activo, que es de lo que depende.
 class AppointmentsCompletedToBottomToggle extends ConsumerWidget {
   const AppointmentsCompletedToBottomToggle({
     super.key,
@@ -23,27 +23,16 @@ class AppointmentsCompletedToBottomToggle extends ConsumerWidget {
     final state = ref.watch(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
 
-    final settings = switch (state) {
-      SettingsData(:final settings) => settings,
-      _ => null,
-    };
-    final enabled = settings?.appointmentsCompletionEnabled ?? false;
-
     return SettingsTile(
       icon: Icons.vertical_align_bottom_rounded,
       title: 'Citas completadas al final',
-      // Con el ajuste apagado la fila se queda sin explicación: la línea solo
-      // aparece para justificar por qué el switch no responde.
-      description: enabled ? null : 'Disponible al activar «Completar citas».',
-      enabled: enabled && state is! SettingsError,
+      enabled: state is! SettingsError,
       isFirst: isFirst,
       isLast: isLast,
       trailing: SettingsSwitch(
         state: state,
-        value: (settings) => settings.appointmentsCompletionEnabled
-            ? settings.appointmentsCompletedToBottom
-            : false,
-        onChanged: enabled ? notifier.setAppointmentsCompletedToBottom : null,
+        value: (settings) => settings.appointmentsCompletedToBottom,
+        onChanged: notifier.setAppointmentsCompletedToBottom,
       ),
     );
   }
