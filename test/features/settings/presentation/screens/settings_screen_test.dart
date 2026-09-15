@@ -145,17 +145,17 @@ void main() {
     expect(tester.getSize(unfold).height, greaterThan(revealing));
   });
 
-  testWidgets('las notificaciones despliegan el recordatorio de citas', (
+  testWidgets('las notificaciones despliegan los recordatorios de citas', (
     tester,
   ) async {
     final repo = FakeSettingsRepository();
     await pumpSettings(tester, repo);
     await tester.pumpAndSettle();
 
-    // Los avisos vienen apagados de fábrica, así que el recordatorio está
-    // recogido y no deja hueco.
-    final row = find.text('Recordatorio');
-    final unfold = unfoldFor('Recordatorio');
+    // Los avisos vienen apagados de fábrica, así que los recordatorios están
+    // recogidos y no dejan hueco.
+    final row = find.text('Recordatorios');
+    final unfold = unfoldFor('Recordatorios');
     expect(row.hitTestable(), findsNothing);
     expect(tester.getSize(unfold).height, 0);
 

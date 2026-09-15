@@ -77,7 +77,7 @@ class AppointmentReminderSelector extends ConsumerWidget {
 
     return SettingsTile(
       icon: Icons.alarm_rounded,
-      title: 'Recordatorio',
+      title: 'Recordatorios',
       enabled: !loadFailed,
       isFirst: isFirst,
       isLast: isLast,
