@@ -7,6 +7,7 @@ import 'package:comfy_list/features/settings/presentation/screens/settings_scree
 import 'package:comfy_list/features/settings/presentation/widgets/settings_tile.dart';
 import 'package:comfy_list/shared/core/failures/failure.dart';
 import 'package:comfy_list/shared/core/theme/app_theme.dart';
+import 'package:comfy_list/shared/ui/animations/unfold_down.dart';
 import 'package:comfy_list/shared/ui/inputs/app_switch.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -144,7 +145,7 @@ void main() {
     final row = find.text('Citas completadas al final');
     final rowTop = tester.getTopLeft(row);
     expect(row.hitTestable(), findsNothing);
-    expect(tester.getSize(find.byType(SizeTransition)).height, 0);
+    expect(tester.getSize(find.byType(UnfoldDown)).height, 0);
 
     await tester.tap(
       find.descendant(
@@ -160,14 +161,14 @@ void main() {
     // A media animación el bloque ya ocupa, pero menos que la fila entera, y la
     // fila sigue donde estaba: el despliegue la descubre, no la desplaza.
     await tester.pump(const Duration(milliseconds: 80));
-    final revealing = tester.getSize(find.byType(SizeTransition)).height;
+    final revealing = tester.getSize(find.byType(UnfoldDown)).height;
     expect(revealing, greaterThan(0));
     expect(tester.getTopLeft(row), rowTop);
 
     await tester.pumpAndSettle();
     expect(row.hitTestable(), findsOneWidget);
     expect(
-      tester.getSize(find.byType(SizeTransition)).height,
+      tester.getSize(find.byType(UnfoldDown)).height,
       greaterThan(revealing),
     );
   });
