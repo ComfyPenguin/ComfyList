@@ -53,6 +53,9 @@ class _FakeSettingsRepository implements SettingsRepository {
   Future<void> setCompletedToBottom(bool enabled) async {}
 
   @override
+  Future<void> setAppointmentsTodayOnTop(bool enabled) async {}
+
+  @override
   Future<void> setInvertSwipeActions(bool enabled) async {}
 
   @override
@@ -113,7 +116,7 @@ void main() {
     expect(find.text('No se han podido leer tus ajustes.'), findsOneWidget);
     // Sin poder leer las preferencias no se sabe si «Citas completadas al
     // final» toca montarla, así que su switch no cuenta.
-    expect(disabledSwitches(tester), 4);
+    expect(disabledSwitches(tester), 5);
 
     repo.fail = false;
     await tester.tap(find.text('Reintentar'));

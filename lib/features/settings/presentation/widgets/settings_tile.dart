@@ -9,37 +9,6 @@ import '../../../../shared/ui/inputs/app_switch.dart';
 import '../../domain/entities/app_settings.dart';
 import '../providers/settings_state.dart';
 
-/// Píldora de estado para las filas que aún no se pueden usar.
-class SettingsTileBadge extends StatelessWidget {
-  const SettingsTileBadge(this.label, {super.key});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.xxs,
-      ),
-      decoration: BoxDecoration(
-        color: colors.canvasSoft,
-        borderRadius: AppRadius.brPill,
-      ),
-      child: Text(
-        label,
-        style: AppTypography.caption.copyWith(
-          // Sobre el relleno de la píldora el `muted` se queda en ~2,3:1;
-          // con el `body` sube a ~5,9:1 en claro y ~7,8:1 en oscuro.
-          color: colors.body,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
 /// Indicador del hueco del switch mientras se leen las preferencias.
 class SettingsTileSpinner extends StatelessWidget {
   const SettingsTileSpinner({super.key});

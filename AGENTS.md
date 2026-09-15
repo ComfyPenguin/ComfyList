@@ -45,7 +45,7 @@ flutter analyze             # Análisis estático
 
 ## Modelo de datos (Drift)
 
-- Schema v4 con migraciones `onUpgrade` secuenciales
+- Schema v7 con migraciones `onUpgrade` secuenciales (una condición `if (from < N)` por columna añadida, y `schemaVersion` a juego)
 - **Tablas**: `settings_table` (singleton id=1), `account_cache_table`
 - `AppDatabase` se instancia en `main()` y se inyecta via `ProviderScope` override
 - Tests: `AppDatabase.forTesting(NativeDatabase.memory())`

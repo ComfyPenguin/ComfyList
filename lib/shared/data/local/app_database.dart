@@ -19,7 +19,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -52,6 +52,12 @@ class AppDatabase extends _$AppDatabase {
             await migrator.addColumn(
               settingsTable,
               settingsTable.invertSwipeActions,
+            );
+          }
+          if (from < 7) {
+            await migrator.addColumn(
+              settingsTable,
+              settingsTable.appointmentsTodayOnTop,
             );
           }
         },

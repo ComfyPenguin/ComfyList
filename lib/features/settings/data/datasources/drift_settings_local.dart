@@ -23,6 +23,9 @@ class DriftSettingsLocal {
   Future<void> updateAppointmentsCompletedToBottom(bool enabled) =>
       _dao.updateAppointmentsCompletedToBottom(enabled);
 
+  Future<void> updateAppointmentsTodayOnTop(bool enabled) =>
+      _dao.updateAppointmentsTodayOnTop(enabled);
+
   Future<void> updateInvertSwipeActions(bool enabled) =>
       _dao.updateInvertSwipeActions(enabled);
 

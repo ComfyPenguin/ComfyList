@@ -24,6 +24,7 @@ void main() {
         appointmentsCompletionEnabled: false,
         completedToBottom: true,
         appointmentsCompletedToBottom: true,
+        appointmentsTodayOnTop: true,
         invertSwipeActions: false,
         use24HourFormat: true,
         updatedAt: DateTime.utc(2026, 6, 30, 12),
@@ -65,6 +66,8 @@ void main() {
       when(() => dao.updateCompletedToBottom(any())).thenAnswer((_) async {});
       when(() => dao.updateAppointmentsCompletedToBottom(any()))
           .thenAnswer((_) async {});
+      when(() => dao.updateAppointmentsTodayOnTop(any()))
+          .thenAnswer((_) async {});
       when(() => dao.updateInvertSwipeActions(any())).thenAnswer((_) async {});
       when(() => dao.updateUse24HourFormat(any())).thenAnswer((_) async {});
 
@@ -72,6 +75,7 @@ void main() {
       await local.updateAppointmentsCompletionEnabled(true);
       await local.updateCompletedToBottom(false);
       await local.updateAppointmentsCompletedToBottom(false);
+      await local.updateAppointmentsTodayOnTop(false);
       await local.updateInvertSwipeActions(true);
       await local.updateUse24HourFormat(false);
 
@@ -79,6 +83,7 @@ void main() {
       verify(() => dao.updateAppointmentsCompletionEnabled(true)).called(1);
       verify(() => dao.updateCompletedToBottom(false)).called(1);
       verify(() => dao.updateAppointmentsCompletedToBottom(false)).called(1);
+      verify(() => dao.updateAppointmentsTodayOnTop(false)).called(1);
       verify(() => dao.updateInvertSwipeActions(true)).called(1);
       verify(() => dao.updateUse24HourFormat(false)).called(1);
     });

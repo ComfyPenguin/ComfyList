@@ -258,6 +258,8 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
     final completionEnabled = settings?.appointmentsCompletionEnabled ?? false;
     // Si el ajuste está activado, las completadas van al final de su día.
     final completedToBottom = settings?.appointmentsCompletedToBottom ?? true;
+    // Y el día de hoy va primero, por delante de los días pasados.
+    final todayOnTop = settings?.appointmentsTodayOnTop ?? true;
 
     // Ordenar por fecha ascendente (más próximas primero).
     // Separar las completadas al final de su día solo con el ajuste activo.
@@ -281,6 +283,13 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
     }
 
     final sortedDates = grouped.keys.toList()..sort();
+    if (todayOnTop) {
+      final todayIndex = sortedDates.indexWhere(_isToday);
+      if (todayIndex > 0) {
+        sortedDates.insert(0, sortedDates.removeAt(todayIndex));
+      }
+    }
+
     final visibleDates = sortedDates.toSet();
     _tileRevealProgressByDate.removeWhere(
       (date, _) => !visibleDates.contains(date),
@@ -299,6 +308,9 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
 
       listChildren.add(
         _AppointmentGroup(
+          // La lista puede reordenarse al anclar hoy: la clave mantiene cada
+          // grupo —y el estado de sus filas— pegado a su día.
+          key: ValueKey(date),
           dateLabel: _formatDateHeader(date),
           isToday: _isToday(date),
           dateHeaderStyle: dateHeaderStyle,
@@ -366,6 +378,7 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
 
 class _AppointmentGroup extends StatelessWidget {
   const _AppointmentGroup({
+    super.key,
     required this.dateLabel,
     required this.isToday,
     required this.dateHeaderStyle,

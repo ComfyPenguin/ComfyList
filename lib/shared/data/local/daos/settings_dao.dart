@@ -81,6 +81,16 @@ class SettingsDao extends DatabaseAccessor<AppDatabase> with _$SettingsDaoMixin 
     );
   }
 
+  Future<void> updateAppointmentsTodayOnTop(bool enabled) async {
+    await getOrCreate();
+    await (update(settingsTable)..where((t) => t.id.equals(1))).write(
+      SettingsTableCompanion(
+        appointmentsTodayOnTop: Value(enabled),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+  }
+
   Future<void> updateInvertSwipeActions(bool enabled) async {
     await getOrCreate();
     await (update(settingsTable)..where((t) => t.id.equals(1))).write(

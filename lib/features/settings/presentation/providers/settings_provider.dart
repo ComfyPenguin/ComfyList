@@ -69,6 +69,9 @@ class SettingsNotifier extends Notifier<SettingsState> {
           .read(settingsRepositoryProvider)
           .setAppointmentsCompletedToBottom(enabled);
 
+  Future<void> setAppointmentsTodayOnTop(bool enabled) =>
+      ref.read(settingsRepositoryProvider).setAppointmentsTodayOnTop(enabled);
+
   Future<void> setInvertSwipeActions(bool enabled) =>
       ref.read(settingsRepositoryProvider).setInvertSwipeActions(enabled);
 
