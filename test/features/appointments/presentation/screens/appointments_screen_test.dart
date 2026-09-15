@@ -36,9 +36,10 @@ void main() {
     await loader.load();
   });
 
-  final now = DateTime.now();
-  final today = DateTime(now.year, now.month, now.day, 10);
-  final yesterday = today.subtract(const Duration(days: 1));
+  // Fecha fija: la pantalla la recibe inyectada, así que el test no depende
+  // del reloj de la máquina.
+  final today = DateTime(2026, 9, 15, 10);
+  final yesterday = DateTime(2026, 9, 14, 9);
 
   // Misma cabecera que pinta la pantalla para el día de ayer.
   String headerOf(DateTime date) =>
@@ -70,7 +71,7 @@ void main() {
         ],
         child: MaterialApp(
           theme: AppTheme.light(),
-          home: const AppointmentsScreen(),
+          home: AppointmentsScreen(today: today),
         ),
       ),
     );

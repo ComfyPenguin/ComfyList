@@ -24,7 +24,11 @@ import '../widgets/empty_state.dart';
 /// Pantalla de lista de citas. El Scaffold, AppBar, FAB y BottomBar
 /// viven en [AppShell].
 class AppointmentsScreen extends ConsumerWidget {
-  const AppointmentsScreen({super.key});
+  const AppointmentsScreen({super.key, this.today});
+
+  /// Día que la lista toma por «hoy». Solo lo inyectan los tests: en la app va
+  /// `null` y manda el reloj.
+  final DateTime? today;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -58,6 +62,7 @@ class AppointmentsScreen extends ConsumerWidget {
               )
             : _AppointmentsList(
                 items: items,
+                today: today ?? DateTime.now(),
                 topPadding: topOffset,
                 bottomPadding: bottomOffset,
               ),
@@ -68,11 +73,15 @@ class AppointmentsScreen extends ConsumerWidget {
 class _AppointmentsList extends ConsumerStatefulWidget {
   const _AppointmentsList({
     required this.items,
+    required this.today,
     required this.topPadding,
     required this.bottomPadding,
   });
 
   final List<Appointment> items;
+
+  /// Día que cuenta como hoy, con la hora que traiga: dentro se normaliza.
+  final DateTime today;
   final double topPadding;
   final double bottomPadding;
 
@@ -355,12 +364,17 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
     );
   }
 
+  /// Medianoche del día que cuenta como hoy.
+  DateTime get _today =>
+      DateTime(widget.today.year, widget.today.month, widget.today.day);
+
   /// Formato de cabecera de fecha. Muestra "HOY" o "MAÑANA" cuando
   /// corresponde, y la fecha completa en otros casos.
   String _formatDateHeader(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final tomorrow = today.add(const Duration(days: 1));
+    final today = _today;
+    // Constructor en vez de sumar 24 h: en los cambios de hora el día siguiente
+    // no cae justo a medianoche.
+    final tomorrow = DateTime(today.year, today.month, today.day + 1);
 
     if (date == today) return 'CITAS DE HOY';
     if (date == tomorrow) return 'MAÑANA';
@@ -369,11 +383,7 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
   }
 
   /// Usado para diferenciar la cabecera de "hoy" (píldora negra) del resto (texto plano).
-  bool _isToday(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    return date == today;
-  }
+  bool _isToday(DateTime date) => date == _today;
 }
 
 class _AppointmentGroup extends StatelessWidget {
