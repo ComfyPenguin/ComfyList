@@ -81,4 +81,33 @@ void main() {
       await expectNoVerticalStretch(tester, entry.key, entry.value);
     });
   }
+
+  /// Ancho del hueco de un `Column` en la pantalla del test, que es todo el que
+  /// hay: un widget que mida su contenido tiene que quedarse muy por debajo.
+  const slotWidth = 800.0;
+
+  /// Los que miden su contenido tampoco pueden llenar el ancho: el `Column` les
+  /// da el ancho máximo sin apretarlos, así que un `Align` sin `widthFactor`
+  /// dentro los estira hasta el borde.
+  ///
+  /// El control segmentado no está aquí a propósito: llena la fila, que es lo
+  /// que se le pide.
+  final hugWidth = <String, Widget Function(Key key)>{
+    'PrimaryButton': (key) =>
+        PrimaryButton(key: key, label: 'Editar', onPressed: () {}),
+    'PrimaryButton dense': (key) =>
+        PrimaryButton(key: key, label: 'Añadir', onPressed: () {}, dense: true),
+    'AppChip': (key) => AppChip(key: key, label: '45 min', onDelete: () {}),
+    'AppSwitch': (key) => AppSwitch(key: key, value: true, onChanged: (_) {}),
+    'AppTag': (key) => AppTag(key: key, label: 'Hoy'),
+  };
+
+  for (final entry in hugWidth.entries) {
+    testWidgets('${entry.key} mide su contenido a lo ancho', (tester) async {
+      final key = ValueKey(entry.key);
+      await tester.pumpWidget(harness(Column(children: [entry.value(key)])));
+
+      expect(tester.getSize(find.byKey(key)).width, lessThan(slotWidth));
+    });
+  }
 }

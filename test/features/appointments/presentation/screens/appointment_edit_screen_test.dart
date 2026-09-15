@@ -4,6 +4,7 @@ import 'package:comfy_list/features/appointments/presentation/screens/appointmen
 import 'package:comfy_list/features/settings/presentation/providers/settings_provider.dart';
 import 'package:comfy_list/shared/core/theme/app_theme.dart';
 import 'package:comfy_list/shared/data/notifications/notifications_provider.dart';
+import 'package:comfy_list/shared/ui/inputs/app_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,10 +31,11 @@ void main() {
     WidgetTester tester, {
     required bool notificationsEnabled,
     bool systemAllows = true,
+    Size physicalSize = const Size(1170, 4200),
   }) async {
     // El formulario entero tiene que caber: si no, el aviso queda fuera de la
     // ventana y la lista ni lo construye.
-    tester.view.physicalSize = const Size(1170, 4200);
+    tester.view.physicalSize = physicalSize;
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
 
@@ -73,5 +75,19 @@ void main() {
 
     expect(find.textContaining('recordatorio'), findsNothing);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('en un móvil estrecho no desborda', (tester) async {
+    await pumpEditScreen(
+      tester,
+      notificationsEnabled: true,
+      // 320 de ancho, con el alto de siempre para que el formulario entero
+      // entre en la ventana.
+      physicalSize: const Size(960, 4200),
+    );
+
+    // Un desborde llega aquí como excepción: no haberla es la comprobación.
+    expect(tester.takeException(), isNull);
+    expect(tester.getSize(find.byType(AppTextField).first).width, 288);
   });
 }
