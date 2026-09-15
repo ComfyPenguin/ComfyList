@@ -13,6 +13,9 @@ const _channelDescription = 'Avisos antes de que empiece una cita.';
 /// quitarlos todos o quitar uno. La preferencia on/off vive en `SettingsTable`
 /// (Drift) y la lógica de qué avisar vive en el planificador de citas.
 ///
+/// Los permisos no se piden al preparar el plugin: se piden cuando el usuario
+/// enciende los avisos, que es cuando tienen sentido.
+///
 /// Las llamadas al plugin son best-effort — en Linux desktop no hay soporte y
 /// el aviso se descarta sin tumbar la app.
 class NotificationsService {
@@ -38,20 +41,25 @@ class NotificationsService {
     // v21+: initialize toma el parámetro `settings` como named (no posicional).
     await _plugin.initialize(settings: initSettings);
 
-    if (_isAndroid) {
-      // Android 13+ requiere POST_NOTIFICATIONS en runtime.
-      try {
-        await _plugin
-            .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin
-            >()
-            ?.requestNotificationsPermission();
-      } catch (e) {
-        debugPrint('No se pudieron pedir permisos de notificaciones: $e');
-      }
-    }
-
     _initialized = true;
+  }
+
+  /// Pide el permiso de notificaciones del sistema —Android 13+ lo exige en
+  /// runtime— y devuelve si quedó concedido. Donde no hay nada que pedir cuenta
+  /// como concedido, para que la app no se quede sin poder encender los avisos.
+  Future<bool> requestNotificationPermission() async {
+    if (!_isAndroid) return true;
+    try {
+      return await _plugin
+              .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin
+              >()
+              ?.requestNotificationsPermission() ??
+          false;
+    } catch (e) {
+      debugPrint('No se pudo pedir el permiso de notificaciones: $e');
+      return false;
+    }
   }
 
   /// Programa un aviso para [when], en la hora local del dispositivo.

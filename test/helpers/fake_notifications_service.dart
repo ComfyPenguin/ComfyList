@@ -25,6 +25,18 @@ class FakeNotificationsService implements NotificationsService {
   /// Veces que se ha llevado al usuario a conceder el permiso del sistema.
   int requestExactAlarmsCalls = 0;
 
+  /// Veces que se ha pedido el permiso de notificaciones.
+  int requestNotificationPermissionCalls = 0;
+
+  /// Lo que contesta el sistema al pedir el permiso de notificaciones.
+  bool notificationPermissionGranted = true;
+
+  @override
+  Future<bool> requestNotificationPermission() async {
+    requestNotificationPermissionCalls++;
+    return notificationPermissionGranted;
+  }
+
   /// Permiso de alarmas exactas del sistema. Por defecto concedido, que es el
   /// caso en el que la app no tiene nada que pedir.
   bool exactAlarmsGranted = true;

@@ -33,6 +33,7 @@ void main() {
     final notifications = FakeNotificationsService();
     final repo = FakeSettingsRepository(
       settings: buildAppSettings(
+        notificationsEnabled: true,
         appointmentReminderLead: AppointmentReminderLead.oneHour,
       ),
     );
@@ -79,7 +80,9 @@ void main() {
   test('al conceder las alarmas exactas reescribe los avisos', () async {
     final notifications = FakeNotificationsService()
       ..exactAlarmsGranted = false;
-    final repo = FakeSettingsRepository();
+    final repo = FakeSettingsRepository(
+      settings: buildAppSettings(notificationsEnabled: true),
+    );
     addTearDown(repo.close);
 
     final items = [

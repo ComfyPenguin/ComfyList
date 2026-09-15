@@ -9,8 +9,10 @@ class SettingsTable extends Table {
   TextColumn get themeMode =>
       text().withDefault(const Constant('system')).withLength(min: 4, max: 8)();
 
+  /// Los avisos vienen apagados de fábrica: el permiso del sistema se pide al
+  /// encenderlos (ver `NotificationsService`).
   BoolColumn get notificationsEnabled =>
-      boolean().withDefault(const Constant(true))();
+      boolean().withDefault(const Constant(false))();
 
   BoolColumn get appointmentsCompletionEnabled =>
       boolean().withDefault(const Constant(false))();

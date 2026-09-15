@@ -20,6 +20,7 @@ void main() {
     // Los avisos son cosa de Android: con el reloj de la plataforma en Android
     // los caminos que pregunta al plugin se recorren de verdad.
     debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    registerFallbackValue(const InitializationSettings());
     registerFallbackValue(const NotificationDetails());
     registerFallbackValue(tz.TZDateTime.from(DateTime.utc(2026), tz.UTC));
     registerFallbackValue(AndroidScheduleMode.inexactAllowWhileIdle);
@@ -91,6 +92,33 @@ void main() {
     await service.cancel(7);
 
     verify(() => plugin.cancel(id: 7)).called(1);
+  });
+
+  test('preparar el plugin no pide ningún permiso', () async {
+    when(
+      () => plugin.initialize(settings: any(named: 'settings')),
+    ).thenAnswer((_) async => true);
+
+    await service.init();
+
+    verify(() => plugin.initialize(settings: any(named: 'settings'))).called(1);
+    verifyNever(() => android.requestNotificationsPermission());
+  });
+
+  test('el permiso de notificaciones lo concede el sistema', () async {
+    when(
+      () => android.requestNotificationsPermission(),
+    ).thenAnswer((_) async => true);
+
+    expect(await service.requestNotificationPermission(), isTrue);
+  });
+
+  test('un sistema que falla deja el permiso sin conceder', () async {
+    when(
+      () => android.requestNotificationsPermission(),
+    ).thenThrow(MissingPluginException('sin soporte'));
+
+    expect(await service.requestNotificationPermission(), isFalse);
   });
 
   test('sin el permiso del sistema el aviso se programa aproximado', () async {

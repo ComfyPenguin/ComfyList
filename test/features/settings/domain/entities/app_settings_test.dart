@@ -8,7 +8,7 @@ void main() {
       const defaults = AppSettings.defaults;
 
       expect(defaults.themeMode, ThemeMode.system);
-      expect(defaults.notificationsEnabled, isTrue);
+      expect(defaults.notificationsEnabled, isFalse);
       expect(defaults.appointmentsCompletionEnabled, isFalse);
       expect(defaults.completedToBottom, isTrue);
       expect(defaults.appointmentsCompletedToBottom, isTrue);
@@ -42,10 +42,10 @@ void main() {
     test('devuelve una instancia nueva (inmutable)', () {
       const baseline = AppSettings.defaults;
 
-      final updated = baseline.copyWith(notificationsEnabled: false);
+      final updated = baseline.copyWith(notificationsEnabled: true);
 
       expect(identical(updated, baseline), isFalse);
-      expect(baseline.notificationsEnabled, isTrue,
+      expect(baseline.notificationsEnabled, isFalse,
           reason: 'La instancia original no debe mutar.');
     });
 

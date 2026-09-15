@@ -47,7 +47,7 @@ class $SettingsTableTable extends SettingsTable
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'CHECK ("notifications_enabled" IN (0, 1))',
     ),
-    defaultValue: const Constant(true),
+    defaultValue: const Constant(false),
   );
   static const VerificationMeta _appointmentsCompletionEnabledMeta =
       const VerificationMeta('appointmentsCompletionEnabled');
@@ -343,6 +343,9 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
 
   /// 'system' | 'light' | 'dark'
   final String themeMode;
+
+  /// Los avisos vienen apagados de fábrica: el permiso del sistema se pide al
+  /// encenderlos (ver `NotificationsService`).
   final bool notificationsEnabled;
   final bool appointmentsCompletionEnabled;
 

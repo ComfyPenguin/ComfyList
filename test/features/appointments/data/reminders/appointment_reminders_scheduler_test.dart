@@ -25,6 +25,8 @@ void main() {
     scheduler = AppointmentRemindersScheduler(notifications);
   });
 
+  /// Los avisos vienen apagados de fábrica: los tests los encienden, que es
+  /// cuando hay algo que programar.
   Future<void> sync({
     List<Appointment> items = const [],
     AppSettings? settings,
@@ -33,7 +35,7 @@ void main() {
   }) {
     return scheduler.sync(
       items: items,
-      settings: settings ?? buildAppSettings(),
+      settings: settings ?? buildAppSettings(notificationsEnabled: true),
       now: at ?? now,
       force: force,
     );
@@ -83,6 +85,7 @@ void main() {
     await sync(
       items: [item],
       settings: buildAppSettings(
+        notificationsEnabled: true,
         appointmentReminderLead: AppointmentReminderLead.oneHour,
       ),
     );
@@ -109,6 +112,7 @@ void main() {
       dateTime: now.add(const Duration(minutes: 1)),
     );
     final settings = buildAppSettings(
+      notificationsEnabled: true,
       appointmentReminderLead: AppointmentReminderLead.atTime,
     );
 

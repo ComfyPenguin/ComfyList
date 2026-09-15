@@ -44,6 +44,16 @@ void main() {
   Finder unfoldFor(String title) =>
       find.ancestor(of: find.text(title), matching: find.byType(UnfoldDown));
 
+  bool switchValue(WidgetTester tester, String title) =>
+      tester.widget<AppSwitch>(switchOf(title)).value;
+
+  /// Enciende los avisos: el permiso del sistema lo concede el fake, así que la
+  /// fila queda desplegada.
+  Future<void> enableNotifications(WidgetTester tester) async {
+    await tester.tap(switchOf('Notificaciones'));
+    await tester.pumpAndSettle();
+  }
+
   Future<void> pumpSettings(
     WidgetTester tester,
     FakeSettingsRepository repo, {
@@ -139,19 +149,53 @@ void main() {
     await pumpSettings(tester, repo);
     await tester.pumpAndSettle();
 
-    // Por defecto las notificaciones vienen activadas, así que el recordatorio
-    // ya está desplegado y responde al toque.
+    // Los avisos vienen apagados de fábrica, así que el recordatorio está
+    // recogido y no deja hueco.
     final row = find.text('Recordatorio');
     final unfold = unfoldFor('Recordatorio');
-    expect(row.hitTestable(), findsOneWidget);
-
-    await tester.tap(switchOf('Notificaciones'));
-    await tester.pumpAndSettle();
-
-    // Con las notificaciones apagadas no hay nada que programar: la fila se
-    // recoge y no deja hueco.
     expect(row.hitTestable(), findsNothing);
     expect(tester.getSize(unfold).height, 0);
+
+    await enableNotifications(tester);
+
+    // Al encenderlos no hay nada que programar todavía, pero la fila se
+    // despliega y responde al toque.
+    expect(row.hitTestable(), findsOneWidget);
+    expect(tester.getSize(unfold).height, greaterThan(0));
+  });
+
+  testWidgets('el permiso del sistema se pide al encender los avisos', (
+    tester,
+  ) async {
+    final notifications = FakeNotificationsService();
+    final repo = FakeSettingsRepository();
+    await pumpSettings(tester, repo, notifications: notifications);
+    await tester.pumpAndSettle();
+
+    // Con los avisos apagados no hay nada que pedir.
+    expect(notifications.requestNotificationPermissionCalls, 0);
+
+    await enableNotifications(tester);
+
+    expect(notifications.requestNotificationPermissionCalls, 1);
+    expect(switchValue(tester, 'Notificaciones'), isTrue);
+  });
+
+  testWidgets('si el sistema deniega el permiso la fila se queda apagada', (
+    tester,
+  ) async {
+    final notifications = FakeNotificationsService()
+      ..notificationPermissionGranted = false;
+    final repo = FakeSettingsRepository();
+    await pumpSettings(tester, repo, notifications: notifications);
+    await tester.pumpAndSettle();
+
+    await enableNotifications(tester);
+
+    // Encenderlo sin permiso sería prometer avisos que el sistema no va a
+    // mostrar, así que el ajuste no se guarda.
+    expect(notifications.requestNotificationPermissionCalls, 1);
+    expect(switchValue(tester, 'Notificaciones'), isFalse);
   });
 
   testWidgets('con el permiso de alarmas exactas no hay nada que pedir', (
@@ -161,6 +205,7 @@ void main() {
     // Por defecto el fake lo da por concedido, como el sistema tras concederlo.
     await pumpSettings(tester, repo);
     await tester.pumpAndSettle();
+    await enableNotifications(tester);
 
     expect(find.text('Alarmas exactas'), findsNothing);
   });
@@ -173,6 +218,7 @@ void main() {
     final repo = FakeSettingsRepository();
     await pumpSettings(tester, repo, notifications: notifications);
     await tester.pumpAndSettle();
+    await enableNotifications(tester);
 
     // Sin el permiso la fila está debajo del recordatorio, que ya no cierra el
     // grupo.

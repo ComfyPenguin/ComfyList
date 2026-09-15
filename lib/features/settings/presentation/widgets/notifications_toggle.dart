@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/data/notifications/notifications_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/settings_state.dart';
 import 'settings_tile.dart';
@@ -30,7 +31,15 @@ class NotificationsToggle extends ConsumerWidget {
       trailing: SettingsSwitch(
         state: state,
         value: (settings) => settings.notificationsEnabled,
-        onChanged: notifier.setNotificationsEnabled,
+        onChanged: (enabled) async {
+          // El permiso del sistema se pide al encender los avisos, no al abrir
+          // la app: hasta que el usuario no los quiere, no hay nada que pedir.
+          // Si lo deniega, la fila se queda apagada en vez de prometer avisos
+          // que el sistema no va a mostrar.
+          final service = ref.read(notificationsServiceProvider);
+          if (enabled && !await service.requestNotificationPermission()) return;
+          await notifier.setNotificationsEnabled(enabled);
+        },
       ),
     );
   }

@@ -31,6 +31,7 @@ void main() {
           buildAppointment(id: 'a1', dateTime: DateTime(2026, 9, 15, 12)),
         ],
         settings: buildAppSettings(
+          notificationsEnabled: true,
           appointmentReminderLead: AppointmentReminderLead.tenMinutes,
         ),
         now: now,
@@ -49,7 +50,7 @@ void main() {
             isDone: true,
           ),
         ],
-        settings: buildAppSettings(),
+        settings: buildAppSettings(notificationsEnabled: true),
         now: now,
       );
 
@@ -66,7 +67,7 @@ void main() {
           ),
           buildAppointment(id: 'pasada', dateTime: DateTime(2026, 9, 15, 9)),
         ],
-        settings: buildAppSettings(),
+        settings: buildAppSettings(notificationsEnabled: true),
         now: now,
       );
 
@@ -84,7 +85,7 @@ void main() {
           ),
           buildAppointment(id: 'manana', dateTime: DateTime(2026, 9, 16, 9, 5)),
         ],
-        settings: buildAppSettings(),
+        settings: buildAppSettings(notificationsEnabled: true),
         now: now,
       );
 
@@ -96,7 +97,10 @@ void main() {
     test('respeta el formato de 12 h en el aviso', () {
       final reminders = buildAppointmentReminders(
         items: [buildAppointment(dateTime: DateTime(2026, 9, 15, 14, 30))],
-        settings: buildAppSettings(use24HourFormat: false),
+        settings: buildAppSettings(
+          notificationsEnabled: true,
+          use24HourFormat: false,
+        ),
         now: now,
       );
 

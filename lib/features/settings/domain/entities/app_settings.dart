@@ -16,7 +16,11 @@ class AppSettings {
   });
 
   final ThemeMode themeMode;
+
+  /// Avisos de citas. Apagado de fábrica, como en `SettingsTable`: el permiso
+  /// del sistema se pide al encenderlo.
   final bool notificationsEnabled;
+
   final bool appointmentsCompletionEnabled;
 
   /// Si es `true`, las tareas completadas se mueven al final de la lista.
@@ -42,7 +46,7 @@ class AppSettings {
 
   static const AppSettings defaults = AppSettings(
     themeMode: ThemeMode.system,
-    notificationsEnabled: true,
+    notificationsEnabled: false,
     appointmentsCompletionEnabled: false,
     completedToBottom: true,
     appointmentsCompletedToBottom: true,
