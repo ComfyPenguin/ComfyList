@@ -173,44 +173,6 @@ void main() {
     });
   });
 
-  group('isReminderPreset', () {
-    test('reconoce los que ofrece Ajustes', () {
-      for (final preset in AppointmentReminderPreset.values) {
-        expect(isReminderPreset(preset.minutes), isTrue);
-      }
-    });
-
-    test('cualquier otra cantidad es personalizada', () {
-      expect(isReminderPreset(45), isFalse);
-      expect(isReminderPreset(0), isFalse);
-    });
-  });
-
-  group('customReminderMinutes', () {
-    test('es el que no sale entre los presets', () {
-      expect(customReminderMinutes([30, 45]), 45);
-    });
-
-    test('sin ninguno puesto no hay personalizado', () {
-      expect(customReminderMinutes([5, 60]), isNull);
-      expect(customReminderMinutes(const []), isNull);
-    });
-  });
-
-  group('setCustomReminderMinutes', () {
-    test('sustituye el personalizado que hubiera', () {
-      expect(setCustomReminderMinutes([30, 45], 90), [30, 90]);
-    });
-
-    test('con un preset elegido, el personalizado desaparece', () {
-      expect(setCustomReminderMinutes([45], 60), [60]);
-    });
-
-    test('encender el personalizado sin tener ninguno no toca los presets', () {
-      expect(setCustomReminderMinutes([5, 30], 90), [5, 30, 90]);
-    });
-  });
-
   group('AppSettings.parseThemeMode', () {
     test('mapea los tres valores conocidos', () {
       expect(AppSettings.parseThemeMode('light'), ThemeMode.light);

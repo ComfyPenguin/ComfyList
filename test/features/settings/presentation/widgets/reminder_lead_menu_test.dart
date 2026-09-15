@@ -39,17 +39,12 @@ void main() {
   Future<_Result> openMenu(
     WidgetTester tester, {
     required List<int> taken,
-    int? custom,
   }) async {
     final result = _Result();
     await tester.pumpWidget(
       _Host(
         onOpen: (context) async {
-          result.option = await showReminderLeadMenu(
-            context,
-            taken: taken,
-            custom: custom,
-          );
+          result.option = await showReminderLeadMenu(context, taken: taken);
         },
       ),
     );
@@ -87,7 +82,7 @@ void main() {
     expect(result.minutes, 30);
   });
 
-  testWidgets('sin personalizado puesto, se ofrece a secas', (tester) async {
+  testWidgets('elegir la personalizada pide la cantidad', (tester) async {
     final result = await openMenu(tester, taken: const [30]);
 
     await tester.tap(find.text('Personalizada'));
@@ -96,29 +91,26 @@ void main() {
     expect(result.option, isA<CustomReminderLead>());
   });
 
-  testWidgets('con un personalizado puesto, se ofrece con su valor', (
+  testWidgets('un personalizado puesto no quita que se pida otro', (
     tester,
   ) async {
-    await openMenu(tester, taken: const [30, 45], custom: 45);
+    final result = await openMenu(tester, taken: const [30, 45]);
 
-    expect(find.text('Personalizada: 45 min'), findsOneWidget);
-    expect(find.text('Personalizada'), findsNothing);
+    expect(find.text('Personalizada'), findsOneWidget);
+
+    await tester.tap(find.text('Personalizada'));
+    await tester.pumpAndSettle();
+
+    expect(result.option, isA<CustomReminderLead>());
   });
 
-  testWidgets('con los cinco puestos no cabe ningún personalizado más', (
+  testWidgets('con los cinco puestos no queda nada que ofrecer', (
     tester,
   ) async {
-    await openMenu(tester, taken: const [5, 10, 15, 30, 60]);
+    await openMenu(tester, taken: const [5, 10, 15, 30, 45]);
 
     expect(find.text('Personalizada'), findsNothing);
     expect(find.textContaining('antes'), findsNothing);
-  });
-
-  testWidgets('con los cinco puestos, el personalizado puesto se sigue '
-      'ofreciendo', (tester) async {
-    await openMenu(tester, taken: const [5, 10, 15, 30, 45], custom: 45);
-
-    expect(find.text('Personalizada: 45 min'), findsOneWidget);
   });
 
   testWidgets('cerrarlo sin elegir no devuelve nada', (tester) async {

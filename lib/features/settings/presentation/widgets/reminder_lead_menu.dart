@@ -30,12 +30,11 @@ class CustomReminderLead extends ReminderLeadOption {
 /// se cierra sin elegir nada.
 ///
 /// Los márgenes que la cita ya tiene no salen —repetir el mismo aviso no añade
-/// nada—, y «Personalizada» sale siempre que haya un personalizado puesto, que
-/// es por donde se cambia.
+/// nada—, y cada personalizado que se añade es uno nuevo: los que ya estén
+/// puestos no quitan que se pueda pedir otro.
 Future<ReminderLeadOption?> showReminderLeadMenu(
   BuildContext context, {
   required List<int> taken,
-  required int? custom,
 }) {
   return showModalBottomSheet<ReminderLeadOption>(
     context: context,
@@ -44,30 +43,25 @@ Future<ReminderLeadOption?> showReminderLeadMenu(
     isScrollControlled: true,
     useSafeArea: true,
     showDragHandle: true,
-    builder: (context) => _ReminderLeadMenuSheet(taken: taken, custom: custom),
+    builder: (context) => _ReminderLeadMenuSheet(taken: taken),
   );
 }
 
 class _ReminderLeadMenuSheet extends StatelessWidget {
-  const _ReminderLeadMenuSheet({required this.taken, required this.custom});
+  const _ReminderLeadMenuSheet({required this.taken});
 
   final List<int> taken;
 
-  /// El margen personalizado que ya está puesto, si lo hay.
-  final int? custom;
-
   @override
   Widget build(BuildContext context) {
-    // Con los cinco puestos no cabe nada más, ni un preset ni un personalizado:
-    // lo único que sigue teniendo sentido es cambiar el personalizado que ya
-    // está.
+    // Con los cinco puestos no cabe nada más, ni un preset ni otro
+    // personalizado.
     final hasRoom = taken.length < maxAppointmentReminders;
     final free = hasRoom
         ? AppointmentReminderPreset.values.where(
             (preset) => !taken.contains(preset.minutes),
           )
         : const <AppointmentReminderPreset>[];
-    final customAvailable = custom != null || hasRoom;
 
     return PickerSheet(
       title: 'Añadir recordatorio',
@@ -83,11 +77,9 @@ class _ReminderLeadMenuSheet extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.sm),
           ],
-          if (customAvailable)
+          if (hasRoom)
             _MenuRow(
-              label: custom == null
-                  ? 'Personalizada'
-                  : 'Personalizada: ${formatReminderLead(custom!)}',
+              label: 'Personalizada',
               onTap: () =>
                   Navigator.of(context).pop(const CustomReminderLead()),
             ),

@@ -42,16 +42,4 @@ void main() {
       expect(formatReminderLeadBefore(2880), '2 días antes');
     });
   });
-
-  group('formatReminderChip', () {
-    test('los presets van por su valor', () {
-      expect(formatReminderChip(15), '15 min');
-      expect(formatReminderChip(1440), '1 día');
-    });
-
-    test('el personalizado lo dice, con el valor detrás', () {
-      expect(formatReminderChip(45), 'Personalizado: 45 min');
-      expect(formatReminderChip(0), 'Personalizado: A la hora');
-    });
-  });
 }

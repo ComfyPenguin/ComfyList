@@ -1,5 +1,3 @@
-import '../../domain/entities/app_settings.dart';
-
 /// Cómo se lee un margen ya puesto: «10 min», «1 h», «3 días».
 ///
 /// El cero ya no se ofrece —el aviso a la hora de la cita se quitó de los
@@ -28,9 +26,3 @@ String formatReminderLeadBefore(int minutes) {
   }
   return '$minutes minutos antes';
 }
-
-/// Cómo se lee una pastilla de recordatorio: el personalizado lleva su nombre
-/// delante para que no parezca un preset más.
-String formatReminderChip(int minutes) => isReminderPreset(minutes)
-    ? formatReminderLead(minutes)
-    : 'Personalizado: ${formatReminderLead(minutes)}';

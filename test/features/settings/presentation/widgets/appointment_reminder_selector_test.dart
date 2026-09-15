@@ -51,7 +51,9 @@ void main() {
   List<String> chips(WidgetTester tester) => tester
       .widgetList<AppChip>(find.byType(AppChip))
       .map((chip) => chip.label)
-      .toList();  bool canAdd(WidgetTester tester) =>
+      .toList();
+
+  bool canAdd(WidgetTester tester) =>
       tester.widget<PrimaryButton>(find.byType(PrimaryButton)).onPressed !=
       null;
 
@@ -65,7 +67,7 @@ void main() {
   ) async {
     await pumpSelector(tester, minutes: const [5, 45]);
 
-    expect(chips(tester), ['5 min', 'Personalizado: 45 min']);
+    expect(chips(tester), ['5 min', '45 min']);
     // Centradas en la fila, no pegadas a la izquierda.
     expect(
       tester.widget<Wrap>(find.byType(Wrap)).alignment,
@@ -122,18 +124,20 @@ void main() {
     await tester.pumpAndSettle();
 
     // Los márgenes van de menor a mayor, y el personalizado es uno más.
-    expect(chips(tester), ['Personalizado: 20 min', '30 min']);
+    expect(chips(tester), ['20 min', '30 min']);
   });
 
-  testWidgets('el personalizado se cambia desde el menú', (tester) async {
+  testWidgets('los personalizados se acumulan, cada uno por su cuenta', (
+    tester,
+  ) async {
     await pumpSelector(tester, minutes: const [30, 45]);
 
     await openMenu(tester);
-    // El menú lo ofrece con el valor que tiene, que es por donde se cambia.
-    await tester.tap(find.text('Personalizada: 45 min'));
+    // La rueda es para el margen nuevo, no para el que ya está puesto.
+    await tester.tap(find.text('Personalizada'));
     await tester.pumpAndSettle();
 
-    // La primera rueda es la de cantidad: un paso abajo deja 40 minutos.
+    // La primera rueda es la de cantidad: un paso abajo deja 15 minutos.
     await tester.drag(
       find.byType(ListWheelScrollView).first,
       const Offset(0, 44),
@@ -142,7 +146,7 @@ void main() {
     await tester.tap(find.text('ACEPTAR'));
     await tester.pumpAndSettle();
 
-    expect(chips(tester), ['30 min', 'Personalizado: 40 min']);
+    expect(chips(tester), ['15 min', '30 min', '45 min']);
   });
 
   testWidgets('quitar una pastilla la saca de la cita', (tester) async {
@@ -151,27 +155,15 @@ void main() {
     await tester.tap(find.text('30 min'));
     await tester.pumpAndSettle();
 
-    expect(chips(tester), ['Personalizado: 45 min']);
+    expect(chips(tester), ['45 min']);
   });
 
   testWidgets('con los cinco puestos no se puede añadir', (tester) async {
-    await pumpSelector(tester, minutes: const [5, 10, 15, 30, 60]);
+    // Aunque uno de los cinco sea personalizado: el tope lo cuentan todos.
+    await pumpSelector(tester, minutes: const [5, 10, 15, 30, 45]);
 
     expect(canAdd(tester), isFalse);
     expect(find.textContaining('Máximo 5 recordatorios'), findsOneWidget);
-  });
-
-  testWidgets('con los cinco puestos, el personalizado se sigue cambiando', (
-    tester,
-  ) async {
-    await pumpSelector(tester, minutes: const [5, 10, 15, 30, 45]);
-
-    expect(canAdd(tester), isTrue);
-
-    await openMenu(tester);
-
-    expect(find.text('Personalizada: 45 min'), findsOneWidget);
-    expect(find.text('1 día antes'), findsNothing);
   });
 
   testWidgets('el aviso a la hora que quedara guardado sigue leyéndose', (
@@ -179,6 +171,6 @@ void main() {
   ) async {
     await pumpSelector(tester, minutes: const [0]);
 
-    expect(chips(tester), ['Personalizado: A la hora']);
+    expect(chips(tester), ['A la hora']);
   });
 }

@@ -126,8 +126,7 @@ class AppSettings {
 
 /// Margen de un aviso que ofrece Ajustes, en minutos antes de la hora.
 ///
-/// El personalizado no vive aquí: cualquier cantidad que no sea de estos sale
-/// como [customReminderMinutes].
+/// Lo que no salga de aquí se elige a mano en la rueda del personalizado.
 enum AppointmentReminderPreset {
   fiveMinutes(5),
   tenMinutes(10),
@@ -148,25 +147,3 @@ List<int> addReminderMinutes(List<int> minutes, int lead) =>
 /// Márgenes de [minutes] sin [lead].
 List<int> removeReminderMinutes(List<int> minutes, int lead) =>
     minutes.where((minutes) => minutes != lead).toList();
-
-/// Si [minutes] es uno de los márgenes que ofrece Ajustes. Lo que no lo sea es
-/// el personalizado.
-bool isReminderPreset(int minutes) =>
-    AppointmentReminderPreset.values.any((preset) => preset.minutes == minutes);
-
-/// El margen personalizado de [minutes]: el que no es ninguno de los presets.
-/// `null` si todos los que hay salen en Ajustes.
-int? customReminderMinutes(List<int> minutes) {
-  for (final lead in minutes) {
-    if (!isReminderPreset(lead)) return lead;
-  }
-  return null;
-}
-
-/// Deja el personalizado en [lead]: el margen personalizado es uno solo, así que
-/// sale el que hubiera y entra el nuevo. Si el elegido es uno de los presets,
-/// solo se enciende ese y desaparece el personalizado.
-List<int> setCustomReminderMinutes(List<int> minutes, int lead) {
-  final presets = minutes.where(isReminderPreset);
-  return AppSettings.normalizeReminderMinutes([...presets, lead]);
-}
