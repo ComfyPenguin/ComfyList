@@ -47,7 +47,10 @@ void main() {
     expect(notifications.scheduled, hasLength(1));
     expect(notifications.scheduled.single.title, 'Dentista');
     expect(notifications.scheduled.single.when, DateTime(2026, 9, 15, 11, 30));
-    expect(notifications.scheduled.single.id, notificationIdFor('a1'));
+    expect(
+      notifications.scheduled.single.id,
+      notificationIdFor('a1', minutes: 30),
+    );
   });
 
   test('con las notificaciones apagadas solo limpia lo programado', () async {
@@ -80,26 +83,50 @@ void main() {
     expect(notifications.scheduled, hasLength(1));
   });
 
-  test('al cambiar el margen reprograma el mismo aviso', () async {
+  test('al cambiar el margen sale el aviso viejo y entra el nuevo', () async {
     await sync(items: [item]);
     await sync(
       items: [item],
       settings: buildAppSettings(
         notificationsEnabled: true,
-        appointmentReminderLead: AppointmentReminderLead.oneHour,
+        appointmentReminderMinutes: const [60],
       ),
     );
 
-    // El id del aviso no cambia, así que el plugin reemplaza el anterior.
-    expect(notifications.cancelled, isEmpty);
+    // Cada margen lleva su id, así que el aviso de 30 minutos no se transforma
+    // en el de una hora: se quita uno y se programa el otro.
+    expect(notifications.cancelled, [notificationIdFor('a1', minutes: 30)]);
     expect(notifications.scheduled.single.when, DateTime(2026, 9, 15, 11));
+    expect(
+      notifications.scheduled.single.id,
+      notificationIdFor('a1', minutes: 60),
+    );
+  });
+
+  test('añadir un margen deja el que ya estaba y programa el nuevo', () async {
+    await sync(items: [item]);
+    await sync(
+      items: [item],
+      settings: buildAppSettings(
+        notificationsEnabled: true,
+        appointmentReminderMinutes: const [0, 30],
+      ),
+    );
+
+    expect(notifications.cancelled, isEmpty);
+    expect(notifications.scheduled, hasLength(2));
+    // El plan sigue el orden de los márgenes guardados, de menor a mayor.
+    expect(notifications.scheduled.map((notification) => notification.when), [
+      DateTime(2026, 9, 15, 12),
+      DateTime(2026, 9, 15, 11, 30),
+    ]);
   });
 
   test('quita los avisos que salen del plan y aún no han llegado', () async {
     await sync(items: [item]);
     await sync(items: []);
 
-    expect(notifications.cancelled, [notificationIdFor('a1')]);
+    expect(notifications.cancelled, [notificationIdFor('a1', minutes: 30)]);
     expect(notifications.scheduled, isEmpty);
   });
 
@@ -113,7 +140,7 @@ void main() {
     );
     final settings = buildAppSettings(
       notificationsEnabled: true,
-      appointmentReminderLead: AppointmentReminderLead.atTime,
+      appointmentReminderMinutes: const [0],
     );
 
     await sync(items: [inminente], settings: settings);

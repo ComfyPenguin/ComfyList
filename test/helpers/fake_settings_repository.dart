@@ -71,6 +71,6 @@ class FakeSettingsRepository implements SettingsRepository {
       _save(_settings.copyWith(use24HourFormat: enabled));
 
   @override
-  Future<void> setAppointmentReminderLead(AppointmentReminderLead lead) async =>
-      _save(_settings.copyWith(appointmentReminderLead: lead));
+  Future<void> setAppointmentReminderMinutes(List<int> minutes) async =>
+      _save(_settings.copyWith(appointmentReminderMinutes: minutes));
 }

@@ -1,5 +1,4 @@
 import 'package:comfy_list/features/appointments/data/reminders/appointment_reminder.dart';
-import 'package:comfy_list/features/settings/domain/entities/app_settings.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -25,20 +24,59 @@ void main() {
       expect(reminders, isEmpty);
     });
 
-    test('programa el aviso con el margen guardado', () {
+    test('programa un aviso por cada margen guardado', () {
       final reminders = buildAppointmentReminders(
         items: [
           buildAppointment(id: 'a1', dateTime: DateTime(2026, 9, 15, 12)),
         ],
         settings: buildAppSettings(
           notificationsEnabled: true,
-          appointmentReminderLead: AppointmentReminderLead.tenMinutes,
+          appointmentReminderMinutes: const [0, 30, 60],
+        ),
+        now: now,
+      );
+
+      expect(reminders, hasLength(3));
+      expect(reminders.map((reminder) => reminder.when), [
+        DateTime(2026, 9, 15, 12),
+        DateTime(2026, 9, 15, 11, 30),
+        DateTime(2026, 9, 15, 11),
+      ]);
+      // Cada margen lleva su id: son avisos distintos de la misma cita y se
+      // cancelan por separado.
+      expect(reminders.map((reminder) => reminder.id).toSet(), hasLength(3));
+    });
+
+    test('de los márgenes caen los que ya habrían pasado', () {
+      final reminders = buildAppointmentReminders(
+        items: [
+          buildAppointment(id: 'a1', dateTime: DateTime(2026, 9, 15, 12)),
+        ],
+        settings: buildAppSettings(
+          notificationsEnabled: true,
+          // El de un día antes caería ayer: la cita sigue avisando a su hora.
+          appointmentReminderMinutes: const [0, 1440],
         ),
         now: now,
       );
 
       expect(reminders, hasLength(1));
-      expect(reminders.single.when, DateTime(2026, 9, 15, 11, 50));
+      expect(reminders.single.when, DateTime(2026, 9, 15, 12));
+    });
+
+    test('sin márgenes no hay ningún aviso', () {
+      final reminders = buildAppointmentReminders(
+        items: [
+          buildAppointment(id: 'a1', dateTime: DateTime(2026, 9, 15, 12)),
+        ],
+        settings: buildAppSettings(
+          notificationsEnabled: true,
+          appointmentReminderMinutes: const [],
+        ),
+        now: now,
+      );
+
+      expect(reminders, isEmpty);
     });
 
     test('deja fuera las citas completadas', () {
@@ -109,20 +147,33 @@ void main() {
   });
 
   group('notificationIdFor', () {
-    test('es estable para el mismo id de documento', () {
-      expect(notificationIdFor('a1'), notificationIdFor('a1'));
+    test('es estable para la misma cita y el mismo margen', () {
+      expect(
+        notificationIdFor('a1', minutes: 30),
+        notificationIdFor('a1', minutes: 30),
+      );
     });
 
     test('cabe en el rango de 32 bits que admite el plugin', () {
       for (final id in ['a1', '', 'documento-largo-con-acentos-áéíóú']) {
-        final value = notificationIdFor(id);
+        final value = notificationIdFor(id, minutes: 30);
         expect(value, greaterThanOrEqualTo(0));
         expect(value, lessThanOrEqualTo(0x7fffffff));
       }
     });
 
-    test('separa ids distintos', () {
-      expect(notificationIdFor('a1'), isNot(notificationIdFor('a2')));
+    test('separa citas distintas', () {
+      expect(
+        notificationIdFor('a1', minutes: 30),
+        isNot(notificationIdFor('a2', minutes: 30)),
+      );
+    });
+
+    test('separa los márgenes de una misma cita', () {
+      expect(
+        notificationIdFor('a1', minutes: 30),
+        isNot(notificationIdFor('a1', minutes: 60)),
+      );
     });
   });
 }

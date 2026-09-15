@@ -40,9 +40,10 @@ class SettingsTable extends Table {
   BoolColumn get use24HourFormat =>
       boolean().withDefault(const Constant(true))();
 
-  /// Minutos de antelación del recordatorio de una cita (0 = a su hora).
-  IntColumn get appointmentReminderMinutes =>
-      integer().withDefault(const Constant(30))();
+  /// Minutos de antelación de los recordatorios de una cita (0 = a su hora),
+  /// separados por comas y como mucho tres. Un valor vacío es «sin avisos».
+  TextColumn get appointmentReminderMinutes =>
+      text().withDefault(const Constant('30'))();
 
   DateTimeColumn get updatedAt => dateTime()();
 

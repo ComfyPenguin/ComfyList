@@ -26,5 +26,5 @@ abstract class SettingsRepository {
 
   Future<void> setUse24HourFormat(bool enabled);
 
-  Future<void> setAppointmentReminderLead(AppointmentReminderLead lead);
+  Future<void> setAppointmentReminderMinutes(List<int> minutes);
 }

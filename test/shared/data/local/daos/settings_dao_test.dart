@@ -27,7 +27,7 @@ void main() {
       expect(row.appointmentsTodayOnTop, isTrue);
       expect(row.invertSwipeActions, isFalse);
       expect(row.use24HourFormat, isTrue);
-      expect(row.appointmentReminderMinutes, 30);
+      expect(row.appointmentReminderMinutes, '30');
     });
 
     test('devuelve la misma fila en llamadas sucesivas y deja una sola row',
@@ -45,14 +45,14 @@ void main() {
   });
 
   group('SettingsDao.updateAppointmentReminderMinutes', () {
-    test('persiste los minutos y watch emite el valor nuevo', () async {
+    test('persiste la lista de márgenes y watch emite el valor nuevo', () async {
       final dao = db.settingsDao;
       await dao.getOrCreate();
 
-      await dao.updateAppointmentReminderMinutes(1440);
+      await dao.updateAppointmentReminderMinutes('0,30,1440');
 
       final streamed = await dao.watch().first;
-      expect(streamed.appointmentReminderMinutes, 1440);
+      expect(streamed.appointmentReminderMinutes, '0,30,1440');
     });
   });
 

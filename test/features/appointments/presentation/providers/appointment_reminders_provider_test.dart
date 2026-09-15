@@ -2,7 +2,6 @@ import 'package:comfy_list/features/appointments/domain/entities/appointment.dar
 import 'package:comfy_list/features/appointments/presentation/providers/appointment_reminders_provider.dart';
 import 'package:comfy_list/features/appointments/presentation/providers/appointments_provider.dart';
 import 'package:comfy_list/features/appointments/presentation/providers/appointments_state.dart';
-import 'package:comfy_list/features/settings/domain/entities/app_settings.dart';
 import 'package:comfy_list/features/settings/domain/repositories/settings_repository.dart';
 import 'package:comfy_list/features/settings/presentation/providers/settings_provider.dart';
 import 'package:comfy_list/shared/data/notifications/notifications_provider.dart';
@@ -34,7 +33,7 @@ void main() {
     final repo = FakeSettingsRepository(
       settings: buildAppSettings(
         notificationsEnabled: true,
-        appointmentReminderLead: AppointmentReminderLead.oneHour,
+        appointmentReminderMinutes: const [60],
       ),
     );
     addTearDown(repo.close);

@@ -32,6 +32,6 @@ class DriftSettingsLocal {
   Future<void> updateUse24HourFormat(bool enabled) =>
       _dao.updateUse24HourFormat(enabled);
 
-  Future<void> updateAppointmentReminderMinutes(int minutes) =>
+  Future<void> updateAppointmentReminderMinutes(String minutes) =>
       _dao.updateAppointmentReminderMinutes(minutes);
 }

@@ -141,14 +141,14 @@ class $SettingsTableTable extends SettingsTable
   static const VerificationMeta _appointmentReminderMinutesMeta =
       const VerificationMeta('appointmentReminderMinutes');
   @override
-  late final GeneratedColumn<int> appointmentReminderMinutes =
-      GeneratedColumn<int>(
+  late final GeneratedColumn<String> appointmentReminderMinutes =
+      GeneratedColumn<String>(
         'appointment_reminder_minutes',
         aliasedName,
         false,
-        type: DriftSqlType.int,
+        type: DriftSqlType.string,
         requiredDuringInsert: false,
-        defaultValue: const Constant(30),
+        defaultValue: const Constant('30'),
       );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -322,7 +322,7 @@ class $SettingsTableTable extends SettingsTable
         data['${effectivePrefix}use24_hour_format'],
       )!,
       appointmentReminderMinutes: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}appointment_reminder_minutes'],
       )!,
       updatedAt: attachedDatabase.typeMapping.read(
@@ -367,8 +367,9 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
   /// Si `false`, se muestran en formato 12H con AM/PM.
   final bool use24HourFormat;
 
-  /// Minutos de antelación del recordatorio de una cita (0 = a su hora).
-  final int appointmentReminderMinutes;
+  /// Minutos de antelación de los recordatorios de una cita (0 = a su hora),
+  /// separados por comas y como mucho tres. Un valor vacío es «sin avisos».
+  final String appointmentReminderMinutes;
   final DateTime updatedAt;
   const SettingsRow({
     required this.id,
@@ -399,7 +400,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     map['appointments_today_on_top'] = Variable<bool>(appointmentsTodayOnTop);
     map['invert_swipe_actions'] = Variable<bool>(invertSwipeActions);
     map['use24_hour_format'] = Variable<bool>(use24HourFormat);
-    map['appointment_reminder_minutes'] = Variable<int>(
+    map['appointment_reminder_minutes'] = Variable<String>(
       appointmentReminderMinutes,
     );
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -445,7 +446,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       ),
       invertSwipeActions: serializer.fromJson<bool>(json['invertSwipeActions']),
       use24HourFormat: serializer.fromJson<bool>(json['use24HourFormat']),
-      appointmentReminderMinutes: serializer.fromJson<int>(
+      appointmentReminderMinutes: serializer.fromJson<String>(
         json['appointmentReminderMinutes'],
       ),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
@@ -468,7 +469,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       'appointmentsTodayOnTop': serializer.toJson<bool>(appointmentsTodayOnTop),
       'invertSwipeActions': serializer.toJson<bool>(invertSwipeActions),
       'use24HourFormat': serializer.toJson<bool>(use24HourFormat),
-      'appointmentReminderMinutes': serializer.toJson<int>(
+      'appointmentReminderMinutes': serializer.toJson<String>(
         appointmentReminderMinutes,
       ),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
@@ -485,7 +486,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     bool? appointmentsTodayOnTop,
     bool? invertSwipeActions,
     bool? use24HourFormat,
-    int? appointmentReminderMinutes,
+    String? appointmentReminderMinutes,
     DateTime? updatedAt,
   }) => SettingsRow(
     id: id ?? this.id,
@@ -601,7 +602,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
   final Value<bool> appointmentsTodayOnTop;
   final Value<bool> invertSwipeActions;
   final Value<bool> use24HourFormat;
-  final Value<int> appointmentReminderMinutes;
+  final Value<String> appointmentReminderMinutes;
   final Value<DateTime> updatedAt;
   const SettingsTableCompanion({
     this.id = const Value.absent(),
@@ -639,7 +640,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     Expression<bool>? appointmentsTodayOnTop,
     Expression<bool>? invertSwipeActions,
     Expression<bool>? use24HourFormat,
-    Expression<int>? appointmentReminderMinutes,
+    Expression<String>? appointmentReminderMinutes,
     Expression<DateTime>? updatedAt,
   }) {
     return RawValuesInsertable({
@@ -673,7 +674,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     Value<bool>? appointmentsTodayOnTop,
     Value<bool>? invertSwipeActions,
     Value<bool>? use24HourFormat,
-    Value<int>? appointmentReminderMinutes,
+    Value<String>? appointmentReminderMinutes,
     Value<DateTime>? updatedAt,
   }) {
     return SettingsTableCompanion(
@@ -732,7 +733,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
       map['use24_hour_format'] = Variable<bool>(use24HourFormat.value);
     }
     if (appointmentReminderMinutes.present) {
-      map['appointment_reminder_minutes'] = Variable<int>(
+      map['appointment_reminder_minutes'] = Variable<String>(
         appointmentReminderMinutes.value,
       );
     }
@@ -1113,7 +1114,7 @@ typedef $$SettingsTableTableCreateCompanionBuilder =
       Value<bool> appointmentsTodayOnTop,
       Value<bool> invertSwipeActions,
       Value<bool> use24HourFormat,
-      Value<int> appointmentReminderMinutes,
+      Value<String> appointmentReminderMinutes,
       required DateTime updatedAt,
     });
 typedef $$SettingsTableTableUpdateCompanionBuilder =
@@ -1127,7 +1128,7 @@ typedef $$SettingsTableTableUpdateCompanionBuilder =
       Value<bool> appointmentsTodayOnTop,
       Value<bool> invertSwipeActions,
       Value<bool> use24HourFormat,
-      Value<int> appointmentReminderMinutes,
+      Value<String> appointmentReminderMinutes,
       Value<DateTime> updatedAt,
     });
 
@@ -1185,7 +1186,7 @@ class $$SettingsTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get appointmentReminderMinutes => $composableBuilder(
+  ColumnFilters<String> get appointmentReminderMinutes => $composableBuilder(
     column: $table.appointmentReminderMinutes,
     builder: (column) => ColumnFilters(column),
   );
@@ -1250,7 +1251,7 @@ class $$SettingsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get appointmentReminderMinutes => $composableBuilder(
+  ColumnOrderings<String> get appointmentReminderMinutes => $composableBuilder(
     column: $table.appointmentReminderMinutes,
     builder: (column) => ColumnOrderings(column),
   );
@@ -1311,7 +1312,7 @@ class $$SettingsTableTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<int> get appointmentReminderMinutes => $composableBuilder(
+  GeneratedColumn<String> get appointmentReminderMinutes => $composableBuilder(
     column: $table.appointmentReminderMinutes,
     builder: (column) => column,
   );
@@ -1362,7 +1363,7 @@ class $$SettingsTableTableTableManager
                 Value<bool> appointmentsTodayOnTop = const Value.absent(),
                 Value<bool> invertSwipeActions = const Value.absent(),
                 Value<bool> use24HourFormat = const Value.absent(),
-                Value<int> appointmentReminderMinutes = const Value.absent(),
+                Value<String> appointmentReminderMinutes = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
               }) => SettingsTableCompanion(
                 id: id,
@@ -1390,7 +1391,7 @@ class $$SettingsTableTableTableManager
                 Value<bool> appointmentsTodayOnTop = const Value.absent(),
                 Value<bool> invertSwipeActions = const Value.absent(),
                 Value<bool> use24HourFormat = const Value.absent(),
-                Value<int> appointmentReminderMinutes = const Value.absent(),
+                Value<String> appointmentReminderMinutes = const Value.absent(),
                 required DateTime updatedAt,
               }) => SettingsTableCompanion.insert(
                 id: id,

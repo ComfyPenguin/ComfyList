@@ -21,7 +21,7 @@ class SettingsRepositoryImpl implements SettingsRepository {
       appointmentsTodayOnTop: row.appointmentsTodayOnTop,
       invertSwipeActions: row.invertSwipeActions,
       use24HourFormat: row.use24HourFormat,
-      appointmentReminderLead: AppointmentReminderLead.fromMinutes(
+      appointmentReminderMinutes: AppSettings.parseReminderMinutes(
         row.appointmentReminderMinutes,
       ),
     );
@@ -39,7 +39,7 @@ class SettingsRepositoryImpl implements SettingsRepository {
             appointmentsTodayOnTop: row.appointmentsTodayOnTop,
             invertSwipeActions: row.invertSwipeActions,
             use24HourFormat: row.use24HourFormat,
-            appointmentReminderLead: AppointmentReminderLead.fromMinutes(
+            appointmentReminderMinutes: AppSettings.parseReminderMinutes(
               row.appointmentReminderMinutes,
             ),
           ),
@@ -87,7 +87,9 @@ class SettingsRepositoryImpl implements SettingsRepository {
   }
 
   @override
-  Future<void> setAppointmentReminderLead(AppointmentReminderLead lead) {
-    return _local.updateAppointmentReminderMinutes(lead.minutes);
+  Future<void> setAppointmentReminderMinutes(List<int> minutes) {
+    return _local.updateAppointmentReminderMinutes(
+      AppSettings.reminderMinutesToString(minutes),
+    );
   }
 }

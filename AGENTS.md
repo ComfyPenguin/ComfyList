@@ -45,7 +45,7 @@ flutter analyze             # Análisis estático
 
 ## Modelo de datos (Drift)
 
-- Schema v8 con migraciones `onUpgrade` secuenciales (una condición `if (from < N)` por columna añadida, y `schemaVersion` a juego)
+- Schema v9 con migraciones `onUpgrade` secuenciales (una condición `if (from < N)` por columna añadida, y `schemaVersion` a juego). Un cambio de tipo de columna no es un `addColumn`: pide `migrator.alterTable(TableMigration(...))` con el `columnTransformer` que la convierta.
 - **Tablas**: `settings_table` (singleton id=1), `account_cache_table`
 - `AppDatabase` se instancia en `main()` y se inyecta via `ProviderScope` override
 - Tests: `AppDatabase.forTesting(NativeDatabase.memory())`
@@ -96,5 +96,5 @@ flutter analyze             # Análisis estático
 - **copyWith con flags**: Entidades usan `clearDescription`/`clearLocation` booleanas (no nullable fields) para distinguir "no tocar" de "poner a null".
 - **Google Sign-In**: Solo Android en `main()` con `Platform.isAndroid`.
 - **Notificaciones**: `NotificationsService.init()` dentro de try-catch (best-effort, falla silenciosamente en Linux). El scheduling (`schedule`/`cancelAll`) también es best-effort.
-- **Recordatorios de citas**: `appointmentRemindersProvider` (activado en `app.dart`) escucha citas y ajustes y reescribe el plan entero con `AppointmentRemindersScheduler`. La lógica de qué avisar es pura (`buildAppointmentReminders`).
+- **Recordatorios de citas**: hasta 3 márgenes por cita (`AppSettings.appointmentReminderMinutes`, en minutos y sin repetidos). `appointmentRemindersProvider` (activado en `app.dart`) escucha citas y ajustes y reescribe el plan entero con `AppointmentRemindersScheduler`. La lógica de qué avisar es pura (`buildAppointmentReminders`), y cada margen lleva su propio id de notificación: `notificationIdFor(id, minutes: n)`.
 - **DB override en tests**: `ProviderScope` con `overrideWithValue` en test permite inyectar DB en memoria.

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+/// Cuántos recordatorios puede llevar una cita.
+const int maxAppointmentReminders = 3;
+
 /// Configuración local de la app (tema y preferencias de usuario).
 @immutable
 class AppSettings {
@@ -12,7 +15,7 @@ class AppSettings {
     required this.appointmentsTodayOnTop,
     required this.invertSwipeActions,
     required this.use24HourFormat,
-    required this.appointmentReminderLead,
+    required this.appointmentReminderMinutes,
   });
 
   final ThemeMode themeMode;
@@ -41,8 +44,11 @@ class AppSettings {
   /// Si es `false`, se muestran en formato 12H con AM/PM.
   final bool use24HourFormat;
 
-  /// Cuánto antes de la cita suena el recordatorio.
-  final AppointmentReminderLead appointmentReminderLead;
+  /// Márgenes con los que avisa una cita, en minutos antes de su hora (0 = a su
+  /// hora). Sin márgenes no hay ningún aviso. La forma canónica la deja
+  /// [normalizeReminderMinutes]: sin repetidos, de menor a mayor y como mucho
+  /// [maxAppointmentReminders].
+  final List<int> appointmentReminderMinutes;
 
   static const AppSettings defaults = AppSettings(
     themeMode: ThemeMode.system,
@@ -53,7 +59,7 @@ class AppSettings {
     appointmentsTodayOnTop: true,
     invertSwipeActions: false,
     use24HourFormat: true,
-    appointmentReminderLead: AppointmentReminderLead.thirtyMinutes,
+    appointmentReminderMinutes: [30],
   );
 
   AppSettings copyWith({
@@ -65,7 +71,7 @@ class AppSettings {
     bool? appointmentsTodayOnTop,
     bool? invertSwipeActions,
     bool? use24HourFormat,
-    AppointmentReminderLead? appointmentReminderLead,
+    List<int>? appointmentReminderMinutes,
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -79,43 +85,88 @@ class AppSettings {
           appointmentsTodayOnTop ?? this.appointmentsTodayOnTop,
       invertSwipeActions: invertSwipeActions ?? this.invertSwipeActions,
       use24HourFormat: use24HourFormat ?? this.use24HourFormat,
-      appointmentReminderLead:
-          appointmentReminderLead ?? this.appointmentReminderLead,
+      appointmentReminderMinutes:
+          appointmentReminderMinutes ?? this.appointmentReminderMinutes,
     );
   }
 
   static ThemeMode parseThemeMode(String value) => switch (value) {
-        'light' => ThemeMode.light,
-        'dark' => ThemeMode.dark,
-        _ => ThemeMode.system,
-      };
+    'light' => ThemeMode.light,
+    'dark' => ThemeMode.dark,
+    _ => ThemeMode.system,
+  };
 
   static String themeModeToString(ThemeMode mode) => switch (mode) {
-        ThemeMode.light => 'light',
-        ThemeMode.dark => 'dark',
-        ThemeMode.system => 'system',
-      };
+    ThemeMode.light => 'light',
+    ThemeMode.dark => 'dark',
+    ThemeMode.system => 'system',
+  };
+
+  /// Forma canónica de los márgenes. Al recortar al máximo se quedan los más
+  /// cercanos a la cita, que son los que primero suenan.
+  static List<int> normalizeReminderMinutes(Iterable<int> minutes) {
+    final canonical = minutes.where((lead) => lead >= 0).toSet().toList()
+      ..sort();
+    return canonical.length > maxAppointmentReminders
+        ? canonical.sublist(0, maxAppointmentReminders)
+        : canonical;
+  }
+
+  /// Márgenes tal como se guardan: la lista canónica separada por comas.
+  static String reminderMinutesToString(List<int> minutes) =>
+      normalizeReminderMinutes(minutes).join(',');
+
+  /// Márgenes guardados. Un valor vacío es «sin avisos» y lo que no se pueda
+  /// leer se descarta.
+  static List<int> parseReminderMinutes(String value) =>
+      normalizeReminderMinutes(
+        value.split(',').map(int.tryParse).whereType<int>(),
+      );
 }
 
-/// Margen con el que avisa el recordatorio de una cita, antes de su hora.
+/// Margen de un aviso que ofrece Ajustes, en minutos antes de la hora.
 ///
-/// En la base de datos se guardan los minutos; el enum mantiene el conjunto
-/// cerrado de opciones que ofrece Ajustes.
-enum AppointmentReminderLead {
-  atTime(0),
+/// El personalizado no vive aquí: cualquier cantidad que no sea de estos sale
+/// como [customReminderMinutes].
+enum AppointmentReminderPreset {
+  fiveMinutes(5),
   tenMinutes(10),
   thirtyMinutes(30),
   oneHour(60),
   oneDay(1440);
 
-  const AppointmentReminderLead(this.minutes);
+  const AppointmentReminderPreset(this.minutes);
 
   final int minutes;
-
-  /// Valor guardado en otro momento (o editado a mano) que ya no corresponde a
-  /// ninguna opción: se vuelve al valor por defecto.
-  static AppointmentReminderLead fromMinutes(int? minutes) => values.firstWhere(
-        (lead) => lead.minutes == minutes,
-        orElse: () => AppointmentReminderLead.thirtyMinutes,
-      );
 }
+
+/// Márgenes de [minutes] con [lead] encendido o apagado, en su forma canónica.
+List<int> toggleReminderMinutes(List<int> minutes, int lead) {
+  final next = minutes.toList();
+  if (next.contains(lead)) {
+    next.remove(lead);
+  } else {
+    next.add(lead);
+  }
+  return AppSettings.normalizeReminderMinutes(next);
+}
+
+/// El margen personalizado de [minutes]: el que no es ninguno de los presets.
+/// `null` si todos los que hay salen en Ajustes.
+int? customReminderMinutes(List<int> minutes) {
+  for (final lead in minutes) {
+    if (!_isPresetMinutes(lead)) return lead;
+  }
+  return null;
+}
+
+/// Deja el personalizado en [lead]: el margen personalizado es uno solo, así que
+/// sale el que hubiera y entra el nuevo. Si el elegido es uno de los presets,
+/// solo se enciende ese y desaparece el personalizado.
+List<int> setCustomReminderMinutes(List<int> minutes, int lead) {
+  final presets = minutes.where(_isPresetMinutes);
+  return AppSettings.normalizeReminderMinutes([...presets, lead]);
+}
+
+bool _isPresetMinutes(int minutes) =>
+    AppointmentReminderPreset.values.any((preset) => preset.minutes == minutes);

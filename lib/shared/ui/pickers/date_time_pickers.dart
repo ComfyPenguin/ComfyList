@@ -9,7 +9,8 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_stroke.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/app_typography.dart';
-import '../buttons/primary_button.dart';
+import 'picker_sheet.dart';
+import 'wheel_picker.dart';
 
 /// Abre el selector de fecha del DS y devuelve la fecha elegida, o `null` si
 /// se cancela. El día que el calendario marca como hoy lo pone el reloj de la
@@ -50,49 +51,6 @@ Future<TimeOfDay?> showAppTimePicker(
   );
 }
 
-/// Estructura común de los sheets del DS: título centrado, contenido y
-/// acciones (CTA pill + cancelar).
-class _PickerSheet extends StatelessWidget {
-  const _PickerSheet({
-    required this.title,
-    required this.onConfirm,
-    required this.child,
-  });
-
-  final String title;
-  final VoidCallback onConfirm;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.xxl,
-        0,
-        AppSpacing.xxl,
-        AppSpacing.xxxl,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: AppTypography.displaySm.copyWith(color: colors.ink),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          child,
-          const SizedBox(height: AppSpacing.xl),
-          PrimaryButton(label: 'Aceptar', onPressed: onConfirm, expand: true),
-        ],
-      ),
-    );
-  }
-}
-
 /// Botón circular con borde hairline (icon-button-circular del DS).
 class _CircleIconButton extends StatelessWidget {
   const _CircleIconButton({
@@ -115,10 +73,7 @@ class _CircleIconButton extends StatelessWidget {
         color: colors.canvas,
         shape: RoundedRectangleBorder(
           borderRadius: AppRadius.brFull,
-          side: BorderSide(
-            color: colors.cardBorder,
-            width: AppStroke.hairline,
-          ),
+          side: BorderSide(color: colors.cardBorder, width: AppStroke.hairline),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -127,50 +82,6 @@ class _CircleIconButton extends StatelessWidget {
             width: 36,
             height: 36,
             child: Icon(icon, size: 20, color: colors.ink),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Rueda vertical de selección (carrousel): el elemento centrado es el
-/// elegido y el resto queda atenuado.
-class _WheelPicker extends StatelessWidget {
-  const _WheelPicker({
-    required this.controller,
-    required this.itemCount,
-    required this.labelBuilder,
-    required this.onSelected,
-  });
-
-  final FixedExtentScrollController controller;
-  final int itemCount;
-  final String Function(int index) labelBuilder;
-  final ValueChanged<int> onSelected;
-
-  static const double itemExtent = 44;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-
-    return ListWheelScrollView.useDelegate(
-      controller: controller,
-      itemExtent: itemExtent,
-      diameterRatio: 1.8,
-      useMagnifier: true,
-      magnification: 1.15,
-      overAndUnderCenterOpacity: 0.4,
-      physics: const FixedExtentScrollPhysics(),
-      onSelectedItemChanged: onSelected,
-      childDelegate: ListWheelChildBuilderDelegate(
-        childCount: itemCount,
-        builder: (context, index) => Center(
-          child: Text(
-            labelBuilder(index),
-            textAlign: TextAlign.center,
-            style: AppTypography.bodyMdStrong.copyWith(color: colors.ink),
           ),
         ),
       ),
@@ -226,7 +137,7 @@ class _DatePickerSheetState extends State<_DatePickerSheet> {
     final colors = context.colors;
     final monthText = capitalize(DateFormat.yMMMM('es_ES').format(_month));
 
-    return _PickerSheet(
+    return PickerSheet(
       title: 'Fecha',
       onConfirm: () => Navigator.of(context).pop(_selected),
       child: Column(
@@ -276,9 +187,9 @@ class _DatePickerSheetState extends State<_DatePickerSheet> {
           Expanded(
             child: Center(
               child: Text(
-                DateFormat.E(
-                  'es_ES',
-                ).format(_weekStart.add(Duration(days: i))).substring(0, 1)
+                DateFormat.E('es_ES')
+                    .format(_weekStart.add(Duration(days: i)))
+                    .substring(0, 1)
                     .toUpperCase(),
                 style: style,
               ),
@@ -424,18 +335,18 @@ class _TimePickerSheetState extends State<_TimePickerSheet> {
   Widget build(BuildContext context) {
     final colors = context.colors;
 
-    return _PickerSheet(
+    return PickerSheet(
       title: 'Hora',
       onConfirm: () => Navigator.of(context).pop(_selectedTime),
       child: SizedBox(
-        height: _WheelPicker.itemExtent * 5,
+        height: WheelPicker.itemExtent * 5,
         child: Stack(
           children: [
             // Banda central que marca la fila seleccionada.
             Center(
               child: IgnorePointer(
                 child: Container(
-                  height: _WheelPicker.itemExtent,
+                  height: WheelPicker.itemExtent,
                   decoration: BoxDecoration(
                     color: colors.canvasSoft,
                     borderRadius: AppRadius.brXl,
@@ -446,7 +357,7 @@ class _TimePickerSheetState extends State<_TimePickerSheet> {
             Row(
               children: [
                 Expanded(
-                  child: _WheelPicker(
+                  child: WheelPicker(
                     controller: _hourController,
                     itemCount: widget.use24HourFormat ? 24 : 12,
                     labelBuilder: (index) => widget.use24HourFormat
@@ -460,7 +371,7 @@ class _TimePickerSheetState extends State<_TimePickerSheet> {
                   style: AppTypography.displayMd.copyWith(color: colors.muted),
                 ),
                 Expanded(
-                  child: _WheelPicker(
+                  child: WheelPicker(
                     controller: _minuteController,
                     itemCount: 60,
                     labelBuilder: (index) => index.toString().padLeft(2, '0'),
@@ -470,7 +381,7 @@ class _TimePickerSheetState extends State<_TimePickerSheet> {
                 if (!widget.use24HourFormat)
                   SizedBox(
                     width: 76,
-                    child: _WheelPicker(
+                    child: WheelPicker(
                       controller: _periodController,
                       itemCount: 2,
                       labelBuilder: (index) => index == 0 ? 'AM' : 'PM',

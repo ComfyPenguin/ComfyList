@@ -27,7 +27,7 @@ void main() {
         appointmentsTodayOnTop: true,
         invertSwipeActions: false,
         use24HourFormat: true,
-        appointmentReminderMinutes: 30,
+        appointmentReminderMinutes: '30',
         updatedAt: DateTime.utc(2026, 6, 30, 12),
       );
       when(() => dao.getOrCreate()).thenAnswer((_) async => row);
@@ -91,13 +91,14 @@ void main() {
   });
 
   group('DriftSettingsLocal.updateAppointmentReminderMinutes', () {
-    test('reenvía los minutos al DAO sin transformación', () async {
+    test('reenvía los márgenes serializados al DAO sin transformación',
+        () async {
       when(() => dao.updateAppointmentReminderMinutes(any()))
           .thenAnswer((_) async {});
 
-      await local.updateAppointmentReminderMinutes(1440);
+      await local.updateAppointmentReminderMinutes('0,1440');
 
-      verify(() => dao.updateAppointmentReminderMinutes(1440)).called(1);
+      verify(() => dao.updateAppointmentReminderMinutes('0,1440')).called(1);
     });
   });
 }

@@ -35,12 +35,13 @@ class AppointmentReminder {
   int get hashCode => Object.hash(id, title, body, when);
 }
 
-/// Avisos que corresponden a [items] con los ajustes de [settings].
+/// Avisos que corresponden a [items] con los ajustes de [settings]: una cita
+/// avisa una vez por cada uno de sus márgenes.
 ///
 /// Con las notificaciones apagadas no hay ninguno. De cada cita se caen las ya
-/// completadas y las cuyo aviso ya habría pasado (una cita dentro de 10 minutos
-/// con un aviso de 30 minutos antes): el plugin rechaza programar en el pasado
-/// y soltar el aviso al abrir la app sería ruido.
+/// completadas y los avisos que ya habrían pasado (una cita dentro de 10 minutos
+/// con un margen de 30): el plugin rechaza programar en el pasado y soltar el
+/// aviso al abrir la app sería ruido.
 List<AppointmentReminder> buildAppointmentReminders({
   required List<Appointment> items,
   required AppSettings settings,
@@ -48,36 +49,38 @@ List<AppointmentReminder> buildAppointmentReminders({
 }) {
   if (!settings.notificationsEnabled) return const [];
 
-  final lead = Duration(minutes: settings.appointmentReminderLead.minutes);
   final reminders = <AppointmentReminder>[];
   for (final item in items) {
     if (item.isDone) continue;
-    final when = item.dateTime.subtract(lead);
-    if (!when.isAfter(now)) continue;
-    reminders.add(
-      AppointmentReminder(
-        id: notificationIdFor(item.id),
-        title: item.title,
-        body: _bodyFor(
-          item,
-          now: now,
-          use24HourFormat: settings.use24HourFormat,
+    for (final minutes in settings.appointmentReminderMinutes) {
+      final when = item.dateTime.subtract(Duration(minutes: minutes));
+      if (!when.isAfter(now)) continue;
+      reminders.add(
+        AppointmentReminder(
+          id: notificationIdFor(item.id, minutes: minutes),
+          title: item.title,
+          body: _bodyFor(
+            item,
+            now: now,
+            use24HourFormat: settings.use24HourFormat,
+          ),
+          when: when,
         ),
-        when: when,
-      ),
-    );
+      );
+    }
   }
   return reminders;
 }
 
-/// Id numérico estable a partir del id del documento.
+/// Id numérico estable a partir del id del documento y del margen del aviso.
 ///
-/// `String.hashCode` no está garantizado entre ejecuciones y el aviso se
-/// cancela con el mismo id con el que se programó, así que va un FNV-1a de 32
-/// bits recortado al rango positivo que admite el plugin.
-int notificationIdFor(String appointmentId) {
+/// Una cita lleva un aviso por margen y se cancelan por id, así que cada margen
+/// necesita el suyo. `String.hashCode` no está garantizado entre ejecuciones,
+/// así que va un FNV-1a de 32 bits recortado al rango positivo que admite el
+/// plugin.
+int notificationIdFor(String appointmentId, {required int minutes}) {
   var hash = 0x811c9dc5;
-  for (final unit in appointmentId.codeUnits) {
+  for (final unit in '$appointmentId:$minutes'.codeUnits) {
     hash = (hash ^ unit) * 0x01000193 & 0xffffffff;
   }
   return hash & 0x7fffffff;
