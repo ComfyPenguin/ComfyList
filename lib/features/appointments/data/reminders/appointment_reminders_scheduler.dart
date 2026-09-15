@@ -15,12 +15,12 @@ class AppointmentRemindersScheduler {
   /// segundos, y sin esto cada tick reescribiría los avisos.
   List<AppointmentReminder>? _lastPlan;
 
-  /// Rehace el plan entero: quita los avisos pendientes y programa los de
-  /// [items].
+  /// Deja programados los avisos que tocan para [items].
   ///
-  /// Se reescribe todo en lugar de calcular altas y bajas porque el resultado
-  /// así no depende de lo que quedara programado antes (en otra sesión, o de
-  /// antes de reiniciar el dispositivo).
+  /// El primer volcado de la sesión limpia todo lo programado, de modo que el
+  /// resultado no depende de lo que dejara otra sesión o de antes de reiniciar
+  /// el dispositivo. A partir de ahí se quita aviso por aviso: lo que sale del
+  /// plan casi siempre es un aviso que ya llegó a su hora, y esos no se tocan.
   Future<void> sync({
     required List<Appointment> items,
     required AppSettings settings,
@@ -33,7 +33,7 @@ class AppointmentRemindersScheduler {
     );
     if (listEquals(reminders, _lastPlan)) return;
 
-    await _notifications.cancelAll();
+    await _discard(previous: _lastPlan, planned: reminders, now: now);
     for (final reminder in reminders) {
       await _notifications.schedule(
         id: reminder.id,
@@ -43,5 +43,29 @@ class AppointmentRemindersScheduler {
       );
     }
     _lastPlan = reminders;
+  }
+
+  /// Quita lo que sobraba del plan anterior.
+  ///
+  /// Un aviso sale del plan en cuanto llega su hora, y en ese momento el
+  /// sistema puede tenerlo todavía pendiente (una alarma aproximada nunca se
+  /// adelanta): cancelarlo ahí es lo que lo deja sin sonar. Por eso los ya
+  /// vencidos se dejan en paz y solo se quitan los que aún estaban por llegar.
+  Future<void> _discard({
+    required List<AppointmentReminder>? previous,
+    required List<AppointmentReminder> planned,
+    required DateTime now,
+  }) async {
+    if (previous == null) {
+      await _notifications.cancelAll();
+      return;
+    }
+
+    final plannedIds = {for (final reminder in planned) reminder.id};
+    for (final reminder in previous) {
+      if (plannedIds.contains(reminder.id)) continue;
+      if (!reminder.when.isAfter(now)) continue;
+      await _notifications.cancel(reminder.id);
+    }
   }
 }

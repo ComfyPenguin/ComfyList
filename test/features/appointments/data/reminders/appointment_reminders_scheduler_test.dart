@@ -28,11 +28,12 @@ void main() {
   Future<void> sync({
     List<Appointment> items = const [],
     AppSettings? settings,
+    DateTime? at,
   }) {
     return scheduler.sync(
       items: items,
       settings: settings ?? buildAppSettings(),
-      now: now,
+      now: at ?? now,
     );
   }
 
@@ -63,7 +64,7 @@ void main() {
     expect(notifications.scheduled, hasLength(1));
   });
 
-  test('reescribe cuando cambia el margen', () async {
+  test('al cambiar el margen reprograma el mismo aviso', () async {
     await sync(items: [item]);
     await sync(
       items: [item],
@@ -72,7 +73,42 @@ void main() {
       ),
     );
 
-    expect(notifications.cancelCalls, 2);
+    // El id del aviso no cambia, así que el plugin reemplaza el anterior.
+    expect(notifications.cancelled, isEmpty);
     expect(notifications.scheduled.single.when, DateTime(2026, 9, 15, 11));
+  });
+
+  test('quita los avisos que salen del plan y aún no han llegado', () async {
+    await sync(items: [item]);
+    await sync(items: []);
+
+    expect(notifications.cancelled, [notificationIdFor('a1')]);
+    expect(notifications.scheduled, isEmpty);
+  });
+
+  test('no cancela el aviso que ya ha llegado a su hora', () async {
+    // Cita de aquí a un minuto con el aviso a su hora: el plan lo suelta en
+    // cuanto pasa ese minuto, que es justo cuando el sistema puede tenerlo
+    // todavía pendiente.
+    final inminente = buildAppointment(
+      id: 'a1',
+      dateTime: now.add(const Duration(minutes: 1)),
+    );
+    final settings = buildAppSettings(
+      appointmentReminderLead: AppointmentReminderLead.atTime,
+    );
+
+    await sync(items: [inminente], settings: settings);
+    expect(notifications.scheduled, hasLength(1));
+
+    await sync(
+      items: [inminente],
+      settings: settings,
+      at: now.add(const Duration(minutes: 2)),
+    );
+
+    expect(notifications.cancelCalls, 1, reason: 'solo la limpieza inicial');
+    expect(notifications.cancelled, isEmpty);
+    expect(notifications.scheduled, hasLength(1));
   });
 }

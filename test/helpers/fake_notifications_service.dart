@@ -8,10 +8,15 @@ typedef ScheduledNotification = ({
   DateTime when,
 });
 
-/// Servicio de notificaciones de mentira: apunta lo que se programa y cuántas
-/// veces se limpia, sin plugin de por medio.
+/// Servicio de notificaciones de mentira: apunta lo que se programa y lo que se
+/// quita, sin plugin de por medio.
 class FakeNotificationsService implements NotificationsService {
   final scheduled = <ScheduledNotification>[];
+
+  /// Ids quitados de uno en uno.
+  final cancelled = <int>[];
+
+  /// Veces que se ha limpiado el plan entero.
   int cancelCalls = 0;
 
   @override
@@ -21,7 +26,16 @@ class FakeNotificationsService implements NotificationsService {
     required String body,
     required DateTime when,
   }) async {
+    // El plugin identifica cada aviso por su id, así que volver a programarlo
+    // reemplaza al anterior en lugar de añadir otro.
+    scheduled.removeWhere((notification) => notification.id == id);
     scheduled.add((id: id, title: title, body: body, when: when));
+  }
+
+  @override
+  Future<void> cancel(int id) async {
+    cancelled.add(id);
+    scheduled.removeWhere((notification) => notification.id == id);
   }
 
   @override

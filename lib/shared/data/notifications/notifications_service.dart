@@ -9,15 +9,15 @@ const _channelDescription = 'Avisos antes de que empiece una cita.';
 
 /// Servicio de notificaciones locales.
 ///
-/// Solo expone lo que la app necesita: preparar el plugin, programar un aviso
-/// y quitarlos todos. La preferencia on/off vive en `SettingsTable` (Drift) y
-/// la lógica de qué avisar vive en el planificador de citas.
+/// Solo expone lo que la app necesita: preparar el plugin, programar un aviso,
+/// quitarlos todos o quitar uno. La preferencia on/off vive en `SettingsTable`
+/// (Drift) y la lógica de qué avisar vive en el planificador de citas.
 ///
 /// Las llamadas al plugin son best-effort — en Linux desktop no hay soporte y
 /// el aviso se descarta sin tumbar la app.
 class NotificationsService {
   NotificationsService({FlutterLocalNotificationsPlugin? plugin})
-      : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
+    : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
 
   final FlutterLocalNotificationsPlugin _plugin;
 
@@ -30,8 +30,9 @@ class NotificationsService {
   Future<void> init() async {
     if (_initialized) return;
 
-    const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
     const initSettings = InitializationSettings(android: androidSettings);
 
     // v21+: initialize toma el parámetro `settings` como named (no posicional).
@@ -42,7 +43,8 @@ class NotificationsService {
       try {
         await _plugin
             .resolvePlatformSpecificImplementation<
-                AndroidFlutterLocalNotificationsPlugin>()
+              AndroidFlutterLocalNotificationsPlugin
+            >()
             ?.requestNotificationsPermission();
       } catch (e) {
         debugPrint('No se pudieron pedir permisos de notificaciones: $e');
@@ -86,6 +88,15 @@ class NotificationsService {
     }
   }
 
+  /// Quita un aviso programado por su id.
+  Future<void> cancel(int id) async {
+    try {
+      await _plugin.cancel(id: id);
+    } catch (e) {
+      debugPrint('No se pudo cancelar el aviso $id: $e');
+    }
+  }
+
   /// Quita los avisos programados. Los ya mostrados no se tocan: si el usuario
   /// los está viendo, no es cosa nuestra hacerlos desaparecer.
   Future<void> cancelAll() async {
@@ -112,7 +123,8 @@ class NotificationsService {
     try {
       return await _plugin
               .resolvePlatformSpecificImplementation<
-                  AndroidFlutterLocalNotificationsPlugin>()
+                AndroidFlutterLocalNotificationsPlugin
+              >()
               ?.canScheduleExactNotifications() ??
           false;
     } catch (e) {

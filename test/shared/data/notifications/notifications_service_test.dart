@@ -68,6 +68,14 @@ void main() {
     );
   });
 
+  test('quita un aviso por su id', () async {
+    when(() => plugin.cancel(id: any(named: 'id'))).thenAnswer((_) async {});
+
+    await service.cancel(7);
+
+    verify(() => plugin.cancel(id: 7)).called(1);
+  });
+
   test('limpia los avisos sin tocar los ya mostrados', () async {
     when(() => plugin.cancelAllPendingNotifications()).thenAnswer((_) async {});
 
