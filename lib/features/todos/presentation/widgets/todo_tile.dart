@@ -18,6 +18,7 @@ class TodoTile extends ConsumerWidget {
     required this.onTap,
     required this.onComplete,
     required this.onDelete,
+    this.onLongPress,
     this.groupIndex = 0,
     this.groupSize = 1,
     this.topSeparationProgress = 1,
@@ -29,6 +30,7 @@ class TodoTile extends ConsumerWidget {
   final VoidCallback onTap;
   final VoidCallback onComplete;
   final VoidCallback onDelete;
+  final VoidCallback? onLongPress;
   final int groupIndex;
   final int groupSize;
   final double topSeparationProgress;
@@ -47,6 +49,7 @@ class TodoTile extends ConsumerWidget {
 
     return SwipeActionsCard(
       onTap: onTap,
+      onLongPress: onLongPress,
       onDelete: onDelete,
       onComplete: onComplete,
       isDone: todo.isDone,

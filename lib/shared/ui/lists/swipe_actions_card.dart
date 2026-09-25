@@ -18,6 +18,7 @@ class SwipeActionsCard extends StatelessWidget {
     required this.child,
     required this.onTap,
     required this.onDelete,
+    this.onLongPress,
     this.onComplete,
     this.isDone = false,
     this.invertActions = false,
@@ -35,6 +36,9 @@ class SwipeActionsCard extends StatelessWidget {
   final Widget child;
   final VoidCallback onTap;
   final VoidCallback onDelete;
+
+  /// Acción de pulsación larga, normalmente abrir la pantalla de edición.
+  final VoidCallback? onLongPress;
 
   /// Acción de completar o desmarcar según [isDone]. Sin invertir ocupa la
   /// zona izquierda (deslizar a la derecha); invertida, la derecha.
@@ -122,6 +126,7 @@ class SwipeActionsCard extends StatelessWidget {
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: onTap,
+            onLongPress: onLongPress,
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 72),
               child: Padding(
