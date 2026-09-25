@@ -4,6 +4,8 @@ import 'package:comfy_list/features/todos/presentation/providers/todos_provider.
 import 'package:comfy_list/features/todos/presentation/providers/todos_state.dart';
 import 'package:comfy_list/features/todos/presentation/screens/todos_screen.dart';
 import 'package:comfy_list/features/todos/presentation/widgets/quick_add_bar.dart';
+import 'package:comfy_list/features/todos/presentation/widgets/todo_tile.dart';
+import 'package:comfy_list/routing/routes.dart';
 import 'package:comfy_list/shared/core/theme/app_spacing.dart';
 import 'package:comfy_list/shared/core/theme/app_theme.dart';
 import 'package:comfy_list/shared/core/time/clock.dart';
@@ -15,6 +17,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import '../../../../helpers/fake_settings_repository.dart';
 import '../../../../helpers/test_helpers.dart';
+import '../../../../helpers/test_router.dart';
 
 class _FixedTodos extends TodosNotifier {
   _FixedTodos(this.items, {String listId = 'L1'}) : super(listId);
@@ -98,5 +101,48 @@ void main() {
     expect(bar.height, 48);
     // Flota por encima de donde va el dock (72 + su margen), no pegada al borde.
     expect(bar.bottom, lessThanOrEqualTo(screen - 72 - AppSpacing.lg));
+  });
+
+  Future<void> pumpRouted(
+    WidgetTester tester, {
+    required List<Todo> items,
+  }) async {
+    final repo = FakeSettingsRepository();
+    addTearDown(repo.close);
+
+    tester.view.physicalSize = const Size(1170, 2400);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          todosProvider('L1').overrideWith(() => _FixedTodos(items)),
+          settingsRepositoryProvider.overrideWithValue(repo),
+          clockProvider.overrideWithValue(() => DateTime(2026, 9, 15, 10)),
+        ],
+        child: MaterialApp.router(
+          theme: AppTheme.light(),
+          routerConfig: buildTestRouter(
+            initialLocation: Routes.todoList('L1'),
+            home: const Scaffold(body: TodosScreen(listId: 'L1')),
+            probes: {Routes.todoEdit('L1', 't1'): 'EDITAR TAREA t1'},
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+  }
+
+  testWidgets('mantener pulsada una tarea abre su pantalla de edición', (
+    tester,
+  ) async {
+    await pumpRouted(tester, items: [buildTodo(id: 't1')]);
+
+    await tester.longPress(find.byType(TodoTile).first);
+    await tester.pump();
+
+    expect(find.text('EDITAR TAREA t1'), findsOneWidget);
   });
 }
