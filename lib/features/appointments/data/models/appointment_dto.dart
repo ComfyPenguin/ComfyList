@@ -43,6 +43,20 @@ class AppointmentDto {
     });
   }
 
+  /// Cuerpo para devolver a Firestore una cita borrada, tal y como estaba: el
+  /// `patch` sobre un documento inexistente la vuelve a crear.
+  static Map<String, dynamic> toRestoreBody(Appointment appointment) {
+    return FirestoreValueCodec.encodeFields({
+      'title': appointment.title,
+      'description': ?appointment.description,
+      'location': ?appointment.location,
+      'dateTime': appointment.dateTime,
+      'isDone': appointment.isDone,
+      'createdAt': appointment.createdAt,
+      'updatedAt': appointment.updatedAt,
+    });
+  }
+
   /// Cuerpo para `patch` con campos parciales.
   static (Map<String, dynamic> body, List<String> updateMask) toPatchBody({
     String? title,

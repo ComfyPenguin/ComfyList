@@ -15,6 +15,7 @@ import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/core/time/clock.dart';
 import '../../../../shared/ui/lists/slide_flow.dart';
+import '../../../../shared/ui/toast/app_toast.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../../settings/presentation/providers/settings_state.dart';
 import '../../domain/entities/appointment.dart';
@@ -327,11 +328,11 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
           onDelete: (appt) async {
             await notifier.delete(appt.id);
             if (!context.mounted) return;
-            ScaffoldMessenger.of(context)
-              ..hideCurrentSnackBar()
-              ..showSnackBar(
-                SnackBar(content: Text('Cita «${appt.title}» eliminada.')),
-              );
+            AppToast.showUndo(
+              context,
+              message: AppToast.appointmentDeleted,
+              onUndo: notifier.undoLastDelete,
+            );
           },
           onRevealProgressChanged: (appt, progress) {
             _setTileRevealProgress(

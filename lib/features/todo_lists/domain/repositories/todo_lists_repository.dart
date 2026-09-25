@@ -28,6 +28,14 @@ abstract class TodoListsRepository {
     required String id,
   });
 
+  /// Devuelve [list] a Firestore con su mismo id, para deshacer el borrado.
+  /// Sus tareas las restaura quien orquesta el deshacer: viven en la
+  /// subcolección que gestiona el feature `todos`.
+  Future<Result<TodoList>> restoreList({
+    required String uid,
+    required TodoList list,
+  });
+
   /// Pausa el polling de watchers activos. Llamado al pasar la app a
   /// background para ahorrar batería y evitar errores de socket.
   void pauseAll();

@@ -9,6 +9,7 @@ import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/ui/lists/slide_flow.dart';
 import '../../../../shared/ui/navigation/app_shell.dart';
+import '../../../../shared/ui/toast/app_toast.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../../settings/presentation/providers/settings_state.dart';
 import '../../domain/entities/todo.dart';
@@ -383,11 +384,11 @@ class _TodosListState extends ConsumerState<_TodosList> {
       onDelete: () async {
         await notifier.delete(todo.id);
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(content: Text('Tarea «${todo.title}» eliminada.')),
-          );
+        AppToast.showUndo(
+          context,
+          message: AppToast.todoDeleted,
+          onUndo: notifier.undoLastDelete,
+        );
       },
     );
   }

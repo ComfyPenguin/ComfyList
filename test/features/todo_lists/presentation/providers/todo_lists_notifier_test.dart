@@ -7,6 +7,7 @@ import 'package:comfy_list/features/todo_lists/domain/entities/todo_list.dart';
 import 'package:comfy_list/features/todo_lists/domain/repositories/todo_lists_repository.dart';
 import 'package:comfy_list/features/todo_lists/presentation/providers/todo_lists_provider.dart';
 import 'package:comfy_list/features/todo_lists/presentation/providers/todo_lists_state.dart';
+import 'package:comfy_list/features/todos/domain/repositories/todos_repository.dart';
 import 'package:comfy_list/shared/core/failures/failure.dart';
 import 'package:comfy_list/shared/core/result/result.dart';
 import 'package:comfy_list/shared/core/time/clock.dart';
@@ -20,6 +21,8 @@ import '../../../../helpers/test_helpers.dart';
 class _MockRepo extends Mock implements TodoListsRepository {}
 
 class _MockRemote extends Mock implements FirestoreListsRemote {}
+
+class _MockTodosRepo extends Mock implements TodosRepository {}
 
 void main() {
   late _MockRepo repo;
@@ -146,6 +149,52 @@ void main() {
     expect(after, isA<TodoListsData>());
     // Sin flicker: la lista existente no se ha reemplazado
     expect((after as TodoListsData).items, hasLength(1));
+  });
+
+  test('delete guarda la lista con sus tareas y undoLastDelete devuelve todo',
+      () async {
+    final controller = StreamController<List<TodoList>>();
+    when(() => repo.watchLists('u1')).thenAnswer((_) => controller.stream);
+    when(() => repo.deleteList(uid: 'u1', id: 'L1'))
+        .thenAnswer((_) async => const Ok(null));
+
+    final list = buildTodoList(id: 'L1');
+    when(() => repo.restoreList(uid: 'u1', list: list))
+        .thenAnswer((_) async => Ok(list));
+
+    final todo = buildTodo(id: 't1');
+    final todosRepo = _MockTodosRepo();
+    when(() => todosRepo.fetchTodos(uid: 'u1', listId: 'L1'))
+        .thenAnswer((_) async => Ok([todo]));
+    when(() => todosRepo.restoreTodo(uid: 'u1', listId: 'L1', todo: todo))
+        .thenAnswer((_) async => Ok(todo));
+
+    final container = createTestContainer(
+      authedUser: buildAuthUser(),
+      repositoryOverrides: {
+        TodoListsRepository: repo,
+        TodosRepository: todosRepo,
+      },
+    );
+    addTearDown(controller.close);
+
+    expect(container.read(todoListsProvider), isA<TodoListsLoading>());
+    controller.add([list]);
+    await pumpEventQueue();
+
+    final notifier = container.read(todoListsProvider.notifier);
+    await notifier.delete('L1');
+
+    // Las tareas se leen antes de borrar: si no, se perderían en el deshacer.
+    verifyInOrder([
+      () => todosRepo.fetchTodos(uid: 'u1', listId: 'L1'),
+      () => repo.deleteList(uid: 'u1', id: 'L1'),
+    ]);
+
+    expect(await notifier.undoLastDelete(), isTrue);
+    verify(() => repo.restoreList(uid: 'u1', list: list)).called(1);
+    verify(() => todosRepo.restoreTodo(uid: 'u1', listId: 'L1', todo: todo))
+        .called(1);
   });
 
   test('bootstrap returns Initial when auth is Unauthenticated', () async {

@@ -125,6 +125,23 @@ class AppointmentsRepositoryImpl implements AppointmentsRepository {
   }
 
   @override
+  Future<Result<Appointment>> restoreAppointment({
+    required String uid,
+    required Appointment appointment,
+  }) async {
+    try {
+      final restored = await _remote.restoreAppointment(
+        uid: uid,
+        appointment: appointment,
+      );
+      await _refresh(uid);
+      return Ok(restored);
+    } on DioException catch (e) {
+      return Err(_mapDioError(e));
+    }
+  }
+
+  @override
   void pauseAll() {
     for (final w in _watchers.values) {
       w.pause();

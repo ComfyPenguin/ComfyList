@@ -12,6 +12,7 @@ import '../../../../shared/ui/buttons/primary_button.dart';
 import '../../../../shared/ui/dialogs/confirm_action_dialog.dart';
 import '../../../../shared/ui/inputs/app_text_field.dart';
 import '../../../../shared/ui/text/app_tag.dart';
+import '../../../../shared/ui/toast/app_toast.dart';
 import '../../domain/entities/todo_list.dart';
 import '../../domain/entities/todo_list_icons.dart';
 import '../providers/todo_lists_provider.dart';
@@ -87,28 +88,28 @@ class _TodoListEditScreenState extends ConsumerState<TodoListEditScreen> {
   Future<void> _delete() async {
     if (!_isEditing) return;
 
-    final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
 
     final confirmed = await ConfirmActionDialog.show(
       context,
       title: '¿Eliminar lista?',
       message:
-          '«$_hydratedName» y todas sus tareas se eliminarán permanentemente. '
-          'Esta acción no se puede deshacer.',
+          '«$_hydratedName» y todas sus tareas se eliminarán. Tendrás unos '
+          'segundos para deshacerlo.',
       confirmLabel: 'Eliminar',
       destructive: true,
     );
     if (!confirmed) return;
 
-    await ref.read(todoListsProvider.notifier).delete(widget.id!);
+    final notifier = ref.read(todoListsProvider.notifier);
+    await notifier.delete(widget.id!);
     if (!mounted) return;
 
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text('Lista «$_hydratedName» eliminada.')),
-      );
+    AppToast.showUndo(
+      context,
+      message: AppToast.listDeleted,
+      onUndo: notifier.undoLastDelete,
+    );
     router.pop();
   }
 

@@ -8,6 +8,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/providers/auth_state.dart';
 import '../../data/datasources/firestore_appointments_remote.dart';
 import '../../data/repositories/appointments_repository_impl.dart';
+import '../../domain/entities/appointment.dart';
 import '../../domain/repositories/appointments_repository.dart';
 import 'appointments_state.dart';
 
@@ -103,11 +104,38 @@ class AppointmentsNotifier extends Notifier<AppointmentsState> {
         );
   }
 
+  /// Última cita borrada. Solo se puede deshacer esa: el aviso que ofrece
+  /// deshacer es único y un borrado nuevo reemplaza al anterior.
+  Appointment? _lastDeleted;
+
   Future<void> delete(String id) async {
+    _lastDeleted = _findById(id);
     await ref.read(appointmentsRepositoryProvider).deleteAppointment(
           uid: _uid,
           id: id,
         );
+  }
+
+  /// Devuelve la última cita borrada. Devuelve si se pudo.
+  Future<bool> undoLastDelete() async {
+    final appointment = _lastDeleted;
+    if (appointment == null) return false;
+
+    final res = await ref.read(appointmentsRepositoryProvider)
+        .restoreAppointment(uid: _uid, appointment: appointment);
+    if (res.isErr) return false;
+
+    _lastDeleted = null;
+    return true;
+  }
+
+  Appointment? _findById(String id) {
+    final current = state;
+    if (current is! AppointmentsData) return null;
+    for (final appointment in current.items) {
+      if (appointment.id == id) return appointment;
+    }
+    return null;
   }
 }
 

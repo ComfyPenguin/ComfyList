@@ -1,4 +1,5 @@
 import 'package:comfy_list/features/todo_lists/data/models/todo_list_dto.dart';
+import 'package:comfy_list/features/todo_lists/domain/entities/todo_list.dart';
 import 'package:comfy_list/shared/data/remote/firestore_value_codec.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -58,6 +59,31 @@ void main() {
       expect(decoded['name'], 'Nuevo');
       expect(decoded.containsKey('iconKey'), isFalse);
       expect(decoded['updatedAt'], isA<DateTime>());
+    });
+
+    test('toRestoreBody devuelve la lista con sus fechas', () {
+      final list = TodoList(
+        id: 'L1',
+        name: 'Compras',
+        iconKey: 'cart',
+        createdAt: DateTime.utc(2026, 1, 1, 12),
+        updatedAt: DateTime.utc(2026, 1, 2, 12),
+      );
+
+      final decoded = FirestoreValueCodec.decodeFields(
+        TodoListDto.toRestoreBody(list),
+      );
+
+      expect(decoded['name'], 'Compras');
+      expect(decoded['iconKey'], 'cart');
+      expect(
+        (decoded['createdAt'] as DateTime).toUtc(),
+        DateTime.utc(2026, 1, 1, 12),
+      );
+      expect(
+        (decoded['updatedAt'] as DateTime).toUtc(),
+        DateTime.utc(2026, 1, 2, 12),
+      );
     });
 
     test('toPatchBody without name or iconKey only updates updatedAt', () {

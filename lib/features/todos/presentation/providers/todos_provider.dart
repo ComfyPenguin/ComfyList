@@ -8,6 +8,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/providers/auth_state.dart';
 import '../../data/datasources/firestore_rest_remote.dart';
 import '../../data/repositories/todos_repository_impl.dart';
+import '../../domain/entities/todo.dart';
 import '../../domain/repositories/todos_repository.dart';
 import 'todos_state.dart';
 
@@ -96,12 +97,42 @@ class TodosNotifier extends Notifier<TodosState> {
         );
   }
 
+  /// Último todo borrado. Solo se puede deshacer ese: el aviso que ofrece
+  /// deshacer es único y un borrado nuevo reemplaza al anterior.
+  Todo? _lastDeleted;
+
   Future<void> delete(String id) async {
+    _lastDeleted = _findById(id);
     await ref.read(todosRepositoryProvider).deleteTodo(
           uid: _uid,
           listId: _listId,
           id: id,
         );
+  }
+
+  /// Devuelve el último todo borrado. Devuelve si se pudo.
+  Future<bool> undoLastDelete() async {
+    final todo = _lastDeleted;
+    if (todo == null) return false;
+
+    final res = await ref.read(todosRepositoryProvider).restoreTodo(
+          uid: _uid,
+          listId: _listId,
+          todo: todo,
+        );
+    if (res.isErr) return false;
+
+    _lastDeleted = null;
+    return true;
+  }
+
+  Todo? _findById(String id) {
+    final current = state;
+    if (current is! TodosData) return null;
+    for (final todo in current.items) {
+      if (todo.id == id) return todo;
+    }
+    return null;
   }
 }
 

@@ -1,4 +1,5 @@
 import 'package:comfy_list/features/appointments/data/models/appointment_dto.dart';
+import 'package:comfy_list/features/appointments/domain/entities/appointment.dart';
 import 'package:comfy_list/shared/data/remote/firestore_value_codec.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -60,6 +61,36 @@ void main() {
       expect(encodedFields['location'], <String, dynamic>{
         'nullValue': null,
       });
+    });
+
+    test('toRestoreBody devuelve la cita con su ubicación y su estado', () {
+      final appointment = Appointment(
+        id: 'a1',
+        title: 'Dentista',
+        description: 'Limpieza',
+        location: 'Calle Mayor 1',
+        dateTime: DateTime.utc(2026, 6, 1, 9),
+        isDone: true,
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 2),
+      );
+
+      final decoded = FirestoreValueCodec.decodeFields(
+        AppointmentDto.toRestoreBody(appointment),
+      );
+
+      expect(decoded['title'], 'Dentista');
+      expect(decoded['description'], 'Limpieza');
+      expect(decoded['location'], 'Calle Mayor 1');
+      expect(decoded['isDone'], isTrue);
+      expect(
+        (decoded['dateTime'] as DateTime).toUtc(),
+        DateTime.utc(2026, 6, 1, 9),
+      );
+      expect(
+        (decoded['createdAt'] as DateTime).toUtc(),
+        DateTime.utc(2026, 1, 1),
+      );
     });
 
     test('toPatchBody with only isDone includes isDone in mask', () {

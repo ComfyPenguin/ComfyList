@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/dio_mock.dart';
+import '../../../../helpers/test_helpers.dart';
 
 class _MockDio extends MockDio {}
 
@@ -134,6 +135,27 @@ void main() {
 
       verify(() => dio.delete<void>('${expectedCollection('u1')}/a1'))
           .called(1);
+    });
+
+    test('restoreAppointment vuelve a escribir el documento con su id',
+        () async {
+      final body = buildDocBody(
+        name:
+            'projects/p/databases/(default)/documents/users/u1/appointments/a1',
+        title: 'Dentista',
+      );
+      stubDioPatch(dio, body: body);
+
+      final restored = await remote.restoreAppointment(
+        uid: 'u1',
+        appointment: buildAppointment(id: 'a1'),
+      );
+
+      expect(restored.id, 'a1');
+      verify(() => dio.patch<Map<String, dynamic>>(
+            '${expectedCollection('u1')}/a1',
+            data: any(named: 'data'),
+          )).called(1);
     });
   });
 }

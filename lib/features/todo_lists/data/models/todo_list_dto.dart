@@ -29,6 +29,17 @@ class TodoListDto {
     });
   }
 
+  /// Cuerpo para devolver a Firestore una lista borrada, tal y como estaba: el
+  /// `patch` sobre un documento inexistente la vuelve a crear.
+  static Map<String, dynamic> toRestoreBody(TodoList list) {
+    return FirestoreValueCodec.encodeFields({
+      'name': list.name,
+      'iconKey': list.iconKey,
+      'createdAt': list.createdAt,
+      'updatedAt': list.updatedAt,
+    });
+  }
+
   static (Map<String, dynamic> body, List<String> updateMask) toPatchBody({
     String? name,
     String? iconKey,

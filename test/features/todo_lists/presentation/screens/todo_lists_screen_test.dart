@@ -66,8 +66,7 @@ void main() {
         ],
         child: MaterialApp(
           theme: AppTheme.light(),
-          // El Scaffold permite mostrar el SnackBar de la pista.
-          home: const Scaffold(body: TodoListsScreen()),
+          home: const TodoListsScreen(),
         ),
       ),
     );
@@ -110,7 +109,7 @@ void main() {
           theme: AppTheme.light(),
           routerConfig: buildTestRouter(
             initialLocation: Routes.todoLists,
-            home: const Scaffold(body: TodoListsScreen()),
+            home: const TodoListsScreen(),
             probes: {Routes.todoListEdit('L1'): 'EDITAR LISTA L1'},
           ),
         ),
@@ -140,9 +139,10 @@ void main() {
     expect(find.text(hintText), findsOneWidget);
     expect((await repo.load()).longPressHintSeen, isTrue);
 
-    // Deja que el SnackBar se oculte solo y no quede su temporizador pendiente.
-    await tester.pump(const Duration(seconds: 5));
-    await tester.pump(const Duration(milliseconds: 400));
+    // Deja que el aviso se oculte solo y no quede su temporizador pendiente.
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
   });
 
   testWidgets('con la pista ya vista no vuelve a aparecer', (tester) async {
