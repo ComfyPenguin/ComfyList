@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/data/notifications/notifications_provider.dart';
+import '../../../../shared/ui/toast/app_toast.dart';
 import 'settings_tile.dart';
 
 /// Fila de que el sistema no deja mostrar los avisos de la app.
@@ -48,15 +49,10 @@ class BlockedNotificationsTile extends ConsumerWidget {
         }
         // El sistema deja de preguntar tras dos negativas y sus ajustes no hay
         // forma de abrirlos desde aquí: al menos que no se quede en silencio.
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Sigue bloqueado: actívalos en los ajustes del sistema.',
-              ),
-            ),
-          );
+        AppToast.show(
+          context,
+          'Sigue bloqueado: actívalos en los ajustes del sistema.',
+        );
       },
     );
   }

@@ -6,6 +6,7 @@ import '../../../../routing/routes.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
+import '../../../../shared/ui/toast/app_toast.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../../settings/presentation/providers/settings_state.dart';
 import '../../domain/entities/todo_list.dart';
@@ -69,7 +70,7 @@ class _ListsState extends ConsumerState<_Lists> {
 
   final _tileRevealProgress = <String, double>{};
 
-  /// Evita programar la pista más de una vez mientras el SnackBar se muestra.
+  /// Evita programar la pista más de una vez mientras el aviso se muestra.
   bool _hintScheduled = false;
 
   ({double top, double bottom}) _effectiveSeparationFor(
@@ -125,13 +126,7 @@ class _ListsState extends ConsumerState<_Lists> {
     _hintScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(
-            content: Text('Mantén pulsada una tarjeta para editarla.'),
-          ),
-        );
+      AppToast.show(context, 'Mantén pulsada una tarjeta para editarla.');
       ref.read(settingsProvider.notifier).setLongPressHintSeen(true);
     });
   }
@@ -170,11 +165,7 @@ class _ListsState extends ConsumerState<_Lists> {
           onDelete: () async {
             await notifier.delete(list.id);
             if (!context.mounted) return;
-            ScaffoldMessenger.of(context)
-              ..hideCurrentSnackBar()
-              ..showSnackBar(
-                SnackBar(content: Text('Lista «${list.name}» eliminada.')),
-              );
+            AppToast.show(context, 'Lista «${list.name}» eliminada.');
           },
         );
       },

@@ -11,6 +11,7 @@ import '../../../../shared/ui/buttons/primary_button.dart';
 import '../../../../shared/ui/dialogs/confirm_action_dialog.dart';
 import '../../../../shared/ui/inputs/app_text_field.dart';
 import '../../../../shared/ui/text/app_tag.dart';
+import '../../../../shared/ui/toast/app_toast.dart';
 import '../../domain/entities/todo.dart';
 import '../providers/todos_provider.dart';
 import '../providers/todos_state.dart';
@@ -90,7 +91,6 @@ class _TodoEditScreenState extends ConsumerState<TodoEditScreen> {
   Future<void> _delete() async {
     if (!_isEditing) return;
 
-    final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
 
     final confirmed = await ConfirmActionDialog.show(
@@ -107,11 +107,7 @@ class _TodoEditScreenState extends ConsumerState<TodoEditScreen> {
     await ref.read(todosProvider(widget.listId).notifier).delete(widget.id!);
     if (!mounted) return;
 
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text('Tarea «$_hydratedTitle» eliminada.')),
-      );
+    AppToast.show(context, 'Tarea «$_hydratedTitle» eliminada.');
     router.pop();
   }
 

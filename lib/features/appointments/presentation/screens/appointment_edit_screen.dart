@@ -15,6 +15,7 @@ import '../../../../shared/ui/inputs/app_text_field.dart';
 import '../../../../shared/ui/inputs/field_notch.dart';
 import '../../../../shared/ui/pickers/date_time_pickers.dart';
 import '../../../../shared/ui/text/app_tag.dart';
+import '../../../../shared/ui/toast/app_toast.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../../settings/presentation/providers/settings_state.dart';
 import '../../domain/entities/appointment.dart';
@@ -136,7 +137,6 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
   Future<void> _delete() async {
     if (!_isEditing) return;
 
-    final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
 
     final confirmed = await ConfirmActionDialog.show(
@@ -153,11 +153,7 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
     await ref.read(appointmentsProvider.notifier).delete(widget.id!);
     if (!mounted) return;
 
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text('Cita «$_hydratedTitle» eliminada.')),
-      );
+    AppToast.show(context, 'Cita «$_hydratedTitle» eliminada.');
     router.pop();
   }
 

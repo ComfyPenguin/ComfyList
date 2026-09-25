@@ -137,12 +137,6 @@ class AppTheme {
         checkColor: WidgetStateProperty.all(c.onPrimary),
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.brMd),
       ),
-      snackBarTheme: SnackBarThemeData(
-        backgroundColor: c.surfaceDark,
-        contentTextStyle: AppTypography.bodySm.copyWith(color: c.onDark),
-        behavior: SnackBarBehavior.floating,
-        shape: const RoundedRectangleBorder(borderRadius: AppRadius.brXl),
-      ),
       dialogTheme: DialogThemeData(
         backgroundColor: c.canvas,
         surfaceTintColor: c.canvas,
