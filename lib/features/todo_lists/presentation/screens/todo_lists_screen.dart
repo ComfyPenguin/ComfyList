@@ -126,7 +126,7 @@ class _ListsState extends ConsumerState<_Lists> {
     _hintScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      AppToast.show(context, 'Mantén pulsada para editar.');
+      AppToast.show(context, 'Mantén pulsada una tarjeta para editarla.');
       ref.read(settingsProvider.notifier).setLongPressHintSeen(true);
     });
   }
