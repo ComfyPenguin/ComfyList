@@ -1,3 +1,4 @@
+import 'package:comfy_list/shared/core/theme/app_spacing.dart';
 import 'package:comfy_list/shared/core/theme/app_theme.dart';
 import 'package:comfy_list/shared/ui/toast/app_toast.dart';
 import 'package:flutter/material.dart';
@@ -21,6 +22,13 @@ void main() {
   /// que lo oculta, deja acabar la animación de salida y retira el overlay.
   Future<void> settleToastAway(WidgetTester tester) async {
     await tester.pump(const Duration(seconds: 4));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+  }
+
+  /// Igual, pero para un aviso con acción: aguanta 5 s en pantalla.
+  Future<void> settleToastAwayWithAction(WidgetTester tester) async {
+    await tester.pump(const Duration(seconds: 6));
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
   }
@@ -68,6 +76,34 @@ void main() {
     expect(toast.bottom, lessThanOrEqualTo(screen.height));
 
     await settleToastAway(tester);
+  });
+
+  testWidgets('el aviso con acción también cabe en pantalla estrecha', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(960, 1920);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    final context = await pumpHost(tester);
+
+    AppToast.showUndo(
+      context,
+      message: AppToast.appointmentDeleted,
+      onUndo: () async => true,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+
+    expect(tester.takeException(), isNull);
+    final screen = tester.getSize(find.byType(Scaffold));
+    // El mensaje cede el ancho que necesita la acción en vez de empujarla fuera.
+    expect(
+      tester.getRect(find.text(AppToast.undo)).right,
+      lessThanOrEqualTo(screen.width - AppSpacing.lg),
+    );
+
+    await settleToastAwayWithAction(tester);
   });
 
   testWidgets('un aviso nuevo reemplaza al anterior', (tester) async {
@@ -136,6 +172,41 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
     expect(find.text(AppToast.todoDeleted), findsNothing);
+  });
+
+  testWidgets('la acción es texto pulsable, separado del mensaje', (
+    tester,
+  ) async {
+    final context = await pumpHost(tester);
+
+    AppToast.showUndo(
+      context,
+      message: AppToast.todoDeleted,
+      onUndo: () async => true,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+
+    // Texto sin relleno, pero con respuesta al tacto: Material + InkWell.
+    final action = find.ancestor(
+      of: find.text(AppToast.undo),
+      matching: find.byType(InkWell),
+    );
+    expect(action, findsOneWidget);
+    expect(tester.getSize(action).height, greaterThanOrEqualTo(32));
+
+    // Y una línea fina entre los dos bloques, al alto del texto: no llega a
+    // cruzar el aviso de arriba abajo.
+    final separator = find.byWidgetPredicate(
+      (widget) => widget is Container && widget.constraints?.maxWidth == 1,
+    );
+    expect(separator, findsOneWidget);
+    expect(
+      tester.getRect(separator).height,
+      lessThan(tester.getSize(action).height),
+    );
+
+    await settleToastAwayWithAction(tester);
   });
 
   testWidgets('si no se puede deshacer, lo dice en otro aviso', (tester) async {

@@ -210,6 +210,14 @@ class _ToastCardState extends State<_ToastCard>
                         ),
                         if (actionLabel != null) ...[
                           const SizedBox(width: AppSpacing.md),
+                          // Línea al alto de la línea de texto: separa los dos
+                          // bloques sin partir el aviso en dos.
+                          Container(
+                            width: 1,
+                            height: AppSpacing.xl,
+                            color: colors.onPrimary.withValues(alpha: 0.24),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
                           _ToastAction(
                             label: actionLabel,
                             onTap: _runAction,
@@ -228,7 +236,10 @@ class _ToastCardState extends State<_ToastCard>
   }
 }
 
-/// Acción del aviso, como una pastilla dentro de él.
+/// Acción del aviso: texto en negrita, sin relleno, con su respuesta al tacto.
+///
+/// Sobre el `Material` transparente el ripple sí se ve: se pinta por encima del
+/// fondo del aviso, que es un `DecoratedBox` de un ancestro.
 class _ToastAction extends StatelessWidget {
   const _ToastAction({required this.label, required this.onTap});
 
@@ -238,22 +249,27 @@ class _ToastAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return GestureDetector(
-      onTap: onTap,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: colors.onPrimary.withValues(alpha: 0.16),
+    return Semantics(
+      button: true,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
           borderRadius: AppRadius.brPill,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: AppSpacing.xs,
-          ),
-          child: Text(
-            label,
-            style: AppTypography.bodySmStrong.copyWith(
-              color: colors.onPrimary,
+          // El brillo del tema apenas se distingue sobre el primario, así que
+          // el del pulsar sale del color que contrasta.
+          splashColor: colors.onPrimary.withValues(alpha: 0.18),
+          highlightColor: colors.onPrimary.withValues(alpha: 0.1),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.sm,
+            ),
+            child: Text(
+              label,
+              style: AppTypography.bodySmStrong.copyWith(
+                color: colors.onPrimary,
+              ),
             ),
           ),
         ),
