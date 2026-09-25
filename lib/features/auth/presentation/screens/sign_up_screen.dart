@@ -8,9 +8,11 @@ import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/ui/buttons/primary_button.dart';
 import '../../../../shared/ui/inputs/app_text_field.dart';
+import '../../domain/entities/password_policy.dart';
 import '../providers/auth_provider.dart';
 import '../providers/auth_state.dart';
 import '../widgets/google_sign_in_section.dart';
+import '../widgets/password_rules_checklist.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
   const SignUpScreen({super.key});
@@ -41,9 +43,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     setState(() {
       _emailError =
           _emailCtrl.text.contains('@') ? null : 'Introduce un correo válido.';
-      _passwordError = _passwordCtrl.text.length >= 6
+      _passwordError = PasswordPolicy.isValid(_passwordCtrl.text)
           ? null
-          : 'La contraseña debe tener al menos 6 caracteres.';
+          : 'La contraseña no cumple los requisitos.';
       _confirmError = _passwordConfirmCtrl.text == _passwordCtrl.text
           ? null
           : 'Las contraseñas no coinciden.';
@@ -166,29 +168,45 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   // superior al rellenar el anterior.
                   _RevealSlide(
                     visible: _emailCtrl.text.trim().isNotEmpty,
-                    child: AppTextField(
-                      controller: _passwordCtrl,
-                      label: 'Contraseña',
-                      obscureText: _obscurePassword,
-                      textInputAction: TextInputAction.next,
-                      // Si se borra la contraseña se elimina también la
-                      // confirmación para ocultar ese campo de nuevo.
-                      onChanged: (_) {
-                        if (_passwordCtrl.text.isEmpty) {
-                          _passwordConfirmCtrl.clear();
-                          _confirmError = null;
-                        }
-                        setState(() {});
-                      },
-                      errorText: _passwordError,
-                      cardStyle: true,
-                      suffixIcon: _buildVisibilityToggle(
-                        obscure: _obscurePassword,
-                        onToggle: () => setState(
-                          () => _obscurePassword = !_obscurePassword,
+                    child: Column(
+                      children: [
+                        AppTextField(
+                          controller: _passwordCtrl,
+                          label: 'Contraseña',
+                          obscureText: _obscurePassword,
+                          textInputAction: TextInputAction.next,
+                          // Si se borra la contraseña se elimina también la
+                          // confirmación para ocultar ese campo de nuevo.
+                          onChanged: (_) {
+                            if (_passwordCtrl.text.isEmpty) {
+                              _passwordConfirmCtrl.clear();
+                              _confirmError = null;
+                            }
+                            // Con los requisitos a la vista, dejar el aviso
+                            // rojo cuando ya se cumplen sobra: se limpia solo.
+                            if (_passwordError != null &&
+                                PasswordPolicy.isValid(_passwordCtrl.text)) {
+                              _passwordError = null;
+                            }
+                            setState(() {});
+                          },
+                          errorText: _passwordError,
+                          cardStyle: true,
+                          suffixIcon: _buildVisibilityToggle(
+                            obscure: _obscurePassword,
+                            onToggle: () => setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            ),
+                            colors: colors,
+                          ),
                         ),
-                        colors: colors,
-                      ),
+                        _RevealSlide(
+                          visible: _passwordCtrl.text.isNotEmpty,
+                          child: PasswordRulesChecklist(
+                            password: _passwordCtrl.text,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   _RevealSlide(
