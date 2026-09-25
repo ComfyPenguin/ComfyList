@@ -187,13 +187,19 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 250));
 
-    // Texto sin relleno, pero con respuesta al tacto: Material + InkWell.
+    // Icono y texto sin relleno, pero con respuesta al tacto: Material + InkWell.
     final action = find.ancestor(
       of: find.text(AppToast.undo),
       matching: find.byType(InkWell),
     );
     expect(action, findsOneWidget);
     expect(tester.getSize(action).height, greaterThanOrEqualTo(32));
+    // El icono va delante de la etiqueta, dentro de la acción.
+    expect(find.byIcon(Icons.undo_rounded), findsOneWidget);
+    expect(
+      tester.getRect(find.byIcon(Icons.undo_rounded)).right,
+      lessThan(tester.getRect(find.text(AppToast.undo)).left),
+    );
 
     // Y una línea fina entre los dos bloques, al alto del texto: no llega a
     // cruzar el aviso de arriba abajo.

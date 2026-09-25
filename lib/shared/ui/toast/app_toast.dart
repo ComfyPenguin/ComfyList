@@ -236,7 +236,7 @@ class _ToastCardState extends State<_ToastCard>
   }
 }
 
-/// Acción del aviso: texto en negrita, sin relleno, con su respuesta al tacto.
+/// Acción del aviso: el icono de deshacer y el texto en negrita, sin relleno.
 ///
 /// Sobre el `Material` transparente el ripple sí se ve: se pinta por encima del
 /// fondo del aviso, que es un `DecoratedBox` de un ancestro.
@@ -265,11 +265,22 @@ class _ToastAction extends StatelessWidget {
               horizontal: AppSpacing.sm,
               vertical: AppSpacing.sm,
             ),
-            child: Text(
-              label,
-              style: AppTypography.bodySmStrong.copyWith(
-                color: colors.onPrimary,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.undo_rounded,
+                  size: 16,
+                  color: colors.onPrimary,
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Text(
+                  label,
+                  style: AppTypography.bodySmStrong.copyWith(
+                    color: colors.onPrimary,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
