@@ -34,7 +34,7 @@ void main() {
   });
 
   const longName = 'Compra semanal del supermercado';
-  const hintText = 'Mantén pulsada una tarjeta para editarla.';
+  const hintText = 'Mantén pulsada para editar.';
 
   Future<void> pumpScreen(
     WidgetTester tester, {

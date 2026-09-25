@@ -126,7 +126,7 @@ class _ListsState extends ConsumerState<_Lists> {
     _hintScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      AppToast.show(context, 'Mantén pulsada una tarjeta para editarla.');
+      AppToast.show(context, 'Mantén pulsada para editar.');
       ref.read(settingsProvider.notifier).setLongPressHintSeen(true);
     });
   }
@@ -165,7 +165,7 @@ class _ListsState extends ConsumerState<_Lists> {
           onDelete: () async {
             await notifier.delete(list.id);
             if (!context.mounted) return;
-            AppToast.show(context, 'Lista «${list.name}» eliminada.');
+            AppToast.show(context, 'Lista eliminada.');
           },
         );
       },

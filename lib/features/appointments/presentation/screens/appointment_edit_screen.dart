@@ -153,7 +153,7 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
     await ref.read(appointmentsProvider.notifier).delete(widget.id!);
     if (!mounted) return;
 
-    AppToast.show(context, 'Cita «$_hydratedTitle» eliminada.');
+    AppToast.show(context, 'Cita eliminada.');
     router.pop();
   }
 

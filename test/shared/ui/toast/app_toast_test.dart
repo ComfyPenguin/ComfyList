@@ -44,6 +44,31 @@ void main() {
     expect(find.text('Lista «Compras» eliminada.'), findsNothing);
   });
 
+  testWidgets('un mensaje largo en pantalla estrecha no desborda', (
+    tester,
+  ) async {
+    // 320 x 640 lógicos: lo más estrecho que se sigue usando.
+    tester.view.physicalSize = const Size(960, 1920);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    final context = await pumpHost(tester);
+    const message = 'Sigue bloqueado: actívalos en los ajustes del sistema.';
+
+    AppToast.show(context, message);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+
+    // Un desborde llega aquí como excepción: no haberla es la comprobación.
+    expect(tester.takeException(), isNull);
+    // Y el aviso cabe entero dentro de la pantalla, sin cortarse por abajo.
+    final screen = tester.getSize(find.byType(Scaffold));
+    final toast = tester.getRect(find.text(message));
+    expect(toast.bottom, lessThanOrEqualTo(screen.height));
+
+    await settleToastAway(tester);
+  });
+
   testWidgets('un aviso nuevo reemplaza al anterior', (tester) async {
     final context = await pumpHost(tester);
 

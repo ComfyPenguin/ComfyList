@@ -328,7 +328,7 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
           onDelete: (appt) async {
             await notifier.delete(appt.id);
             if (!context.mounted) return;
-            AppToast.show(context, 'Cita «${appt.title}» eliminada.');
+            AppToast.show(context, 'Cita eliminada.');
           },
           onRevealProgressChanged: (appt, progress) {
             _setTileRevealProgress(

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_shadow.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/app_typography.dart';
@@ -65,7 +66,7 @@ class _ToastCard extends StatefulWidget {
 
 class _ToastCardState extends State<_ToastCard>
     with SingleTickerProviderStateMixin {
-  static const Duration _visibleFor = Duration(seconds: 3);
+  static const Duration _visibleFor = Duration(seconds: 2);
   static const Duration _slide = Duration(milliseconds: 200);
 
   late final AnimationController _controller;
@@ -120,26 +121,26 @@ class _ToastCardState extends State<_ToastCard>
             child: GestureDetector(
               onTap: _hide,
               child: DecoratedBox(
+                // Primario de la app: oscuro en claro y claro en oscuro, el
+                // contraste inverso al canvas. Con su halo de elemento primario.
                 decoration: BoxDecoration(
-                  color: colors.surfaceDark,
+                  color: colors.primary,
                   borderRadius: AppRadius.brPill,
-                  boxShadow: [
-                    BoxShadow(
-                      color: colors.shadowDark,
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
+                  boxShadow: AppShadow.primaryGlow(colors),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.xl,
-                    vertical: AppSpacing.md,
+                    vertical: AppSpacing.sm,
                   ),
                   child: Text(
                     widget.message,
                     textAlign: TextAlign.center,
-                    style: AppTypography.bodySm.copyWith(color: colors.onDark),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.bodySm.copyWith(
+                      color: colors.onPrimary,
+                    ),
                   ),
                 ),
               ),
