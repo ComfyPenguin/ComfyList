@@ -20,6 +20,7 @@ import '../features/todos/presentation/screens/todo_edit_screen.dart';
 import '../features/todos/presentation/screens/todos_screen.dart';
 import '../shared/core/theme/app_theme.dart';
 import '../shared/ui/navigation/app_shell.dart';
+import '../shared/ui/secure_screen.dart';
 import 'routes.dart';
 
 /// Adapta el estado de auth y datos al `Listenable` de GoRouter.
@@ -87,13 +88,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: Routes.home,
         pageBuilder: (context, state) => _instantPage(const _HomeGate()),
       ),
+      // Las pantallas de acceso van blindadas: sin capturas mientras se
+      // escribe la contraseña.
       GoRoute(
         path: Routes.signIn,
-        pageBuilder: (context, state) => _instantPage(const SignInScreen()),
+        pageBuilder: (context, state) =>
+            _instantPage(const SecureScreen(child: SignInScreen())),
       ),
       GoRoute(
         path: Routes.signUp,
-        pageBuilder: (context, state) => _instantPage(const SignUpScreen()),
+        pageBuilder: (context, state) =>
+            _instantPage(const SecureScreen(child: SignUpScreen())),
       ),
 
       // Shell persistente: TopBar + BottomBar + FAB compartidos.
