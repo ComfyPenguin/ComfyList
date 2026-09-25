@@ -24,6 +24,7 @@ class SettingsRepositoryImpl implements SettingsRepository {
       appointmentReminderMinutes: AppSettings.parseReminderMinutes(
         row.appointmentReminderMinutes,
       ),
+      longPressHintSeen: row.longPressHintSeen,
     );
   }
 
@@ -42,6 +43,7 @@ class SettingsRepositoryImpl implements SettingsRepository {
             appointmentReminderMinutes: AppSettings.parseReminderMinutes(
               row.appointmentReminderMinutes,
             ),
+            longPressHintSeen: row.longPressHintSeen,
           ),
         );
   }
@@ -91,5 +93,10 @@ class SettingsRepositoryImpl implements SettingsRepository {
     return _local.updateAppointmentReminderMinutes(
       AppSettings.reminderMinutesToString(minutes),
     );
+  }
+
+  @override
+  Future<void> setLongPressHintSeen(bool seen) {
+    return _local.updateLongPressHintSeen(seen);
   }
 }

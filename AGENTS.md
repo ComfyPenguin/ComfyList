@@ -45,7 +45,7 @@ flutter analyze             # Análisis estático
 
 ## Modelo de datos (Drift)
 
-- Schema v9 con migraciones `onUpgrade` secuenciales (una condición `if (from < N)` por columna añadida, y `schemaVersion` a juego). Un cambio de tipo de columna no es un `addColumn`: pide `migrator.alterTable(TableMigration(...))` con el `columnTransformer` que la convierta.
+- Schema v10 con migraciones `onUpgrade` secuenciales (una condición `if (from < N)` por columna añadida, y `schemaVersion` a juego). Un cambio de tipo de columna no es un `addColumn`: pide `migrator.alterTable(TableMigration(...))` con el `columnTransformer` que la convierta. Ojo: `alterTable` recrea la tabla con el esquema **actual**, así que las columnas añadidas después de esa versión van en su `newColumns` y su propio `addColumn` se condiciona a `if (from == N)`.
 - **Tablas**: `settings_table` (singleton id=1), `account_cache_table`
 - `AppDatabase` se instancia en `main()` y se inyecta via `ProviderScope` override
 - Tests: `AppDatabase.forTesting(NativeDatabase.memory())`

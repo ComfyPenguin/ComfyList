@@ -80,6 +80,9 @@ class SettingsNotifier extends Notifier<SettingsState> {
 
   Future<void> setAppointmentReminderMinutes(List<int> minutes) =>
       ref.read(settingsRepositoryProvider).setAppointmentReminderMinutes(minutes);
+
+  Future<void> setLongPressHintSeen(bool seen) =>
+      ref.read(settingsRepositoryProvider).setLongPressHintSeen(seen);
 }
 
 final settingsProvider =

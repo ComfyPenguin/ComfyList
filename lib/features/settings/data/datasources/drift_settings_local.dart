@@ -34,4 +34,7 @@ class DriftSettingsLocal {
 
   Future<void> updateAppointmentReminderMinutes(String minutes) =>
       _dao.updateAppointmentReminderMinutes(minutes);
+
+  Future<void> updateLongPressHintSeen(bool seen) =>
+      _dao.updateLongPressHintSeen(seen);
 }

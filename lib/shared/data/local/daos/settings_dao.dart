@@ -121,4 +121,14 @@ class SettingsDao extends DatabaseAccessor<AppDatabase> with _$SettingsDaoMixin 
       ),
     );
   }
+
+  Future<void> updateLongPressHintSeen(bool seen) async {
+    await getOrCreate();
+    await (update(settingsTable)..where((t) => t.id.equals(1))).write(
+      SettingsTableCompanion(
+        longPressHintSeen: Value(seen),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+  }
 }
