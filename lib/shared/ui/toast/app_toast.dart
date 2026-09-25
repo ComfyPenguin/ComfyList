@@ -17,6 +17,16 @@ import '../../core/theme/app_typography.dart';
 class AppToast {
   AppToast._();
 
+  /// Textos de los avisos. Cada mensaje vive aquí una sola vez, aunque lo
+  /// muestren varias pantallas.
+  static const String listDeleted = 'Lista eliminada.';
+  static const String todoDeleted = 'Tarea eliminada.';
+  static const String appointmentDeleted = 'Cita eliminada.';
+  static const String longPressHint =
+      'Mantén pulsada una tarjeta para editarla.';
+  static const String notificationsStillBlocked =
+      'Sigue bloqueado: actívalos en los ajustes del sistema.';
+
   /// Alto de la barra superior del shell por debajo del área segura: el
   /// IconButton (48) más su padding inferior (8), ver `app_shell.dart`.
   static const double _shellTopBarHeight = 56;

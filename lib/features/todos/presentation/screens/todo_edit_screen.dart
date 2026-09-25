@@ -107,7 +107,7 @@ class _TodoEditScreenState extends ConsumerState<TodoEditScreen> {
     await ref.read(todosProvider(widget.listId).notifier).delete(widget.id!);
     if (!mounted) return;
 
-    AppToast.show(context, 'Tarea eliminada.');
+    AppToast.show(context, AppToast.todoDeleted);
     router.pop();
   }
 

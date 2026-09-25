@@ -91,10 +91,7 @@ class ReminderWarning extends ConsumerWidget {
     if (!granted) {
       // El sistema puede negarse sin volver a preguntar, y sus ajustes no hay
       // forma de abrirlos desde aquí: al menos que no se quede en silencio.
-      AppToast.show(
-        context,
-        'Sigue bloqueado: actívalos en los ajustes del sistema.',
-      );
+      AppToast.show(context, AppToast.notificationsStillBlocked);
       return;
     }
     ref.invalidate(systemAllowsNotificationsProvider);

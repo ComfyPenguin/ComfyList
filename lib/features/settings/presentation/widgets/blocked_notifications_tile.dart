@@ -49,10 +49,7 @@ class BlockedNotificationsTile extends ConsumerWidget {
         }
         // El sistema deja de preguntar tras dos negativas y sus ajustes no hay
         // forma de abrirlos desde aquí: al menos que no se quede en silencio.
-        AppToast.show(
-          context,
-          'Sigue bloqueado: actívalos en los ajustes del sistema.',
-        );
+        AppToast.show(context, AppToast.notificationsStillBlocked);
       },
     );
   }
