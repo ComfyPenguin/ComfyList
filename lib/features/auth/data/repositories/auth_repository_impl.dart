@@ -287,6 +287,15 @@ class AuthRepositoryImpl implements AuthRepository {
     }
     if (code == 'EMAIL_EXISTS') return const EmailAlreadyInUseFailure();
     if (code.startsWith('WEAK_PASSWORD')) return const WeakPasswordFailure();
+    // Estos códigos existen para el usuario, no para que los lea tal cual: sin
+    // mapear, el aviso de la pantalla enseñaba «TOO_MANY_ATTEMPTS_TRY_LATER».
+    if (code == 'TOO_MANY_ATTEMPTS_TRY_LATER') {
+      return const TooManyAttemptsFailure();
+    }
+    if (code == 'USER_DISABLED') return const AccountDisabledFailure();
+    if (code == 'PASSWORD_LOGIN_DISABLED' || code == 'OPERATION_NOT_ALLOWED') {
+      return const PasswordLoginDisabledFailure();
+    }
     return ServerFailure(code);
   }
 }

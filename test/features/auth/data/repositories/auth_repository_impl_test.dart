@@ -33,6 +33,23 @@ void main() {
     );
   });
 
+  /// Respuesta de error de Identity Toolkit con el código dado.
+  DioException badResponse(String code) => DioException(
+        requestOptions: RequestOptions(path: ''),
+        type: DioExceptionType.badResponse,
+        response: Response<dynamic>(
+          requestOptions: RequestOptions(path: ''),
+          statusCode: 400,
+          data: <String, dynamic>{
+            'error': <String, dynamic>{
+              'code': 400,
+              'message': code,
+              'status': 'INVALID_ARGUMENT',
+            },
+          },
+        ),
+      );
+
   group('AuthRepositoryImpl.signIn', () {
     test('returns Ok(AuthUser) and persists session + cache on success',
         () async {
@@ -143,6 +160,47 @@ void main() {
 
       expect(res.isErr, isTrue);
       expect((res as Err).failure, isA<EmailAlreadyInUseFailure>());
+    });
+  });
+
+  group('AuthRepositoryImpl traduce los códigos de Identity Toolkit', () {
+    test('ninguno llega crudo a la pantalla', () async {
+      final cases = <String, Type>{
+        'TOO_MANY_ATTEMPTS_TRY_LATER': TooManyAttemptsFailure,
+        'USER_DISABLED': AccountDisabledFailure,
+        'PASSWORD_LOGIN_DISABLED': PasswordLoginDisabledFailure,
+        'OPERATION_NOT_ALLOWED': PasswordLoginDisabledFailure,
+        'INVALID_LOGIN_CREDENTIALS': InvalidCredentialsFailure,
+        'EMAIL_EXISTS': EmailAlreadyInUseFailure,
+      };
+
+      for (final entry in cases.entries) {
+        when(() => remote.signInWithPassword(
+              email: any(named: 'email'),
+              password: any(named: 'password'),
+            )).thenThrow(badResponse(entry.key));
+
+        final res = await repo.signIn(email: 'a@b.c', password: 'pw123456');
+
+        expect(res.isErr, isTrue);
+        expect(
+          (res as Err).failure.runtimeType,
+          entry.value,
+          reason: 'El código ${entry.key} debe llegar traducido.',
+        );
+      }
+    });
+
+    test('un código desconocido cae en ServerFailure, no se inventa', () async {
+      when(() => remote.signInWithPassword(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+          )).thenThrow(badResponse('SOMETHING_NEW'));
+
+      final res = await repo.signIn(email: 'a@b.c', password: 'pw123456');
+
+      expect(res.isErr, isTrue);
+      expect((res as Err).failure, isA<ServerFailure>());
     });
   });
 
