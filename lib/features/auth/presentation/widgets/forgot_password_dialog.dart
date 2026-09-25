@@ -8,6 +8,7 @@ import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/ui/buttons/primary_button.dart';
 import '../../../../shared/ui/inputs/app_text_field.dart';
+import '../../domain/entities/email_policy.dart';
 import '../providers/auth_provider.dart';
 
 /// Dialog modal para solicitar restablecimiento de contraseña.
@@ -54,7 +55,7 @@ class _ForgotPasswordDialogState extends ConsumerState<ForgotPasswordDialog> {
 
   bool _validate() {
     setState(() {
-      _emailError = _emailCtrl.text.trim().contains('@')
+      _emailError = EmailPolicy.isValid(_emailCtrl.text)
           ? null
           : 'Introduce un correo válido.';
       _serverError = null;

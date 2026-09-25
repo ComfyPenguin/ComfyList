@@ -8,6 +8,7 @@ import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/ui/buttons/primary_button.dart';
 import '../../../../shared/ui/inputs/app_text_field.dart';
+import '../../domain/entities/email_policy.dart';
 import '../providers/auth_provider.dart';
 import '../providers/auth_state.dart';
 import '../widgets/forgot_password_dialog.dart';
@@ -52,8 +53,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
   bool _validate() {
     setState(() {
-      _emailError =
-          _emailCtrl.text.contains('@') ? null : 'Introduce un correo válido.';
+      _emailError = EmailPolicy.isValid(_emailCtrl.text)
+          ? null
+          : 'Introduce un correo válido.';
       _passwordError = _passwordCtrl.text.length >= 6
           ? null
           : 'La contraseña debe tener al menos 6 caracteres.';

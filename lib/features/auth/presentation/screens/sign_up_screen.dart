@@ -8,6 +8,7 @@ import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/ui/buttons/primary_button.dart';
 import '../../../../shared/ui/inputs/app_text_field.dart';
+import '../../domain/entities/email_policy.dart';
 import '../../domain/entities/password_policy.dart';
 import '../providers/auth_provider.dart';
 import '../providers/auth_state.dart';
@@ -41,8 +42,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
   bool _validate() {
     setState(() {
-      _emailError =
-          _emailCtrl.text.contains('@') ? null : 'Introduce un correo válido.';
+      _emailError = EmailPolicy.isValid(_emailCtrl.text)
+          ? null
+          : 'Introduce un correo válido.';
       _passwordError = PasswordPolicy.isValid(_passwordCtrl.text)
           ? null
           : 'La contraseña no cumple los requisitos.';
