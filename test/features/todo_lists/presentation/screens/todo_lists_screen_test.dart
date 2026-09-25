@@ -34,11 +34,21 @@ void main() {
   });
 
   const longName = 'Compra semanal del supermercado';
+  const hintText = 'Mantén pulsada una tarjeta para editarla.';
 
   Future<void> pumpScreen(
     WidgetTester tester, {
     Size physicalSize = const Size(1170, 2400),
+    // Por defecto la pista ya está vista: así no interfiere en los demás tests.
+    FakeSettingsRepository? settings,
   }) async {
+    final repo =
+        settings ??
+        FakeSettingsRepository(
+          settings: buildAppSettings(longPressHintSeen: true),
+        );
+    addTearDown(repo.close);
+
     tester.view.physicalSize = physicalSize;
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
@@ -52,13 +62,12 @@ void main() {
               buildTodoList(id: 'L2', name: 'Casa'),
             ]),
           ),
-          settingsRepositoryProvider.overrideWithValue(
-            FakeSettingsRepository(),
-          ),
+          settingsRepositoryProvider.overrideWithValue(repo),
         ],
         child: MaterialApp(
           theme: AppTheme.light(),
-          home: const TodoListsScreen(),
+          // El Scaffold permite mostrar el SnackBar de la pista.
+          home: const Scaffold(body: TodoListsScreen()),
         ),
       ),
     );
@@ -92,14 +101,16 @@ void main() {
             ]),
           ),
           settingsRepositoryProvider.overrideWithValue(
-            FakeSettingsRepository(),
+            FakeSettingsRepository(
+              settings: buildAppSettings(longPressHintSeen: true),
+            ),
           ),
         ],
         child: MaterialApp.router(
           theme: AppTheme.light(),
           routerConfig: buildTestRouter(
             initialLocation: Routes.todoLists,
-            home: const TodoListsScreen(),
+            home: const Scaffold(body: TodoListsScreen()),
             probes: {Routes.todoListEdit('L1'): 'EDITAR LISTA L1'},
           ),
         ),
@@ -118,5 +129,30 @@ void main() {
     await tester.pump();
 
     expect(find.text('EDITAR LISTA L1'), findsOneWidget);
+  });
+
+  testWidgets('la primera visita muestra la pista y la marca como vista', (
+    tester,
+  ) async {
+    final repo = FakeSettingsRepository();
+    await pumpScreen(tester, settings: repo);
+
+    expect(find.text(hintText), findsOneWidget);
+    expect((await repo.load()).longPressHintSeen, isTrue);
+
+    // Deja que el SnackBar se oculte solo y no quede su temporizador pendiente.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump(const Duration(milliseconds: 400));
+  });
+
+  testWidgets('con la pista ya vista no vuelve a aparecer', (tester) async {
+    await pumpScreen(
+      tester,
+      settings: FakeSettingsRepository(
+        settings: buildAppSettings(longPressHintSeen: true),
+      ),
+    );
+
+    expect(find.text(hintText), findsNothing);
   });
 }

@@ -16,6 +16,7 @@ void main() {
       expect(defaults.invertSwipeActions, isFalse);
       expect(defaults.use24HourFormat, isTrue);
       expect(defaults.appointmentReminderMinutes, [30]);
+      expect(defaults.longPressHintSeen, isFalse);
     });
   });
 
@@ -43,6 +44,7 @@ void main() {
         updated.appointmentReminderMinutes,
         baseline.appointmentReminderMinutes,
       );
+      expect(updated.longPressHintSeen, baseline.longPressHintSeen);
     });
 
     test('devuelve una instancia nueva (inmutable)', () {
@@ -69,6 +71,7 @@ void main() {
         appointmentsTodayOnTop: false,
         invertSwipeActions: true,
         appointmentReminderMinutes: const [5, 60],
+        longPressHintSeen: true,
       );
 
       expect(updated.themeMode, ThemeMode.light);
@@ -78,6 +81,7 @@ void main() {
       expect(updated.appointmentsTodayOnTop, isFalse);
       expect(updated.invertSwipeActions, isTrue);
       expect(updated.appointmentReminderMinutes, [5, 60]);
+      expect(updated.longPressHintSeen, isTrue);
       expect(updated.notificationsEnabled, baseline.notificationsEnabled);
       expect(
         updated.appointmentsCompletionEnabled,

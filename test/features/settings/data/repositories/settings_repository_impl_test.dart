@@ -29,6 +29,7 @@ void main() {
     bool invertSwipeActions = false,
     bool use24HourFormat = true,
     String appointmentReminderMinutes = '30',
+    bool longPressHintSeen = false,
   }) {
     return SettingsRow(
       id: 1,
@@ -41,6 +42,7 @@ void main() {
       invertSwipeActions: invertSwipeActions,
       use24HourFormat: use24HourFormat,
       appointmentReminderMinutes: appointmentReminderMinutes,
+      longPressHintSeen: longPressHintSeen,
       updatedAt: DateTime.utc(2026, 6, 30, 12),
     );
   }
@@ -60,6 +62,17 @@ void main() {
       expect(result.invertSwipeActions, isFalse);
       expect(result.use24HourFormat, isTrue);
       expect(result.appointmentReminderMinutes, [30]);
+      expect(result.longPressHintSeen, isFalse);
+    });
+
+    test('mapea longPressHintSeen desde la fila', () async {
+      when(
+        () => local.getOrCreate(),
+      ).thenAnswer((_) async => buildRow(longPressHintSeen: true));
+
+      final result = await repo.load();
+
+      expect(result.longPressHintSeen, isTrue);
     });
 
     test('lee la lista de márgenes guardada', () async {
@@ -163,6 +176,7 @@ void main() {
         () => local.updateInvertSwipeActions(any()),
       ).thenAnswer((_) async {});
       when(() => local.updateUse24HourFormat(any())).thenAnswer((_) async {});
+      when(() => local.updateLongPressHintSeen(any())).thenAnswer((_) async {});
 
       await repo.setNotificationsEnabled(false);
       await repo.setAppointmentsCompletionEnabled(true);
@@ -171,6 +185,7 @@ void main() {
       await repo.setAppointmentsTodayOnTop(false);
       await repo.setInvertSwipeActions(true);
       await repo.setUse24HourFormat(false);
+      await repo.setLongPressHintSeen(true);
 
       verify(() => local.updateNotificationsEnabled(false)).called(1);
       verify(() => local.updateAppointmentsCompletionEnabled(true)).called(1);
@@ -179,6 +194,7 @@ void main() {
       verify(() => local.updateAppointmentsTodayOnTop(false)).called(1);
       verify(() => local.updateInvertSwipeActions(true)).called(1);
       verify(() => local.updateUse24HourFormat(false)).called(1);
+      verify(() => local.updateLongPressHintSeen(true)).called(1);
     });
   });
 

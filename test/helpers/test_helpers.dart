@@ -93,6 +93,7 @@ AppSettings buildAppSettings({
   bool? invertSwipeActions,
   bool? use24HourFormat,
   List<int>? appointmentReminderMinutes,
+  bool? longPressHintSeen,
 }) {
   return AppSettings(
     themeMode: themeMode ?? AppSettings.defaults.themeMode,
@@ -114,6 +115,8 @@ AppSettings buildAppSettings({
     appointmentReminderMinutes:
         appointmentReminderMinutes ??
         AppSettings.defaults.appointmentReminderMinutes,
+    longPressHintSeen:
+        longPressHintSeen ?? AppSettings.defaults.longPressHintSeen,
   );
 }
 
@@ -130,6 +133,7 @@ SettingsRow buildSettingsRow({
   bool invertSwipeActions = false,
   bool use24HourFormat = true,
   String appointmentReminderMinutes = '30',
+  bool longPressHintSeen = false,
   DateTime? updatedAt,
 }) {
   return SettingsRow(
@@ -143,6 +147,7 @@ SettingsRow buildSettingsRow({
     invertSwipeActions: invertSwipeActions,
     use24HourFormat: use24HourFormat,
     appointmentReminderMinutes: appointmentReminderMinutes,
+    longPressHintSeen: longPressHintSeen,
     updatedAt: updatedAt ?? DateTime.now().toUtc(),
   );
 }
