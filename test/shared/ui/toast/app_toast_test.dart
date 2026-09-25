@@ -1,6 +1,7 @@
 import 'package:comfy_list/shared/core/theme/app_theme.dart';
 import 'package:comfy_list/shared/ui/toast/app_toast.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -83,6 +84,25 @@ void main() {
 
     expect(find.text('Segundo'), findsOneWidget);
     expect(find.text('Primero'), findsNothing);
+
+    await settleToastAway(tester);
+  });
+
+  testWidgets('el texto no hereda el subrayado de error del overlay', (
+    tester,
+  ) async {
+    final context = await pumpHost(tester);
+
+    AppToast.show(context, 'Lista eliminada.');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+
+    // Fuera de un Material, el overlay raíz hereda el estilo de error de
+    // Flutter: subrayado doble en amarillo bajo el texto.
+    final paragraph = tester.renderObject<RenderParagraph>(
+      find.text('Lista eliminada.'),
+    );
+    expect(paragraph.text.style?.decoration, isNot(TextDecoration.underline));
 
     await settleToastAway(tester);
   });

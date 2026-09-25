@@ -120,26 +120,32 @@ class _ToastCardState extends State<_ToastCard>
             alignment: Alignment.topCenter,
             child: GestureDetector(
               onTap: _hide,
-              child: DecoratedBox(
-                // Primario de la app: oscuro en claro y claro en oscuro, el
-                // contraste inverso al canvas. Con su halo de elemento primario.
-                decoration: BoxDecoration(
-                  color: colors.primary,
-                  borderRadius: AppRadius.brPill,
-                  boxShadow: AppShadow.primaryGlow(colors),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.xl,
-                    vertical: AppSpacing.sm,
+              // El overlay raíz cuelga por encima del Navigator: sin un Material
+              // por medio, el texto hereda el estilo de error de Flutter y sale
+              // subrayado en amarillo.
+              child: Material(
+                type: MaterialType.transparency,
+                child: DecoratedBox(
+                  // Primario de la app: oscuro en claro y claro en oscuro, el
+                  // contraste inverso al canvas. Con su halo de elemento primario.
+                  decoration: BoxDecoration(
+                    color: colors.primary,
+                    borderRadius: AppRadius.brPill,
+                    boxShadow: AppShadow.primaryGlow(colors),
                   ),
-                  child: Text(
-                    widget.message,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.bodySm.copyWith(
-                      color: colors.onPrimary,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xl,
+                      vertical: AppSpacing.sm,
+                    ),
+                    child: Text(
+                      widget.message,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.bodySm.copyWith(
+                        color: colors.onPrimary,
+                      ),
                     ),
                   ),
                 ),
