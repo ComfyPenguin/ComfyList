@@ -22,6 +22,8 @@ class AppToast {
   static const String listDeleted = 'Lista eliminada.';
   static const String todoDeleted = 'Tarea eliminada.';
   static const String appointmentDeleted = 'Cita eliminada.';
+  static const String undo = 'Deshacer';
+  static const String undoFailed = 'No se pudo deshacer. Inténtalo de nuevo.';
   static const String longPressHint =
       'Mantén pulsada una tarjeta para editarla.';
   static const String notificationsStillBlocked =
@@ -34,7 +36,12 @@ class AppToast {
   static OverlayEntry? _entry;
 
   /// Muestra [message] arriba. Un aviso nuevo reemplaza al anterior.
-  static void show(BuildContext context, String message) {
+  static void show(
+    BuildContext context,
+    String message, {
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
     final overlay = Overlay.maybeOf(context, rootOverlay: true);
     if (overlay == null) return;
 
@@ -44,6 +51,8 @@ class AppToast {
     entry = OverlayEntry(
       builder: (_) => _ToastCard(
         message: message,
+        actionLabel: actionLabel,
+        onAction: onAction,
         onDismissed: () {
           if (!identical(_entry, entry)) return;
           _entry = null;
@@ -53,6 +62,25 @@ class AppToast {
     );
     _entry = entry;
     overlay.insert(entry);
+  }
+
+  /// Aviso de un borrado, con «Deshacer». [onUndo] devuelve si el elemento
+  /// volvió; si no, se avisa del fallo.
+  static void showUndo(
+    BuildContext context, {
+    required String message,
+    required Future<bool> Function() onUndo,
+  }) {
+    show(
+      context,
+      message,
+      actionLabel: undo,
+      onAction: () async {
+        if (await onUndo()) return;
+        if (!context.mounted) return;
+        show(context, undoFailed);
+      },
+    );
   }
 
   static void _removeCurrent() {
@@ -65,9 +93,16 @@ class AppToast {
 /// Card del aviso: entra deslizándose desde arriba, se queda unos segundos y
 /// se va sola. Tocarla la descarta antes de tiempo.
 class _ToastCard extends StatefulWidget {
-  const _ToastCard({required this.message, required this.onDismissed});
+  const _ToastCard({
+    required this.message,
+    required this.onDismissed,
+    this.actionLabel,
+    this.onAction,
+  });
 
   final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
   final VoidCallback onDismissed;
 
   @override
@@ -76,7 +111,9 @@ class _ToastCard extends StatefulWidget {
 
 class _ToastCardState extends State<_ToastCard>
     with SingleTickerProviderStateMixin {
+  /// Con acción el aviso necesita más tiempo: hay que leerlo y decidir.
   static const Duration _visibleFor = Duration(seconds: 2);
+  static const Duration _visibleForAction = Duration(seconds: 5);
   static const Duration _slide = Duration(milliseconds: 200);
 
   late final AnimationController _controller;
@@ -89,7 +126,10 @@ class _ToastCardState extends State<_ToastCard>
     _controller = AnimationController(vsync: this, duration: _slide);
     _curved = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
     _controller.forward();
-    _hideTimer = Timer(_visibleFor, _hide);
+    _hideTimer = Timer(
+      widget.actionLabel == null ? _visibleFor : _visibleForAction,
+      _hide,
+    );
   }
 
   @override
@@ -107,9 +147,15 @@ class _ToastCardState extends State<_ToastCard>
     });
   }
 
+  void _runAction() {
+    widget.onAction?.call();
+    _hide();
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final actionLabel = widget.actionLabel;
     final top =
         MediaQuery.paddingOf(context).top +
         AppToast._shellTopBarHeight +
@@ -148,18 +194,66 @@ class _ToastCardState extends State<_ToastCard>
                       horizontal: AppSpacing.xl,
                       vertical: AppSpacing.sm,
                     ),
-                    child: Text(
-                      widget.message,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.bodySm.copyWith(
-                        color: colors.onPrimary,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            widget.message,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.bodySm.copyWith(
+                              color: colors.onPrimary,
+                            ),
+                          ),
+                        ),
+                        if (actionLabel != null) ...[
+                          const SizedBox(width: AppSpacing.md),
+                          _ToastAction(
+                            label: actionLabel,
+                            onTap: _runAction,
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ),
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Acción del aviso, como una pastilla dentro de él.
+class _ToastAction extends StatelessWidget {
+  const _ToastAction({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return GestureDetector(
+      onTap: onTap,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colors.onPrimary.withValues(alpha: 0.16),
+          borderRadius: AppRadius.brPill,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.xs,
+          ),
+          child: Text(
+            label,
+            style: AppTypography.bodySmStrong.copyWith(
+              color: colors.onPrimary,
             ),
           ),
         ),

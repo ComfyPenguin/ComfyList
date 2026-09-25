@@ -107,6 +107,58 @@ void main() {
     await settleToastAway(tester);
   });
 
+  testWidgets('con «Deshacer» aguanta más tiempo en pantalla', (
+    tester,
+  ) async {
+    final context = await pumpHost(tester);
+    var undone = false;
+
+    AppToast.showUndo(
+      context,
+      message: AppToast.todoDeleted,
+      onUndo: () async {
+        undone = true;
+        return true;
+      },
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+
+    expect(find.text(AppToast.undo), findsOneWidget);
+    // A los 3 s sigue ahí: hay tiempo para decidir.
+    await tester.pump(const Duration(seconds: 3));
+    expect(find.text(AppToast.todoDeleted), findsOneWidget);
+
+    await tester.tap(find.text(AppToast.undo));
+    await tester.pump();
+
+    expect(undone, isTrue);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+    expect(find.text(AppToast.todoDeleted), findsNothing);
+  });
+
+  testWidgets('si no se puede deshacer, lo dice en otro aviso', (tester) async {
+    final context = await pumpHost(tester);
+
+    AppToast.showUndo(
+      context,
+      message: AppToast.todoDeleted,
+      onUndo: () async => false,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+
+    await tester.tap(find.text(AppToast.undo));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text(AppToast.undoFailed), findsOneWidget);
+
+    await settleToastAway(tester);
+    expect(find.text(AppToast.undoFailed), findsNothing);
+  });
+
   testWidgets('tocarlo lo descarta antes de tiempo', (tester) async {
     final context = await pumpHost(tester);
 
