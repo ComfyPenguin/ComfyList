@@ -46,3 +46,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Configuración de Firebase: la genera `flutterfire configure` (ver firebase.json),
+# cada persona la aporta en su clon y no se versiona.
+android/app/google-services.json
+lib/firebase_options.dart
