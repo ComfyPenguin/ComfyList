@@ -151,6 +151,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     hint: 'tu@correo.com',
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
+                    autofillHints: const [AutofillHints.email],
                     // Si se borra el correo se eliminan también las
                     // contraseñas para ocultar sus campos de nuevo.
                     onChanged: (_) {
@@ -177,6 +178,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                           label: 'Contraseña',
                           obscureText: _obscurePassword,
                           textInputAction: TextInputAction.next,
+                          // `newPassword` hace que el gestor ofrezca guardarla
+                          // (y genere una) en vez de rellenar la de siempre.
+                          autofillHints: const [AutofillHints.newPassword],
                           // Si se borra la contraseña se elimina también la
                           // confirmación para ocultar ese campo de nuevo.
                           onChanged: (_) {

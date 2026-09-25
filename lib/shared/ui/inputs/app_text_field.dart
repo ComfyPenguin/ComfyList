@@ -32,6 +32,7 @@ class AppTextField extends StatefulWidget {
     this.maxLines = 1,
     this.cardStyle = false,
     this.suffixIcon,
+    this.autofillHints,
   });
 
   final TextEditingController? controller;
@@ -58,6 +59,10 @@ class AppTextField extends StatefulWidget {
   /// Icono opcional al final del campo (p. ej. toggle de visibilidad).
   final Widget? suffixIcon;
 
+  /// Pistas para el autocompletado del sistema y los gestores de contraseñas
+  /// (`AutofillHints.username`, `AutofillHints.newPassword`…).
+  final Iterable<String>? autofillHints;
+
   /// Radio de la card del campo — espejo de las cards de citas.
   static const double _cardRadius = 32;
 
@@ -72,6 +77,11 @@ class _AppTextFieldState extends State<AppTextField> {
   bool _hasText = false;
 
   bool get _labelFloats => _focusNode.hasFocus || _hasText;
+
+  /// En un campo de contraseña el teclado no debe autocorregir ni aprender lo
+  /// que se escribe: fuera correcciones y sugerencias.
+  bool get _autocorrect => !widget.obscureText;
+  bool get _enableSuggestions => !widget.obscureText;
 
   /// Dentro del campo va la etiqueta completa; en el borde solo sube el título
   /// y en mayúsculas — Flutter no tiene `text-transform`, así que el texto se
@@ -153,6 +163,9 @@ class _AppTextFieldState extends State<AppTextField> {
         onSubmitted: widget.onSubmitted,
         enabled: widget.enabled,
         maxLines: widget.obscureText ? 1 : widget.maxLines,
+        autocorrect: _autocorrect,
+        enableSuggestions: _enableSuggestions,
+        autofillHints: widget.autofillHints,
         decoration: baseDecoration.copyWith(suffixIcon: widget.suffixIcon),
       );
     }
@@ -186,6 +199,9 @@ class _AppTextFieldState extends State<AppTextField> {
       onSubmitted: widget.onSubmitted,
       enabled: widget.enabled,
       maxLines: widget.obscureText ? 1 : widget.maxLines,
+      autocorrect: _autocorrect,
+      enableSuggestions: _enableSuggestions,
+      autofillHints: widget.autofillHints,
       decoration: cardDecoration,
     );
   }

@@ -188,6 +188,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
           hint: 'tu@correo.com',
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
+          // `username` junto a `password` es lo que agrupa el gestor para
+          // rellenar el par de un tirón.
+          autofillHints: const [AutofillHints.username],
           errorText: _emailError,
           cardStyle: true,
         ),
@@ -198,6 +201,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
           obscureText: _obscurePassword,
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => _submit(),
+          autofillHints: const [AutofillHints.password],
           errorText: _passwordError,
           cardStyle: true,
           suffixIcon: Padding(
