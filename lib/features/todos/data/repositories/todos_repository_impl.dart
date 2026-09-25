@@ -124,6 +124,25 @@ class TodosRepositoryImpl implements TodosRepository {
   }
 
   @override
+  Future<Result<Todo>> restoreTodo({
+    required String uid,
+    required String listId,
+    required Todo todo,
+  }) async {
+    try {
+      final restored = await _remote.restoreTodo(
+        uid: uid,
+        listId: listId,
+        todo: todo,
+      );
+      await _refresh(uid, listId);
+      return Ok(restored);
+    } on DioException catch (e) {
+      return Err(_mapDioError(e));
+    }
+  }
+
+  @override
   void pauseAll() {
     for (final w in _watchers.values) {
       w.pause();

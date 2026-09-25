@@ -34,6 +34,18 @@ class TodoDto {
     });
   }
 
+  /// Cuerpo para devolver a Firestore un todo borrado, tal y como estaba: el
+  /// `patch` sobre un documento inexistente lo vuelve a crear.
+  static Map<String, dynamic> toRestoreBody(Todo todo) {
+    return FirestoreValueCodec.encodeFields({
+      'title': todo.title,
+      'description': ?todo.description,
+      'isDone': todo.isDone,
+      'createdAt': todo.createdAt,
+      'updatedAt': todo.updatedAt,
+    });
+  }
+
   /// Cuerpo para `patch` con campos parciales.
   static (Map<String, dynamic> body, List<String> updateMask) toPatchBody({
     String? title,

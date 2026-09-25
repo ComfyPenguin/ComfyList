@@ -70,6 +70,18 @@ class FirestoreListsRemote {
     await _dio.delete<void>('${_collectionPath(uid)}/$id');
   }
 
+  /// Vuelve a escribir el documento de [list] con su mismo id.
+  Future<TodoList> restoreList({
+    required String uid,
+    required TodoList list,
+  }) async {
+    final res = await _dio.patch<Map<String, dynamic>>(
+      '${_collectionPath(uid)}/${list.id}',
+      data: TodoListDto.toRestoreBody(list),
+    );
+    return TodoListDto.fromDocument(res.data!);
+  }
+
   /// Lista los IDs de los documentos de la subcolección `todos` de una
   /// lista. Útil para el cascade delete (Firestore no borra subcolecciones
   /// automáticamente al eliminar el documento padre).

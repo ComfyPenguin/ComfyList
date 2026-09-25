@@ -145,4 +145,60 @@ void main() {
     verify(() => repo.deleteAppointment(uid: 'u1', id: 'a1')).called(1);
     expect(container.read(appointmentsProvider), isA<AppointmentsLoading>());
   });
+
+  test('delete recuerda la cita y undoLastDelete la devuelve', () async {
+    final controller = StreamController<List<Appointment>>();
+    when(() => repo.watchAppointments('u1'))
+        .thenAnswer((_) => controller.stream);
+    when(() => repo.deleteAppointment(uid: 'u1', id: 'a1'))
+        .thenAnswer((_) async => const Ok(null));
+    final appointment = buildAppointment(id: 'a1', title: 'Dentista');
+    when(() => repo.restoreAppointment(uid: 'u1', appointment: appointment))
+        .thenAnswer((_) async => Ok(appointment));
+
+    final container = createTestContainer(
+      authedUser: buildAuthUser(),
+      repositoryOverrides: {AppointmentsRepository: repo},
+    );
+    addTearDown(controller.close);
+
+    expect(container.read(appointmentsProvider), isA<AppointmentsLoading>());
+    controller.add([appointment]);
+    await pumpEventQueue();
+
+    final notifier = container.read(appointmentsProvider.notifier);
+    await notifier.delete('a1');
+
+    expect(await notifier.undoLastDelete(), isTrue);
+    verify(() => repo.restoreAppointment(uid: 'u1', appointment: appointment))
+        .called(1);
+  });
+
+  test('undoLastDelete dice que no si la restauración falla', () async {
+    final controller = StreamController<List<Appointment>>();
+    when(() => repo.watchAppointments('u1'))
+        .thenAnswer((_) => controller.stream);
+    when(() => repo.deleteAppointment(uid: 'u1', id: 'a1'))
+        .thenAnswer((_) async => const Ok(null));
+    final appointment = buildAppointment(id: 'a1');
+    when(() => repo.restoreAppointment(uid: 'u1', appointment: appointment))
+        .thenAnswer(
+      (_) async => const Err<Appointment>(ServerFailure('Error 500')),
+    );
+
+    final container = createTestContainer(
+      authedUser: buildAuthUser(),
+      repositoryOverrides: {AppointmentsRepository: repo},
+    );
+    addTearDown(controller.close);
+
+    expect(container.read(appointmentsProvider), isA<AppointmentsLoading>());
+    controller.add([appointment]);
+    await pumpEventQueue();
+
+    final notifier = container.read(appointmentsProvider.notifier);
+    await notifier.delete('a1');
+
+    expect(await notifier.undoLastDelete(), isFalse);
+  });
 }

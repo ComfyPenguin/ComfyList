@@ -86,4 +86,17 @@ class FirestoreRestRemote {
   }) async {
     await _dio.delete<void>('${_collectionPath(uid, listId)}/$id');
   }
+
+  /// Vuelve a escribir el documento de [todo] con su mismo id.
+  Future<Todo> restoreTodo({
+    required String uid,
+    required String listId,
+    required Todo todo,
+  }) async {
+    final res = await _dio.patch<Map<String, dynamic>>(
+      '${_collectionPath(uid, listId)}/${todo.id}',
+      data: TodoDto.toRestoreBody(todo),
+    );
+    return TodoDto.fromDocument(res.data!);
+  }
 }

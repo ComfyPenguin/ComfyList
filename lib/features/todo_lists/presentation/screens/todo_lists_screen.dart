@@ -165,7 +165,11 @@ class _ListsState extends ConsumerState<_Lists> {
           onDelete: () async {
             await notifier.delete(list.id);
             if (!context.mounted) return;
-            AppToast.show(context, AppToast.listDeleted);
+            AppToast.showUndo(
+              context,
+              message: AppToast.listDeleted,
+              onUndo: notifier.undoLastDelete,
+            );
           },
         );
       },

@@ -384,7 +384,11 @@ class _TodosListState extends ConsumerState<_TodosList> {
       onDelete: () async {
         await notifier.delete(todo.id);
         if (!context.mounted) return;
-        AppToast.show(context, AppToast.todoDeleted);
+        AppToast.showUndo(
+          context,
+          message: AppToast.todoDeleted,
+          onUndo: notifier.undoLastDelete,
+        );
       },
     );
   }

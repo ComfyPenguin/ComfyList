@@ -117,6 +117,20 @@ class TodoListsRepositoryImpl implements TodoListsRepository {
   }
 
   @override
+  Future<Result<TodoList>> restoreList({
+    required String uid,
+    required TodoList list,
+  }) async {
+    try {
+      final restored = await _remote.restoreList(uid: uid, list: list);
+      await _refresh(uid);
+      return Ok(restored);
+    } on DioException catch (e) {
+      return Err(_mapDioError(e));
+    }
+  }
+
+  @override
   void pauseAll() {
     for (final w in _watchers.values) {
       w.pause();

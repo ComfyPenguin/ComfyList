@@ -1,4 +1,5 @@
 import 'package:comfy_list/features/todos/data/models/todo_dto.dart';
+import 'package:comfy_list/features/todos/domain/entities/todo.dart';
 import 'package:comfy_list/shared/data/remote/firestore_value_codec.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -51,6 +52,43 @@ void main() {
 
       final decoded = FirestoreValueCodec.decodeFields(body);
       expect(decoded['description'], 'En la esquina');
+    });
+
+    test('toRestoreBody devuelve el todo con sus fechas y su estado', () {
+      final todo = Todo(
+        id: 't1',
+        title: 'Comprar pan',
+        description: 'En la esquina',
+        isDone: true,
+        createdAt: DateTime.utc(2026, 1, 1, 12),
+        updatedAt: DateTime.utc(2026, 1, 2, 12),
+      );
+
+      final decoded = FirestoreValueCodec.decodeFields(
+        TodoDto.toRestoreBody(todo),
+      );
+
+      expect(decoded['title'], 'Comprar pan');
+      expect(decoded['description'], 'En la esquina');
+      expect(decoded['isDone'], isTrue);
+      expect(decoded['createdAt'].toUtc(), DateTime.utc(2026, 1, 1, 12));
+      expect(decoded['updatedAt'].toUtc(), DateTime.utc(2026, 1, 2, 12));
+    });
+
+    test('toRestoreBody omits description when null', () {
+      final todo = Todo(
+        id: 't1',
+        title: 'Comprar pan',
+        isDone: false,
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 1),
+      );
+
+      final decoded = FirestoreValueCodec.decodeFields(
+        TodoDto.toRestoreBody(todo),
+      );
+
+      expect(decoded.containsKey('description'), isFalse);
     });
 
     test('toPatchBody with clearDescription includes mask with nullValue',

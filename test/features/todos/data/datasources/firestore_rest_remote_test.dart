@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/dio_mock.dart';
+import '../../../../helpers/test_helpers.dart';
 
 class _MockDio extends MockDio {}
 
@@ -131,6 +132,29 @@ void main() {
 
       verify(() => dio.delete<void>('${expectedCollection('u1', 'L1')}/t1'))
           .called(1);
+    });
+
+    test('restoreTodo vuelve a escribir el documento con su mismo id',
+        () async {
+      final body = buildDocBody(
+        name:
+            'projects/p/databases/(default)/documents/users/u1/todo_lists/L1/todos/t1',
+        title: 'Comprar pan',
+      );
+      stubDioPatch(dio, body: body);
+
+      final restored = await remote.restoreTodo(
+        uid: 'u1',
+        listId: 'L1',
+        todo: buildTodo(id: 't1'),
+      );
+
+      expect(restored.id, 't1');
+      expect(restored.title, 'Comprar pan');
+      verify(() => dio.patch<Map<String, dynamic>>(
+            '${expectedCollection('u1', 'L1')}/t1',
+            data: any(named: 'data'),
+          )).called(1);
     });
   });
 }

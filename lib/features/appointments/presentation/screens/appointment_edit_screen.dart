@@ -143,17 +143,22 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
       context,
       title: '¿Eliminar cita?',
       message:
-          '«$_hydratedTitle» se eliminará permanentemente. '
-          'Esta acción no se puede deshacer.',
+          '«$_hydratedTitle» se eliminará. Tendrás unos segundos para '
+          'deshacerlo.',
       confirmLabel: 'Eliminar',
       destructive: true,
     );
     if (!confirmed) return;
 
-    await ref.read(appointmentsProvider.notifier).delete(widget.id!);
+    final notifier = ref.read(appointmentsProvider.notifier);
+    await notifier.delete(widget.id!);
     if (!mounted) return;
 
-    AppToast.show(context, AppToast.appointmentDeleted);
+    AppToast.showUndo(
+      context,
+      message: AppToast.appointmentDeleted,
+      onUndo: notifier.undoLastDelete,
+    );
     router.pop();
   }
 

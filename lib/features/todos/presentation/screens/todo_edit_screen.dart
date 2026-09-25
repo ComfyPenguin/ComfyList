@@ -97,17 +97,22 @@ class _TodoEditScreenState extends ConsumerState<TodoEditScreen> {
       context,
       title: '¿Eliminar tarea?',
       message:
-          '«$_hydratedTitle» se eliminará permanentemente. '
-          'Esta acción no se puede deshacer.',
+          '«$_hydratedTitle» se eliminará. Tendrás unos segundos para '
+          'deshacerlo.',
       confirmLabel: 'Eliminar',
       destructive: true,
     );
     if (!confirmed) return;
 
-    await ref.read(todosProvider(widget.listId).notifier).delete(widget.id!);
+    final notifier = ref.read(todosProvider(widget.listId).notifier);
+    await notifier.delete(widget.id!);
     if (!mounted) return;
 
-    AppToast.show(context, AppToast.todoDeleted);
+    AppToast.showUndo(
+      context,
+      message: AppToast.todoDeleted,
+      onUndo: notifier.undoLastDelete,
+    );
     router.pop();
   }
 

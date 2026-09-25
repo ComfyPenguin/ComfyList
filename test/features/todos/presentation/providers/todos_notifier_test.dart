@@ -106,6 +106,95 @@ void main() {
         )).called(1);
   });
 
+  test('delete recuerda la tarea y undoLastDelete la devuelve', () async {
+    final controller = StreamController<List<Todo>>();
+    when(() => repo.watchTodos(uid: 'u1', listId: 'L1'))
+        .thenAnswer((_) => controller.stream);
+    when(() => repo.deleteTodo(uid: 'u1', listId: 'L1', id: 't1'))
+        .thenAnswer((_) async => const Ok(null));
+    final todo = buildTodo(id: 't1', title: 'Comprar pan');
+    when(() => repo.restoreTodo(uid: 'u1', listId: 'L1', todo: todo))
+        .thenAnswer((_) async => Ok(todo));
+
+    final container = createTestContainer(
+      authedUser: buildAuthUser(),
+      repositoryOverrides: {TodosRepository: repo},
+    );
+    addTearDown(controller.close);
+
+    expect(container.read(todosProvider('L1')), isA<TodosLoading>());
+    controller.add([todo]);
+    await pumpEventQueue();
+
+    final notifier = container.read(todosProvider('L1').notifier);
+    await notifier.delete('t1');
+
+    expect(await notifier.undoLastDelete(), isTrue);
+    verify(() => repo.restoreTodo(uid: 'u1', listId: 'L1', todo: todo))
+        .called(1);
+  });
+
+  test('solo se deshace el último borrado', () async {
+    final controller = StreamController<List<Todo>>();
+    when(() => repo.watchTodos(uid: 'u1', listId: 'L1'))
+        .thenAnswer((_) => controller.stream);
+    when(() => repo.deleteTodo(
+          uid: 'u1',
+          listId: 'L1',
+          id: any(named: 'id'),
+        )).thenAnswer((_) async => const Ok(null));
+
+    final first = buildTodo(id: 't1');
+    final second = buildTodo(id: 't2');
+    when(() => repo.restoreTodo(uid: 'u1', listId: 'L1', todo: second))
+        .thenAnswer((_) async => Ok(second));
+
+    final container = createTestContainer(
+      authedUser: buildAuthUser(),
+      repositoryOverrides: {TodosRepository: repo},
+    );
+    addTearDown(controller.close);
+
+    expect(container.read(todosProvider('L1')), isA<TodosLoading>());
+    controller.add([first, second]);
+    await pumpEventQueue();
+
+    final notifier = container.read(todosProvider('L1').notifier);
+    await notifier.delete('t1');
+    await notifier.delete('t2');
+    await notifier.undoLastDelete();
+
+    verify(() => repo.restoreTodo(uid: 'u1', listId: 'L1', todo: second))
+        .called(1);
+    verifyNever(() => repo.restoreTodo(uid: 'u1', listId: 'L1', todo: first));
+  });
+
+  test('undoLastDelete dice que no si la restauración falla', () async {
+    final controller = StreamController<List<Todo>>();
+    when(() => repo.watchTodos(uid: 'u1', listId: 'L1'))
+        .thenAnswer((_) => controller.stream);
+    when(() => repo.deleteTodo(uid: 'u1', listId: 'L1', id: 't1'))
+        .thenAnswer((_) async => const Ok(null));
+    final todo = buildTodo(id: 't1');
+    when(() => repo.restoreTodo(uid: 'u1', listId: 'L1', todo: todo))
+        .thenAnswer((_) async => const Err<Todo>(ServerFailure('Error 500')));
+
+    final container = createTestContainer(
+      authedUser: buildAuthUser(),
+      repositoryOverrides: {TodosRepository: repo},
+    );
+    addTearDown(controller.close);
+
+    expect(container.read(todosProvider('L1')), isA<TodosLoading>());
+    controller.add([todo]);
+    await pumpEventQueue();
+
+    final notifier = container.read(todosProvider('L1').notifier);
+    await notifier.delete('t1');
+
+    expect(await notifier.undoLastDelete(), isFalse);
+  });
+
   test('create Err propagates to state', () async {
     final controller = StreamController<List<Todo>>();
     when(() => repo.watchTodos(uid: 'u1', listId: 'L1'))

@@ -94,17 +94,22 @@ class _TodoListEditScreenState extends ConsumerState<TodoListEditScreen> {
       context,
       title: '¿Eliminar lista?',
       message:
-          '«$_hydratedName» y todas sus tareas se eliminarán permanentemente. '
-          'Esta acción no se puede deshacer.',
+          '«$_hydratedName» y todas sus tareas se eliminarán. Tendrás unos '
+          'segundos para deshacerlo.',
       confirmLabel: 'Eliminar',
       destructive: true,
     );
     if (!confirmed) return;
 
-    await ref.read(todoListsProvider.notifier).delete(widget.id!);
+    final notifier = ref.read(todoListsProvider.notifier);
+    await notifier.delete(widget.id!);
     if (!mounted) return;
 
-    AppToast.show(context, AppToast.listDeleted);
+    AppToast.showUndo(
+      context,
+      message: AppToast.listDeleted,
+      onUndo: notifier.undoLastDelete,
+    );
     router.pop();
   }
 
