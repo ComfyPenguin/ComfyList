@@ -171,48 +171,38 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   // superior al rellenar el anterior.
                   _RevealSlide(
                     visible: _emailCtrl.text.trim().isNotEmpty,
-                    child: Column(
-                      children: [
-                        AppTextField(
-                          controller: _passwordCtrl,
-                          label: 'Contraseña',
-                          obscureText: _obscurePassword,
-                          textInputAction: TextInputAction.next,
-                          // `newPassword` hace que el gestor ofrezca guardarla
-                          // (y genere una) en vez de rellenar la de siempre.
-                          autofillHints: const [AutofillHints.newPassword],
-                          // Si se borra la contraseña se elimina también la
-                          // confirmación para ocultar ese campo de nuevo.
-                          onChanged: (_) {
-                            if (_passwordCtrl.text.isEmpty) {
-                              _passwordConfirmCtrl.clear();
-                              _confirmError = null;
-                            }
-                            // Con los requisitos a la vista, dejar el aviso
-                            // rojo cuando ya se cumplen sobra: se limpia solo.
-                            if (_passwordError != null &&
-                                PasswordPolicy.isValid(_passwordCtrl.text)) {
-                              _passwordError = null;
-                            }
-                            setState(() {});
-                          },
-                          errorText: _passwordError,
-                          cardStyle: true,
-                          suffixIcon: _buildVisibilityToggle(
-                            obscure: _obscurePassword,
-                            onToggle: () => setState(
-                              () => _obscurePassword = !_obscurePassword,
-                            ),
-                            colors: colors,
-                          ),
+                    child: AppTextField(
+                      controller: _passwordCtrl,
+                      label: 'Contraseña',
+                      obscureText: _obscurePassword,
+                      textInputAction: TextInputAction.next,
+                      // `newPassword` hace que el gestor ofrezca guardarla
+                      // (y genere una) en vez de rellenar la de siempre.
+                      autofillHints: const [AutofillHints.newPassword],
+                      // Si se borra la contraseña se elimina también la
+                      // confirmación para ocultar ese campo de nuevo.
+                      onChanged: (_) {
+                        if (_passwordCtrl.text.isEmpty) {
+                          _passwordConfirmCtrl.clear();
+                          _confirmError = null;
+                        }
+                        // Con los requisitos a la vista, dejar el aviso
+                        // rojo cuando ya se cumplen sobra: se limpia solo.
+                        if (_passwordError != null &&
+                            PasswordPolicy.isValid(_passwordCtrl.text)) {
+                          _passwordError = null;
+                        }
+                        setState(() {});
+                      },
+                      errorText: _passwordError,
+                      cardStyle: true,
+                      suffixIcon: _buildVisibilityToggle(
+                        obscure: _obscurePassword,
+                        onToggle: () => setState(
+                          () => _obscurePassword = !_obscurePassword,
                         ),
-                        _RevealSlide(
-                          visible: _passwordCtrl.text.isNotEmpty,
-                          child: PasswordRulesChecklist(
-                            password: _passwordCtrl.text,
-                          ),
-                        ),
-                      ],
+                        colors: colors,
+                      ),
                     ),
                   ),
                   _RevealSlide(
@@ -232,6 +222,14 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         ),
                         colors: colors,
                       ),
+                    ),
+                  ),
+                  // Los requisitos van tras el par de contraseñas: entre las
+                  // dos quedaban separadas y parecía que faltaba un campo.
+                  _RevealSlide(
+                    visible: _passwordCtrl.text.isNotEmpty,
+                    child: PasswordRulesChecklist(
+                      password: _passwordCtrl.text,
                     ),
                   ),
                   if (error != null) ...[

@@ -107,4 +107,18 @@ void main() {
       findsNothing,
     );
   });
+
+  testWidgets('los requisitos van después del par de contraseñas', (
+    tester,
+  ) async {
+    await pumpScreen(tester);
+
+    await fillForm(tester, password: 'abc12345');
+
+    // Entre las dos contraseñas partían el par y parecía faltar un campo.
+    final confirmTop = tester.getTopLeft(find.byType(TextField).at(2)).dy;
+    final checklistTop = tester.getTopLeft(find.text('Al menos 8 caracteres')).dy;
+
+    expect(checklistTop, greaterThan(confirmTop));
+  });
 }
