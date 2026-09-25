@@ -378,6 +378,7 @@ class _TodosListState extends ConsumerState<_TodosList> {
       onRevealProgressChanged: (progress) =>
           _setTileRevealProgress(todo.id, progress),
       onTap: () => _showDetailSheet(context, ref, todo.id),
+      onLongPress: () => context.push(Routes.todoEdit(widget.listId, todo.id)),
       onComplete: () => notifier.toggleDone(todo.id, !todo.isDone),
       onDelete: () async {
         await notifier.delete(todo.id);

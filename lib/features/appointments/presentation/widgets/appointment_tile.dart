@@ -19,6 +19,7 @@ class AppointmentTile extends ConsumerWidget {
     required this.onTap,
     required this.onComplete,
     required this.onDelete,
+    this.onLongPress,
     this.completionEnabled = false,
     this.groupIndex = 0,
     this.groupSize = 1,
@@ -35,6 +36,7 @@ class AppointmentTile extends ConsumerWidget {
   final VoidCallback onTap;
   final VoidCallback onComplete;
   final VoidCallback onDelete;
+  final VoidCallback? onLongPress;
   final bool completionEnabled;
   final int groupIndex;
   final int groupSize;
@@ -78,6 +80,7 @@ class AppointmentTile extends ConsumerWidget {
 
     return SwipeActionsCard(
       onTap: onTap,
+      onLongPress: onLongPress,
       onDelete: onDelete,
       onComplete: completionEnabled ? onComplete : null,
       isDone: done,

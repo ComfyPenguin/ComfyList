@@ -150,6 +150,21 @@ class $SettingsTableTable extends SettingsTable
         requiredDuringInsert: false,
         defaultValue: const Constant('30'),
       );
+  static const VerificationMeta _longPressHintSeenMeta = const VerificationMeta(
+    'longPressHintSeen',
+  );
+  @override
+  late final GeneratedColumn<bool> longPressHintSeen = GeneratedColumn<bool>(
+    'long_press_hint_seen',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("long_press_hint_seen" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
   );
@@ -173,6 +188,7 @@ class $SettingsTableTable extends SettingsTable
     invertSwipeActions,
     use24HourFormat,
     appointmentReminderMinutes,
+    longPressHintSeen,
     updatedAt,
   ];
   @override
@@ -268,6 +284,15 @@ class $SettingsTableTable extends SettingsTable
         ),
       );
     }
+    if (data.containsKey('long_press_hint_seen')) {
+      context.handle(
+        _longPressHintSeenMeta,
+        longPressHintSeen.isAcceptableOrUnknown(
+          data['long_press_hint_seen']!,
+          _longPressHintSeenMeta,
+        ),
+      );
+    }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
@@ -325,6 +350,10 @@ class $SettingsTableTable extends SettingsTable
         DriftSqlType.string,
         data['${effectivePrefix}appointment_reminder_minutes'],
       )!,
+      longPressHintSeen: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}long_press_hint_seen'],
+      )!,
       updatedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
@@ -370,6 +399,10 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
   /// Minutos de antelación de los recordatorios de una cita (0 = a su hora),
   /// separados por comas y como mucho tres. Un valor vacío es «sin avisos».
   final String appointmentReminderMinutes;
+
+  /// Si `true`, ya se mostró la pista de mantener pulsada una tarjeta para
+  /// editarla y no vuelve a aparecer.
+  final bool longPressHintSeen;
   final DateTime updatedAt;
   const SettingsRow({
     required this.id,
@@ -382,6 +415,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     required this.invertSwipeActions,
     required this.use24HourFormat,
     required this.appointmentReminderMinutes,
+    required this.longPressHintSeen,
     required this.updatedAt,
   });
   @override
@@ -403,6 +437,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     map['appointment_reminder_minutes'] = Variable<String>(
       appointmentReminderMinutes,
     );
+    map['long_press_hint_seen'] = Variable<bool>(longPressHintSeen);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
   }
@@ -419,6 +454,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       invertSwipeActions: Value(invertSwipeActions),
       use24HourFormat: Value(use24HourFormat),
       appointmentReminderMinutes: Value(appointmentReminderMinutes),
+      longPressHintSeen: Value(longPressHintSeen),
       updatedAt: Value(updatedAt),
     );
   }
@@ -449,6 +485,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       appointmentReminderMinutes: serializer.fromJson<String>(
         json['appointmentReminderMinutes'],
       ),
+      longPressHintSeen: serializer.fromJson<bool>(json['longPressHintSeen']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
   }
@@ -472,6 +509,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       'appointmentReminderMinutes': serializer.toJson<String>(
         appointmentReminderMinutes,
       ),
+      'longPressHintSeen': serializer.toJson<bool>(longPressHintSeen),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
   }
@@ -487,6 +525,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     bool? invertSwipeActions,
     bool? use24HourFormat,
     String? appointmentReminderMinutes,
+    bool? longPressHintSeen,
     DateTime? updatedAt,
   }) => SettingsRow(
     id: id ?? this.id,
@@ -503,6 +542,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     use24HourFormat: use24HourFormat ?? this.use24HourFormat,
     appointmentReminderMinutes:
         appointmentReminderMinutes ?? this.appointmentReminderMinutes,
+    longPressHintSeen: longPressHintSeen ?? this.longPressHintSeen,
     updatedAt: updatedAt ?? this.updatedAt,
   );
   SettingsRow copyWithCompanion(SettingsTableCompanion data) {
@@ -533,6 +573,9 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       appointmentReminderMinutes: data.appointmentReminderMinutes.present
           ? data.appointmentReminderMinutes.value
           : this.appointmentReminderMinutes,
+      longPressHintSeen: data.longPressHintSeen.present
+          ? data.longPressHintSeen.value
+          : this.longPressHintSeen,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
@@ -554,6 +597,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
           ..write('invertSwipeActions: $invertSwipeActions, ')
           ..write('use24HourFormat: $use24HourFormat, ')
           ..write('appointmentReminderMinutes: $appointmentReminderMinutes, ')
+          ..write('longPressHintSeen: $longPressHintSeen, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
@@ -571,6 +615,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     invertSwipeActions,
     use24HourFormat,
     appointmentReminderMinutes,
+    longPressHintSeen,
     updatedAt,
   );
   @override
@@ -589,6 +634,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
           other.invertSwipeActions == this.invertSwipeActions &&
           other.use24HourFormat == this.use24HourFormat &&
           other.appointmentReminderMinutes == this.appointmentReminderMinutes &&
+          other.longPressHintSeen == this.longPressHintSeen &&
           other.updatedAt == this.updatedAt);
 }
 
@@ -603,6 +649,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
   final Value<bool> invertSwipeActions;
   final Value<bool> use24HourFormat;
   final Value<String> appointmentReminderMinutes;
+  final Value<bool> longPressHintSeen;
   final Value<DateTime> updatedAt;
   const SettingsTableCompanion({
     this.id = const Value.absent(),
@@ -615,6 +662,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     this.invertSwipeActions = const Value.absent(),
     this.use24HourFormat = const Value.absent(),
     this.appointmentReminderMinutes = const Value.absent(),
+    this.longPressHintSeen = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
   SettingsTableCompanion.insert({
@@ -628,6 +676,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     this.invertSwipeActions = const Value.absent(),
     this.use24HourFormat = const Value.absent(),
     this.appointmentReminderMinutes = const Value.absent(),
+    this.longPressHintSeen = const Value.absent(),
     required DateTime updatedAt,
   }) : updatedAt = Value(updatedAt);
   static Insertable<SettingsRow> custom({
@@ -641,6 +690,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     Expression<bool>? invertSwipeActions,
     Expression<bool>? use24HourFormat,
     Expression<String>? appointmentReminderMinutes,
+    Expression<bool>? longPressHintSeen,
     Expression<DateTime>? updatedAt,
   }) {
     return RawValuesInsertable({
@@ -660,6 +710,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
       if (use24HourFormat != null) 'use24_hour_format': use24HourFormat,
       if (appointmentReminderMinutes != null)
         'appointment_reminder_minutes': appointmentReminderMinutes,
+      if (longPressHintSeen != null) 'long_press_hint_seen': longPressHintSeen,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
   }
@@ -675,6 +726,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     Value<bool>? invertSwipeActions,
     Value<bool>? use24HourFormat,
     Value<String>? appointmentReminderMinutes,
+    Value<bool>? longPressHintSeen,
     Value<DateTime>? updatedAt,
   }) {
     return SettingsTableCompanion(
@@ -692,6 +744,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
       use24HourFormat: use24HourFormat ?? this.use24HourFormat,
       appointmentReminderMinutes:
           appointmentReminderMinutes ?? this.appointmentReminderMinutes,
+      longPressHintSeen: longPressHintSeen ?? this.longPressHintSeen,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
@@ -737,6 +790,9 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
         appointmentReminderMinutes.value,
       );
     }
+    if (longPressHintSeen.present) {
+      map['long_press_hint_seen'] = Variable<bool>(longPressHintSeen.value);
+    }
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
@@ -760,6 +816,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
           ..write('invertSwipeActions: $invertSwipeActions, ')
           ..write('use24HourFormat: $use24HourFormat, ')
           ..write('appointmentReminderMinutes: $appointmentReminderMinutes, ')
+          ..write('longPressHintSeen: $longPressHintSeen, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
@@ -1115,6 +1172,7 @@ typedef $$SettingsTableTableCreateCompanionBuilder =
       Value<bool> invertSwipeActions,
       Value<bool> use24HourFormat,
       Value<String> appointmentReminderMinutes,
+      Value<bool> longPressHintSeen,
       required DateTime updatedAt,
     });
 typedef $$SettingsTableTableUpdateCompanionBuilder =
@@ -1129,6 +1187,7 @@ typedef $$SettingsTableTableUpdateCompanionBuilder =
       Value<bool> invertSwipeActions,
       Value<bool> use24HourFormat,
       Value<String> appointmentReminderMinutes,
+      Value<bool> longPressHintSeen,
       Value<DateTime> updatedAt,
     });
 
@@ -1188,6 +1247,11 @@ class $$SettingsTableTableFilterComposer
 
   ColumnFilters<String> get appointmentReminderMinutes => $composableBuilder(
     column: $table.appointmentReminderMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get longPressHintSeen => $composableBuilder(
+    column: $table.longPressHintSeen,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1256,6 +1320,11 @@ class $$SettingsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get longPressHintSeen => $composableBuilder(
+    column: $table.longPressHintSeen,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
@@ -1317,6 +1386,11 @@ class $$SettingsTableTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<bool> get longPressHintSeen => $composableBuilder(
+    column: $table.longPressHintSeen,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
@@ -1364,6 +1438,7 @@ class $$SettingsTableTableTableManager
                 Value<bool> invertSwipeActions = const Value.absent(),
                 Value<bool> use24HourFormat = const Value.absent(),
                 Value<String> appointmentReminderMinutes = const Value.absent(),
+                Value<bool> longPressHintSeen = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
               }) => SettingsTableCompanion(
                 id: id,
@@ -1376,6 +1451,7 @@ class $$SettingsTableTableTableManager
                 invertSwipeActions: invertSwipeActions,
                 use24HourFormat: use24HourFormat,
                 appointmentReminderMinutes: appointmentReminderMinutes,
+                longPressHintSeen: longPressHintSeen,
                 updatedAt: updatedAt,
               ),
           createCompanionCallback:
@@ -1392,6 +1468,7 @@ class $$SettingsTableTableTableManager
                 Value<bool> invertSwipeActions = const Value.absent(),
                 Value<bool> use24HourFormat = const Value.absent(),
                 Value<String> appointmentReminderMinutes = const Value.absent(),
+                Value<bool> longPressHintSeen = const Value.absent(),
                 required DateTime updatedAt,
               }) => SettingsTableCompanion.insert(
                 id: id,
@@ -1404,6 +1481,7 @@ class $$SettingsTableTableTableManager
                 invertSwipeActions: invertSwipeActions,
                 use24HourFormat: use24HourFormat,
                 appointmentReminderMinutes: appointmentReminderMinutes,
+                longPressHintSeen: longPressHintSeen,
                 updatedAt: updatedAt,
               ),
           withReferenceMapper: (p0) => p0

@@ -73,4 +73,8 @@ class FakeSettingsRepository implements SettingsRepository {
   @override
   Future<void> setAppointmentReminderMinutes(List<int> minutes) async =>
       _save(_settings.copyWith(appointmentReminderMinutes: minutes));
+
+  @override
+  Future<void> setLongPressHintSeen(bool seen) async =>
+      _save(_settings.copyWith(longPressHintSeen: seen));
 }

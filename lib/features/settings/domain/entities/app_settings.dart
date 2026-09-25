@@ -16,6 +16,7 @@ class AppSettings {
     required this.invertSwipeActions,
     required this.use24HourFormat,
     required this.appointmentReminderMinutes,
+    required this.longPressHintSeen,
   });
 
   final ThemeMode themeMode;
@@ -50,6 +51,10 @@ class AppSettings {
   /// [maxAppointmentReminders].
   final List<int> appointmentReminderMinutes;
 
+  /// Si `true`, ya se mostró la pista de mantener pulsada una tarjeta para
+  /// editarla. Se muestra una única vez.
+  final bool longPressHintSeen;
+
   static const AppSettings defaults = AppSettings(
     themeMode: ThemeMode.system,
     notificationsEnabled: false,
@@ -60,6 +65,7 @@ class AppSettings {
     invertSwipeActions: false,
     use24HourFormat: true,
     appointmentReminderMinutes: [30],
+    longPressHintSeen: false,
   );
 
   AppSettings copyWith({
@@ -72,6 +78,7 @@ class AppSettings {
     bool? invertSwipeActions,
     bool? use24HourFormat,
     List<int>? appointmentReminderMinutes,
+    bool? longPressHintSeen,
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -87,6 +94,7 @@ class AppSettings {
       use24HourFormat: use24HourFormat ?? this.use24HourFormat,
       appointmentReminderMinutes:
           appointmentReminderMinutes ?? this.appointmentReminderMinutes,
+      longPressHintSeen: longPressHintSeen ?? this.longPressHintSeen,
     );
   }
 

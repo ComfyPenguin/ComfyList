@@ -28,6 +28,7 @@ void main() {
         invertSwipeActions: false,
         use24HourFormat: true,
         appointmentReminderMinutes: '30',
+        longPressHintSeen: false,
         updatedAt: DateTime.utc(2026, 6, 30, 12),
       );
       when(() => dao.getOrCreate()).thenAnswer((_) async => row);
@@ -71,6 +72,7 @@ void main() {
           .thenAnswer((_) async {});
       when(() => dao.updateInvertSwipeActions(any())).thenAnswer((_) async {});
       when(() => dao.updateUse24HourFormat(any())).thenAnswer((_) async {});
+      when(() => dao.updateLongPressHintSeen(any())).thenAnswer((_) async {});
 
       await local.updateNotificationsEnabled(false);
       await local.updateAppointmentsCompletionEnabled(true);
@@ -79,6 +81,7 @@ void main() {
       await local.updateAppointmentsTodayOnTop(false);
       await local.updateInvertSwipeActions(true);
       await local.updateUse24HourFormat(false);
+      await local.updateLongPressHintSeen(true);
 
       verify(() => dao.updateNotificationsEnabled(false)).called(1);
       verify(() => dao.updateAppointmentsCompletionEnabled(true)).called(1);
@@ -87,6 +90,7 @@ void main() {
       verify(() => dao.updateAppointmentsTodayOnTop(false)).called(1);
       verify(() => dao.updateInvertSwipeActions(true)).called(1);
       verify(() => dao.updateUse24HourFormat(false)).called(1);
+      verify(() => dao.updateLongPressHintSeen(true)).called(1);
     });
   });
 

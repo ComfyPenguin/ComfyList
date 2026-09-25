@@ -45,6 +45,11 @@ class SettingsTable extends Table {
   TextColumn get appointmentReminderMinutes =>
       text().withDefault(const Constant('30'))();
 
+  /// Si `true`, ya se mostró la pista de mantener pulsada una tarjeta para
+  /// editarla y no vuelve a aparecer.
+  BoolColumn get longPressHintSeen =>
+      boolean().withDefault(const Constant(false))();
+
   DateTimeColumn get updatedAt => dateTime()();
 
   @override

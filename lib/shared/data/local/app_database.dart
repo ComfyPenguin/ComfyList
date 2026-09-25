@@ -19,7 +19,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -71,6 +71,11 @@ class AppDatabase extends _$AppDatabase {
             // un entero y guarda la lista separada por comas. Cambiar el tipo
             // obliga a recrear la tabla, y el margen que hubiera se conserva
             // como el único de la lista.
+            //
+            // La recreación usa el esquema actual, así que las columnas que
+            // llegaron después de la v9 no existen en la tabla antigua: hay
+            // que declararlas en `newColumns` para que la copia no las busque
+            // (se quedan con su valor por defecto).
             await migrator.alterTable(
               TableMigration(
                 settingsTable,
@@ -78,7 +83,16 @@ class AppDatabase extends _$AppDatabase {
                   settingsTable.appointmentReminderMinutes:
                       settingsTable.appointmentReminderMinutes.cast<String>(),
                 },
+                newColumns: [settingsTable.longPressHintSeen],
               ),
+            );
+          }
+          if (from == 9) {
+            // Solo la v9 necesita añadir la columna a mano: quien viene de
+            // antes ya la recibe con la recreación de la tabla de arriba.
+            await migrator.addColumn(
+              settingsTable,
+              settingsTable.longPressHintSeen,
             );
           }
         },

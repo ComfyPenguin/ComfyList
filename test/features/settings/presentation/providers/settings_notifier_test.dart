@@ -65,6 +65,24 @@ void main() {
     });
   });
 
+  group('SettingsNotifier.setLongPressHintSeen', () {
+    test('persiste la marca en el repositorio', () async {
+      when(() => repo.load()).thenAnswer((_) async => AppSettings.defaults);
+      when(() => repo.watch()).thenAnswer((_) => const Stream.empty());
+      when(() => repo.setLongPressHintSeen(true)).thenAnswer((_) async {});
+
+      container.read(settingsProvider.notifier);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      await container
+          .read(settingsProvider.notifier)
+          .setLongPressHintSeen(true);
+
+      verify(() => repo.setLongPressHintSeen(true)).called(1);
+    });
+  });
+
   group('SettingsNotifier error path', () {
     test('un error en load() surface como SettingsError(CacheFailure)',
         () async {

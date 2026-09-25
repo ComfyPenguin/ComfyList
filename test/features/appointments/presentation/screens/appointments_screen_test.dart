@@ -4,6 +4,7 @@ import 'package:comfy_list/features/appointments/presentation/providers/appointm
 import 'package:comfy_list/features/appointments/presentation/screens/appointments_screen.dart';
 import 'package:comfy_list/features/appointments/presentation/widgets/appointment_tile.dart';
 import 'package:comfy_list/features/settings/presentation/providers/settings_provider.dart';
+import 'package:comfy_list/routing/routes.dart';
 import 'package:comfy_list/shared/core/theme/app_theme.dart';
 import 'package:comfy_list/shared/core/time/clock.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +16,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../helpers/fake_settings_repository.dart';
 import '../../../../helpers/test_helpers.dart';
+import '../../../../helpers/test_router.dart';
 
 /// Notifier de citas con una lista fija: sin repo ni auth de por medio.
 class _FixedAppointmentsNotifier extends AppointmentsNotifier {
@@ -203,5 +205,51 @@ void main() {
       tester.getSize(find.byType(AppointmentTile).first).height,
       lessThan(200),
     );
+  });
+
+  Future<void> pumpRouted(
+    WidgetTester tester, {
+    required List<Appointment> items,
+  }) async {
+    final repo = FakeSettingsRepository();
+    addTearDown(repo.close);
+
+    tester.view.physicalSize = const Size(1170, 2400);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appointmentsProvider.overrideWith(
+            () => _FixedAppointmentsNotifier(items),
+          ),
+          settingsRepositoryProvider.overrideWithValue(repo),
+          clockProvider.overrideWithValue(() => today),
+        ],
+        child: MaterialApp.router(
+          theme: AppTheme.light(),
+          routerConfig: buildTestRouter(
+            initialLocation: Routes.appointments,
+            home: const AppointmentsScreen(),
+            probes: {Routes.appointmentEdit('hoy'): 'EDITAR CITA hoy'},
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+  }
+
+  testWidgets('mantener pulsada una cita abre su pantalla de edición', (
+    tester,
+  ) async {
+    await pumpRouted(tester, items: [todayAppointment]);
+
+    await tester.longPress(find.byType(AppointmentTile).first);
+    await tester.pump();
+
+    expect(find.text('EDITAR CITA hoy'), findsOneWidget);
   });
 }

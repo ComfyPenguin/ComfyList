@@ -28,6 +28,7 @@ void main() {
       expect(row.invertSwipeActions, isFalse);
       expect(row.use24HourFormat, isTrue);
       expect(row.appointmentReminderMinutes, '30');
+      expect(row.longPressHintSeen, isFalse);
     });
 
     test('devuelve la misma fila en llamadas sucesivas y deja una sola row',
@@ -53,6 +54,18 @@ void main() {
 
       final streamed = await dao.watch().first;
       expect(streamed.appointmentReminderMinutes, '0,30,1440');
+    });
+  });
+
+  group('SettingsDao.updateLongPressHintSeen', () {
+    test('persiste la marca y watch emite el valor nuevo', () async {
+      final dao = db.settingsDao;
+      await dao.getOrCreate();
+
+      await dao.updateLongPressHintSeen(true);
+
+      final streamed = await dao.watch().first;
+      expect(streamed.longPressHintSeen, isTrue);
     });
   });
 

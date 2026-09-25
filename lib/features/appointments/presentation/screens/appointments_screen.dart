@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 
+import '../../../../routing/routes.dart';
 import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_shadow.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
@@ -319,6 +321,8 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
           ),
           onTap: (appt) =>
               showAppointmentDetailSheet(context: context, id: appt.id),
+          onLongPress: (appt) =>
+              context.push(Routes.appointmentEdit(appt.id)),
           onComplete: (appt) => notifier.toggleDone(appt.id, !appt.isDone),
           onDelete: (appt) async {
             await notifier.delete(appt.id);
@@ -399,6 +403,7 @@ class _AppointmentGroup extends StatelessWidget {
     required this.completionEnabled,
     required this.separationFor,
     required this.onTap,
+    required this.onLongPress,
     required this.onComplete,
     required this.onDelete,
     required this.onRevealProgressChanged,
@@ -419,6 +424,7 @@ class _AppointmentGroup extends StatelessWidget {
   final ({double top, double bottom}) Function(int tileIndex) separationFor;
 
   final void Function(Appointment appointment) onTap;
+  final void Function(Appointment appointment) onLongPress;
   final void Function(Appointment appointment) onComplete;
   final Future<void> Function(Appointment appointment) onDelete;
   final void Function(Appointment appointment, double progress)
@@ -484,6 +490,7 @@ class _AppointmentGroup extends StatelessWidget {
       topSeparationProgress: edges.top,
       bottomSeparationProgress: edges.bottom,
       onTap: () => onTap(appt),
+      onLongPress: () => onLongPress(appt),
       onComplete: () => onComplete(appt),
       onDelete: () => onDelete(appt),
       onRevealProgressChanged: (value) {

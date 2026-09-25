@@ -6,6 +6,8 @@ import '../../../../routing/routes.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
+import '../../../settings/presentation/providers/settings_provider.dart';
+import '../../../settings/presentation/providers/settings_state.dart';
 import '../../domain/entities/todo_list.dart';
 import '../providers/todo_lists_provider.dart';
 import '../providers/todo_lists_state.dart';
@@ -67,6 +69,9 @@ class _ListsState extends ConsumerState<_Lists> {
 
   final _tileRevealProgress = <String, double>{};
 
+  /// Evita programar la pista más de una vez mientras el SnackBar se muestra.
+  bool _hintScheduled = false;
+
   ({double top, double bottom}) _effectiveSeparationFor(
     int tileIndex,
     List<TodoList> lists,
@@ -107,9 +112,34 @@ class _ListsState extends ConsumerState<_Lists> {
     _tileRevealProgress.removeWhere((id, _) => !visibleIds.contains(id));
   }
 
+  /// Muestra una única vez la pista del gesto: mantener pulsada una tarjeta
+  /// la abre en edición. Solo con ajustes cargados y sin haberla visto antes.
+  void _maybeShowLongPressHint() {
+    if (_hintScheduled) return;
+    final settings = switch (ref.watch(settingsProvider)) {
+      SettingsData(:final settings) => settings,
+      _ => null,
+    };
+    if (settings == null || settings.longPressHintSeen) return;
+
+    _hintScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Mantén pulsada una tarjeta para editarla.'),
+          ),
+        );
+      ref.read(settingsProvider.notifier).setLongPressHintSeen(true);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final notifier = ref.read(todoListsProvider.notifier);
+    _maybeShowLongPressHint();
     final sorted = [...widget.items]
       ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     _removeStaleRevealProgress(sorted);
@@ -136,6 +166,7 @@ class _ListsState extends ConsumerState<_Lists> {
           onRevealProgressChanged: (progress) =>
               _setTileRevealProgress(list.id, progress),
           onTap: () => context.push(Routes.todoList(list.id)),
+          onLongPress: () => context.push(Routes.todoListEdit(list.id)),
           onDelete: () async {
             await notifier.delete(list.id);
             if (!context.mounted) return;
