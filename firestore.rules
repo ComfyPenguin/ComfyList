@@ -7,8 +7,14 @@ service cloud.firestore {
     // así que exigir que el token sea el del propio uid cierra todo lo demás.
     // Es el único control de acceso real: la apiKey es pública y las llamadas
     // van por REST, sin SDK.
+    //
+    // El correo verificado se exige aquí y no solo en la app: una cuenta
+    // recién creada con el correo de otra persona no puede tocar nada hasta
+    // que demuestre que la dirección es suya.
     match /users/{uid}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if request.auth != null
+                            && request.auth.uid == uid
+                            && request.auth.token.email_verified == true;
     }
   }
 }
