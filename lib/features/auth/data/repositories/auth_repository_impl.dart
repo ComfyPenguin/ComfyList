@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../../../shared/core/failures/failure.dart';
+import '../../../../shared/core/logging/debug_log.dart';
 import '../../../../shared/core/result/result.dart';
 import '../../../../shared/data/local/daos/account_cache_dao.dart';
 import '../../../../shared/data/secure/secure_session_store.dart';
@@ -179,7 +180,7 @@ class AuthRepositoryImpl implements AuthRepository {
     final GoogleSignInAccount account;
     try {
       account = await GoogleSignIn.instance.authenticate();
-      debugPrint('[AuthRepo] GoogleSignIn.authenticate() OK → ${account.email}');
+      debugLog('[AuthRepo] GoogleSignIn.authenticate() OK → ${account.email}');
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled) {
         debugPrint('[AuthRepo] GoogleSignIn cancelado por el usuario.');
@@ -195,7 +196,7 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     final googleIdToken = account.authentication.idToken;
-    debugPrint('[AuthRepo] idToken recibido: ${googleIdToken != null ? '${googleIdToken.length} chars' : 'null'}');
+    debugLog('[AuthRepo] idToken recibido: ${googleIdToken != null ? '${googleIdToken.length} chars' : 'null'}');
     if (googleIdToken == null || googleIdToken.isEmpty) {
       // Sin ID token no podemos verificarlo en Firebase. Causa habitual:
       // serverClientId vacío o mal configurado en initialize().
@@ -208,7 +209,7 @@ class AuthRepositoryImpl implements AuthRepository {
     // Paso 2 — intercambio en Firebase Identity Toolkit.
     try {
       final res = await _remote.signInWithGoogle(googleIdToken: googleIdToken);
-      debugPrint('[AuthRepo] Firebase signInWithIdp OK → uid=${res.localId}');
+      debugLog('[AuthRepo] Firebase signInWithIdp OK → uid=${res.localId}');
       await _session.saveSession(
         idToken: res.idToken,
         refreshToken: res.refreshToken,

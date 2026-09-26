@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/core/logging/debug_log.dart';
 import '../../../../shared/core/result/result.dart';
 import '../../../../shared/data/local/database_provider.dart';
 import '../../../../shared/data/remote/dio_client.dart';
@@ -91,7 +92,7 @@ class AuthNotifier extends Notifier<AuthState> {
     final result = await ref.read(authRepositoryProvider).signInWithGoogle();
     state = result.fold(
       onOk: (user) {
-        debugPrint('[AuthNotifier] Google sign-in OK → uid=${user.uid}');
+        debugLog('[AuthNotifier] Google sign-in OK → uid=${user.uid}');
         return Authenticated(user);
       },
       onErr: (f) {
