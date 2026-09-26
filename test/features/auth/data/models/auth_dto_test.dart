@@ -62,5 +62,23 @@ void main() {
       expect(user.email, 'a@b.c');
       expect(user.displayName, 'Ana');
     });
+
+    test('fromJson deja el correo como no verificado si falta la clave', () {
+      final user = IdentityLookupUser.fromJson(<String, dynamic>{
+        'localId': 'u-1',
+      });
+
+      expect(user.emailVerified, isFalse);
+    });
+
+    test('fromJson refleja emailVerified cuando viene en la respuesta', () {
+      final user = IdentityLookupUser.fromJson(<String, dynamic>{
+        'localId': 'u-1',
+        'email': 'a@b.c',
+        'emailVerified': true,
+      });
+
+      expect(user.emailVerified, isTrue);
+    });
   });
 }

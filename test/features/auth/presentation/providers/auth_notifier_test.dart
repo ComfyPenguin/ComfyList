@@ -140,4 +140,103 @@ void main() {
       expect(container.read(authProvider), isA<Unauthenticated>());
     });
   });
+
+  group('AuthNotifier y el correo sin verificar', () {
+    const pending = AuthUser(uid: 'u-1', email: 'a@b.c', emailVerified: false);
+    const verified = AuthUser(uid: 'u-1', email: 'a@b.c', emailVerified: true);
+
+    test('signIn deja la sesión en AuthUnverifiedEmail', () async {
+      when(() => repo.signIn(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+          )).thenAnswer((_) async => const Ok<AuthUser>(pending));
+
+      final container = buildContainer();
+
+      await container
+          .read(authProvider.notifier)
+          .signIn(email: 'a@b.c', password: 'pw123456');
+
+      final state = container.read(authProvider);
+      expect(state, isA<AuthUnverifiedEmail>());
+      expect((state as AuthUnverifiedEmail).user.email, 'a@b.c');
+    });
+
+    test('el bootstrap no deja entrar con el correo sin verificar', () async {
+      when(() => repo.currentUser())
+          .thenAnswer((_) async => const Ok<AuthUser?>(pending));
+
+      final container = buildContainer();
+      // La primera lectura construye el notifier y agenda el microtask.
+      expect(container.read(authProvider), isA<AuthInitial>());
+
+      await pumpEventQueue();
+
+      expect(container.read(authProvider), isA<AuthUnverifiedEmail>());
+    });
+
+    test('checkEmailVerified pasa a Authenticated cuando el servidor confirma',
+        () async {
+      when(() => repo.signIn(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+          )).thenAnswer((_) async => const Ok<AuthUser>(pending));
+      when(() => repo.currentUser())
+          .thenAnswer((_) async => const Ok<AuthUser?>(verified));
+
+      final container = buildContainer();
+      await container
+          .read(authProvider.notifier)
+          .signIn(email: 'a@b.c', password: 'pw123456');
+      expect(container.read(authProvider), isA<AuthUnverifiedEmail>());
+
+      final res =
+          await container.read(authProvider.notifier).checkEmailVerified();
+
+      expect((res as Ok<bool>).value, isTrue);
+      expect(container.read(authProvider), isA<Authenticated>());
+    });
+
+    test('checkEmailVerified sigue bloqueando si todavía no lo está',
+        () async {
+      when(() => repo.currentUser())
+          .thenAnswer((_) async => const Ok<AuthUser?>(pending));
+
+      final container = buildContainer();
+
+      final res =
+          await container.read(authProvider.notifier).checkEmailVerified();
+
+      expect((res as Ok<bool>).value, isFalse);
+      expect(container.read(authProvider), isA<AuthUnverifiedEmail>());
+    });
+
+    test('checkEmailVerified devuelve Err si no se ha podido comprobar',
+        () async {
+      when(() => repo.currentUser()).thenAnswer(
+        (_) async => const Err<AuthUser?>(NetworkFailure()),
+      );
+
+      final container = buildContainer();
+
+      final res =
+          await container.read(authProvider.notifier).checkEmailVerified();
+
+      expect(res.isErr, isTrue);
+    });
+
+    test('resendVerificationEmail delega en el repositorio', () async {
+      when(() => repo.sendEmailVerification())
+          .thenAnswer((_) async => const Ok(null));
+
+      final container = buildContainer();
+
+      final res = await container
+          .read(authProvider.notifier)
+          .resendVerificationEmail();
+
+      expect(res.isOk, isTrue);
+      verify(() => repo.sendEmailVerification()).called(1);
+    });
+  });
 }

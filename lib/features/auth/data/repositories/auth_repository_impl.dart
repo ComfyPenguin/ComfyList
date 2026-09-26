@@ -57,6 +57,7 @@ class AuthRepositoryImpl implements AuthRepository {
             uid: lookup.localId,
             email: lookup.email,
             displayName: lookup.displayName,
+            emailVerified: lookup.emailVerified,
           ),
         );
       } on DioException catch (e) {
@@ -93,6 +94,8 @@ class AuthRepositoryImpl implements AuthRepository {
     if (uid == null || uid.isEmpty) return null;
     final cached = await _accountCache.findByUid(uid);
     if (cached == null) return null;
+    // Sin red no hay forma de saber si el correo está verificado, así que se
+    // deja en `null` y no se bloquea a quien sí lo verificó.
     return AuthUser(
       uid: cached.uid,
       email: cached.email,
@@ -120,10 +123,14 @@ class AuthRepositoryImpl implements AuthRepository {
         email: res.email,
         displayName: res.displayName,
       );
+      // El inicio de sesión no dice si el correo está verificado: hay que
+      // preguntarlo, y si no hay respuesta se trata como no verificado.
+      final lookup = await _remote.lookup(res.idToken);
       return Ok(AuthUser(
         uid: res.localId,
         email: res.email,
         displayName: res.displayName,
+        emailVerified: lookup?.emailVerified ?? false,
       ));
     } on DioException catch (e) {
       return Err(_mapDioError(e));
@@ -149,10 +156,14 @@ class AuthRepositoryImpl implements AuthRepository {
         email: res.email,
         displayName: res.displayName,
       );
+      // La cuenta recién creada nunca está verificada: se manda el correo de
+      // una vez para que la pantalla de verificación tenga algo que esperar.
+      await _sendVerificationEmailBestEffort(res.idToken);
       return Ok(AuthUser(
         uid: res.localId,
         email: res.email,
         displayName: res.displayName,
+        emailVerified: false,
       ));
     } on DioException catch (e) {
       return Err(_mapDioError(e));
@@ -212,6 +223,8 @@ class AuthRepositoryImpl implements AuthRepository {
         uid: res.localId,
         email: res.email,
         displayName: res.displayName,
+        // Google ya ha verificado ese correo por nosotros.
+        emailVerified: true,
       ));
     } on DioException catch (e) {
       debugPrint('[AuthRepo] DioException en signInWithIdp: ${e.response?.statusCode} ${e.message}');
@@ -240,6 +253,32 @@ class AuthRepositoryImpl implements AuthRepository {
       return Err(_mapDioError(e));
     } catch (_) {
       return const Err(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Result<void>> sendEmailVerification() async {
+    try {
+      final idToken = await _session.readIdToken();
+      if (idToken == null || idToken.isEmpty) {
+        return const Err(UnknownFailure());
+      }
+      await _remote.sendEmailVerification(idToken);
+      return const Ok(null);
+    } on DioException catch (e) {
+      return Err(_mapDioError(e));
+    } catch (_) {
+      return const Err(UnknownFailure());
+    }
+  }
+
+  /// El primer envío no puede tumbar el registro: la cuenta ya está creada y
+  /// la pantalla de verificación trae su propio botón para reintentarlo.
+  Future<void> _sendVerificationEmailBestEffort(String idToken) async {
+    try {
+      await _remote.sendEmailVerification(idToken);
+    } on DioException {
+      return;
     }
   }
 

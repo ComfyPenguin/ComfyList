@@ -20,8 +20,14 @@ AuthUser buildAuthUser({
   String uid = 'u1',
   String email = 'a@b.c',
   String? displayName,
+  bool? emailVerified = true,
 }) {
-  return AuthUser(uid: uid, email: email, displayName: displayName);
+  return AuthUser(
+    uid: uid,
+    email: email,
+    displayName: displayName,
+    emailVerified: emailVerified,
+  );
 }
 
 Todo buildTodo({

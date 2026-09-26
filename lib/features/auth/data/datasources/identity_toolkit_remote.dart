@@ -75,6 +75,17 @@ class IdentityToolkitRemote {
     );
   }
 
+  /// Manda el correo de verificación de la cuenta dueña de [idToken].
+  Future<void> sendEmailVerification(String idToken) async {
+    await _dio.post<Map<String, dynamic>>(
+      '${FirebaseEndpoints.identityBase}:sendOobCode?key=${FirebaseEndpoints.apiKey}',
+      data: {
+        'requestType': 'VERIFY_EMAIL',
+        'idToken': idToken,
+      },
+    );
+  }
+
   /// Devuelve el primer usuario de `accounts:lookup` para el idToken dado.
   Future<IdentityLookupUser?> lookup(String idToken) async {
     final res = await _dio.post<Map<String, dynamic>>(
