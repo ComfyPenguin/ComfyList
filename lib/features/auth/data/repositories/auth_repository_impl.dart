@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../../../shared/core/failures/failure.dart';
+import '../../../../shared/core/logging/debug_log.dart';
 import '../../../../shared/core/result/result.dart';
 import '../../../../shared/data/local/daos/account_cache_dao.dart';
 import '../../../../shared/data/secure/secure_session_store.dart';
@@ -57,6 +58,7 @@ class AuthRepositoryImpl implements AuthRepository {
             uid: lookup.localId,
             email: lookup.email,
             displayName: lookup.displayName,
+            emailVerified: lookup.emailVerified,
           ),
         );
       } on DioException catch (e) {
@@ -93,6 +95,8 @@ class AuthRepositoryImpl implements AuthRepository {
     if (uid == null || uid.isEmpty) return null;
     final cached = await _accountCache.findByUid(uid);
     if (cached == null) return null;
+    // Sin red no hay forma de saber si el correo está verificado, así que se
+    // deja en `null` y no se bloquea a quien sí lo verificó.
     return AuthUser(
       uid: cached.uid,
       email: cached.email,
@@ -120,10 +124,14 @@ class AuthRepositoryImpl implements AuthRepository {
         email: res.email,
         displayName: res.displayName,
       );
+      // El inicio de sesión no dice si el correo está verificado: hay que
+      // preguntarlo, y si no hay respuesta se trata como no verificado.
+      final lookup = await _remote.lookup(res.idToken);
       return Ok(AuthUser(
         uid: res.localId,
         email: res.email,
         displayName: res.displayName,
+        emailVerified: lookup?.emailVerified ?? false,
       ));
     } on DioException catch (e) {
       return Err(_mapDioError(e));
@@ -149,10 +157,14 @@ class AuthRepositoryImpl implements AuthRepository {
         email: res.email,
         displayName: res.displayName,
       );
+      // La cuenta recién creada nunca está verificada: se manda el correo de
+      // una vez para que la pantalla de verificación tenga algo que esperar.
+      await _sendVerificationEmailBestEffort(res.idToken);
       return Ok(AuthUser(
         uid: res.localId,
         email: res.email,
         displayName: res.displayName,
+        emailVerified: false,
       ));
     } on DioException catch (e) {
       return Err(_mapDioError(e));
@@ -168,7 +180,7 @@ class AuthRepositoryImpl implements AuthRepository {
     final GoogleSignInAccount account;
     try {
       account = await GoogleSignIn.instance.authenticate();
-      debugPrint('[AuthRepo] GoogleSignIn.authenticate() OK → ${account.email}');
+      debugLog('[AuthRepo] GoogleSignIn.authenticate() OK → ${account.email}');
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled) {
         debugPrint('[AuthRepo] GoogleSignIn cancelado por el usuario.');
@@ -184,7 +196,7 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     final googleIdToken = account.authentication.idToken;
-    debugPrint('[AuthRepo] idToken recibido: ${googleIdToken != null ? '${googleIdToken.length} chars' : 'null'}');
+    debugLog('[AuthRepo] idToken recibido: ${googleIdToken != null ? '${googleIdToken.length} chars' : 'null'}');
     if (googleIdToken == null || googleIdToken.isEmpty) {
       // Sin ID token no podemos verificarlo en Firebase. Causa habitual:
       // serverClientId vacío o mal configurado en initialize().
@@ -197,7 +209,7 @@ class AuthRepositoryImpl implements AuthRepository {
     // Paso 2 — intercambio en Firebase Identity Toolkit.
     try {
       final res = await _remote.signInWithGoogle(googleIdToken: googleIdToken);
-      debugPrint('[AuthRepo] Firebase signInWithIdp OK → uid=${res.localId}');
+      debugLog('[AuthRepo] Firebase signInWithIdp OK → uid=${res.localId}');
       await _session.saveSession(
         idToken: res.idToken,
         refreshToken: res.refreshToken,
@@ -212,6 +224,8 @@ class AuthRepositoryImpl implements AuthRepository {
         uid: res.localId,
         email: res.email,
         displayName: res.displayName,
+        // Google ya ha verificado ese correo por nosotros.
+        emailVerified: true,
       ));
     } on DioException catch (e) {
       debugPrint('[AuthRepo] DioException en signInWithIdp: ${e.response?.statusCode} ${e.message}');
@@ -244,7 +258,36 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Result<void>> sendEmailVerification() async {
+    try {
+      final idToken = await _session.readIdToken();
+      if (idToken == null || idToken.isEmpty) {
+        return const Err(UnknownFailure());
+      }
+      await _remote.sendEmailVerification(idToken);
+      return const Ok(null);
+    } on DioException catch (e) {
+      return Err(_mapDioError(e));
+    } catch (_) {
+      return const Err(UnknownFailure());
+    }
+  }
+
+  /// El primer envío no puede tumbar el registro: la cuenta ya está creada y
+  /// la pantalla de verificación trae su propio botón para reintentarlo.
+  Future<void> _sendVerificationEmailBestEffort(String idToken) async {
+    try {
+      await _remote.sendEmailVerification(idToken);
+    } on DioException {
+      return;
+    }
+  }
+
+  @override
   Future<void> signOut() async {
+    // El refreshToken no caduca solo: sin revocarlo, quien lo tenga puede
+    // seguir pidiendo idTokens después de que el usuario cierre sesión.
+    await _revokeRefreshTokensBestEffort();
     // Cerramos también la sesión nativa de Google para que el siguiente
     // login no entre con el mismo usuario en silencio.
     try {
@@ -255,6 +298,18 @@ class AuthRepositoryImpl implements AuthRepository {
     }
     await _session.clear();
     await _accountCache.deleteAll();
+  }
+
+  /// Sin red o con un idToken ya caducado la sesión se cierra igual: borrar
+  /// los tokens locales es lo que deja al usuario fuera ahora mismo.
+  Future<void> _revokeRefreshTokensBestEffort() async {
+    try {
+      final idToken = await _session.readIdToken();
+      if (idToken == null || idToken.isEmpty) return;
+      await _remote.revokeRefreshTokens(idToken);
+    } catch (_) {
+      return;
+    }
   }
 
   Failure _mapDioError(DioException e) {
@@ -287,6 +342,15 @@ class AuthRepositoryImpl implements AuthRepository {
     }
     if (code == 'EMAIL_EXISTS') return const EmailAlreadyInUseFailure();
     if (code.startsWith('WEAK_PASSWORD')) return const WeakPasswordFailure();
+    // Estos códigos existen para el usuario, no para que los lea tal cual: sin
+    // mapear, el aviso de la pantalla enseñaba «TOO_MANY_ATTEMPTS_TRY_LATER».
+    if (code == 'TOO_MANY_ATTEMPTS_TRY_LATER') {
+      return const TooManyAttemptsFailure();
+    }
+    if (code == 'USER_DISABLED') return const AccountDisabledFailure();
+    if (code == 'PASSWORD_LOGIN_DISABLED' || code == 'OPERATION_NOT_ALLOWED') {
+      return const PasswordLoginDisabledFailure();
+    }
     return ServerFailure(code);
   }
 }

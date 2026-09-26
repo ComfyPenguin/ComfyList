@@ -34,5 +34,20 @@ void main() {
       expect(b.email, a.email);
       expect(b.displayName, a.displayName);
     });
+
+    test('emailVerified queda sin definir si no se ha preguntado al servidor',
+        () {
+      const user = AuthUser(uid: 'u', email: 'a@b.c');
+
+      expect(user.emailVerified, isNull);
+    });
+
+    test('emailVerified distingue verificado de pendiente', () {
+      const verified = AuthUser(uid: 'u', email: 'a@b.c', emailVerified: true);
+      const pending = AuthUser(uid: 'u', email: 'a@b.c', emailVerified: false);
+
+      expect(verified.emailVerified, isTrue);
+      expect(pending.emailVerified, isFalse);
+    });
   });
 }

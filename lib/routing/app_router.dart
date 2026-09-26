@@ -10,6 +10,7 @@ import '../features/appointments/presentation/screens/appointments_screen.dart';
 import '../features/auth/presentation/providers/auth_provider.dart';
 import '../features/auth/presentation/providers/auth_state.dart';
 import '../features/auth/presentation/screens/sign_in_screen.dart';
+import '../features/auth/presentation/screens/verify_email_screen.dart';
 import '../features/todo_lists/presentation/providers/todo_lists_provider.dart';
 import '../features/todo_lists/presentation/providers/todo_lists_state.dart';
 import '../features/auth/presentation/screens/sign_up_screen.dart';
@@ -20,6 +21,7 @@ import '../features/todos/presentation/screens/todo_edit_screen.dart';
 import '../features/todos/presentation/screens/todos_screen.dart';
 import '../shared/core/theme/app_theme.dart';
 import '../shared/ui/navigation/app_shell.dart';
+import '../shared/ui/secure_screen.dart';
 import 'routes.dart';
 
 /// Adapta el estado de auth y datos al `Listenable` de GoRouter.
@@ -57,10 +59,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       final auth = ref.read(authProvider);
       final loggingIn = state.matchedLocation == Routes.signIn ||
           state.matchedLocation == Routes.signUp;
+      final verifying = state.matchedLocation == Routes.verifyEmail;
 
       // Mientras el bootstrap (auto-login) decide, no redirigimos:
       // _HomeGate muestra el splash hasta que haya veredicto.
       if (auth is AuthInitial || auth is AuthLoading) return null;
+
+      // Con el correo sin verificar la app no se puede usar: la única salida
+      // hacia delante es la pantalla de verificación.
+      if (auth is AuthUnverifiedEmail) {
+        return verifying ? null : Routes.verifyEmail;
+      }
+      if (verifying) {
+        return auth is Authenticated ? Routes.home : Routes.signIn;
+      }
 
       final isAuth = auth is Authenticated;
       if (!isAuth && !loggingIn) return Routes.signIn;
@@ -87,13 +99,22 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: Routes.home,
         pageBuilder: (context, state) => _instantPage(const _HomeGate()),
       ),
+      // Las pantallas de acceso van blindadas: sin capturas mientras se
+      // escribe la contraseña.
       GoRoute(
         path: Routes.signIn,
-        pageBuilder: (context, state) => _instantPage(const SignInScreen()),
+        pageBuilder: (context, state) =>
+            _instantPage(const SecureScreen(child: SignInScreen())),
       ),
       GoRoute(
         path: Routes.signUp,
-        pageBuilder: (context, state) => _instantPage(const SignUpScreen()),
+        pageBuilder: (context, state) =>
+            _instantPage(const SecureScreen(child: SignUpScreen())),
+      ),
+      GoRoute(
+        path: Routes.verifyEmail,
+        pageBuilder: (context, state) =>
+            _instantPage(const SecureScreen(child: VerifyEmailScreen())),
       ),
 
       // Shell persistente: TopBar + BottomBar + FAB compartidos.

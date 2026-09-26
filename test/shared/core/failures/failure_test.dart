@@ -46,6 +46,27 @@ void main() {
       );
     });
 
+    test('TooManyAttemptsFailure explica el bloqueo temporal', () {
+      expect(
+        const TooManyAttemptsFailure().message,
+        'Demasiados intentos fallidos. Espera unos minutos e inténtalo de nuevo.',
+      );
+    });
+
+    test('AccountDisabledFailure tiene mensaje específico', () {
+      expect(
+        const AccountDisabledFailure().message,
+        'Esta cuenta está deshabilitada.',
+      );
+    });
+
+    test('PasswordLoginDisabledFailure tiene mensaje específico', () {
+      expect(
+        const PasswordLoginDisabledFailure().message,
+        'El acceso con correo y contraseña está desactivado.',
+      );
+    });
+
     test('GoogleSignInCancelledFailure tiene mensaje específico', () {
       expect(
         const GoogleSignInCancelledFailure().message,
@@ -95,6 +116,9 @@ void main() {
         InvalidCredentialsFailure(),
         EmailAlreadyInUseFailure(),
         WeakPasswordFailure(),
+        TooManyAttemptsFailure(),
+        AccountDisabledFailure(),
+        PasswordLoginDisabledFailure(),
         GoogleSignInCancelledFailure(),
         GoogleSignInFailure(),
       ];
@@ -109,12 +133,15 @@ void main() {
       }
     });
 
-    test('un switch exhaustivo cubre las 5 ramas (compilación)', () {
+    test('un switch exhaustivo cubre las 8 ramas (compilación)', () {
       const AuthFailure f = InvalidCredentialsFailure();
       final label = switch (f) {
         InvalidCredentialsFailure() => 'invalid',
         EmailAlreadyInUseFailure() => 'exists',
         WeakPasswordFailure() => 'weak',
+        TooManyAttemptsFailure() => 'too_many',
+        AccountDisabledFailure() => 'disabled',
+        PasswordLoginDisabledFailure() => 'password_login_disabled',
         GoogleSignInCancelledFailure() => 'cancelled',
         GoogleSignInFailure() => 'google_error',
         AuthFailure() => 'generic',

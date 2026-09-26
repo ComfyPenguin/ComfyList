@@ -107,5 +107,25 @@ void main() {
             cancelToken: any(named: 'cancelToken'),
           )).called(1);
     });
+
+    test('revokeRefreshTokens manda el idToken y un validSince de ahora',
+        () async {
+      stubDioPost(dio, body: const <String, dynamic>{});
+
+      await remote.revokeRefreshTokens('id-tok');
+
+      final data = verify(() => dio.post<Map<String, dynamic>>(
+            '${FirebaseEndpoints.identityBase}:update?key=${FirebaseEndpoints.apiKey}',
+            data: captureAny(named: 'data'),
+            options: any(named: 'options'),
+            cancelToken: any(named: 'cancelToken'),
+          )).captured.single as Map<String, dynamic>;
+
+      expect(data['idToken'], 'id-tok');
+      expect(
+        int.parse(data['validSince'] as String),
+        closeTo(DateTime.now().millisecondsSinceEpoch ~/ 1000, 5),
+      );
+    });
   });
 }

@@ -8,6 +8,8 @@ void main() {
     WidgetTester tester,
     TextEditingController controller, {
     String label = 'Nombre',
+    bool obscureText = false,
+    Iterable<String>? autofillHints,
   }) {
     return tester.pumpWidget(
       MaterialApp(
@@ -17,11 +19,45 @@ void main() {
             controller: controller,
             label: label,
             cardStyle: true,
+            obscureText: obscureText,
+            autofillHints: autofillHints,
           ),
         ),
       ),
     );
   }
+
+  group('AppTextField y el teclado', () {
+    testWidgets('un campo normal sí autocorrige', (tester) async {
+      final controller = TextEditingController();
+      addTearDown(controller.dispose);
+
+      await pumpField(tester, controller);
+
+      final field = tester.widget<TextField>(find.byType(TextField));
+      expect(field.autocorrect, isTrue);
+      expect(field.enableSuggestions, isTrue);
+    });
+
+    testWidgets('uno de contraseña no autocorrige ni sugiere', (tester) async {
+      final controller = TextEditingController();
+      addTearDown(controller.dispose);
+
+      await pumpField(
+        tester,
+        controller,
+        label: 'Contraseña',
+        obscureText: true,
+        autofillHints: const [AutofillHints.newPassword],
+      );
+
+      final field = tester.widget<TextField>(find.byType(TextField));
+      expect(field.autocorrect, isFalse);
+      expect(field.enableSuggestions, isFalse);
+      // Y el gestor de contraseñas sabe qué le toca rellenar.
+      expect(field.autofillHints, [AutofillHints.newPassword]);
+    });
+  });
 
   group('AppTextField etiqueta', () {
     testWidgets('dentro del campo se queda como placeholder', (tester) async {

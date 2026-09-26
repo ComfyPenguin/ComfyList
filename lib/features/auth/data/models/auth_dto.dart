@@ -32,17 +32,22 @@ class IdentityLookupUser {
     required this.localId,
     required this.email,
     this.displayName,
+    this.emailVerified = false,
   });
 
   final String localId;
   final String email;
   final String? displayName;
 
+  /// Solo es `true` cuando el usuario ha abierto el enlace del correo.
+  final bool emailVerified;
+
   factory IdentityLookupUser.fromJson(Map<String, dynamic> json) {
     return IdentityLookupUser(
       localId: json['localId'] as String,
       email: json['email'] as String? ?? '',
       displayName: json['displayName'] as String?,
+      emailVerified: json['emailVerified'] as bool? ?? false,
     );
   }
 }

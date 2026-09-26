@@ -33,6 +33,23 @@ void main() {
     );
   });
 
+  /// Respuesta de error de Identity Toolkit con el código dado.
+  DioException badResponse(String code) => DioException(
+        requestOptions: RequestOptions(path: ''),
+        type: DioExceptionType.badResponse,
+        response: Response<dynamic>(
+          requestOptions: RequestOptions(path: ''),
+          statusCode: 400,
+          data: <String, dynamic>{
+            'error': <String, dynamic>{
+              'code': 400,
+              'message': code,
+              'status': 'INVALID_ARGUMENT',
+            },
+          },
+        ),
+      );
+
   group('AuthRepositoryImpl.signIn', () {
     test('returns Ok(AuthUser) and persists session + cache on success',
         () async {
@@ -59,6 +76,14 @@ void main() {
             email: any(named: 'email'),
             displayName: any(named: 'displayName'),
           )).thenAnswer((_) async {});
+      when(() => remote.lookup('i-tok')).thenAnswer(
+        (_) async => IdentityLookupUser(
+          localId: 'u-1',
+          email: 'a@b.c',
+          displayName: 'Ana',
+          emailVerified: true,
+        ),
+      );
 
       final res = await repo.signIn(email: 'a@b.c', password: 'pw!');
 
@@ -67,6 +92,7 @@ void main() {
       expect(ok.value.uid, 'u-1');
       expect(ok.value.email, 'a@b.c');
       expect(ok.value.displayName, 'Ana');
+      expect(ok.value.emailVerified, isTrue);
 
       verify(() => session.saveSession(
             idToken: 'i-tok',
@@ -114,6 +140,41 @@ void main() {
             uid: any(named: 'uid'),
           ));
     });
+
+    test('marca el correo como sin verificar si el lookup lo dice', () async {
+      when(() => remote.signInWithPassword(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+          )).thenAnswer(
+        (_) async => IdentityAuthResponse(
+          idToken: 'i-tok',
+          refreshToken: 'r-tok',
+          localId: 'u-1',
+          email: 'a@b.c',
+        ),
+      );
+      when(() => session.saveSession(
+            idToken: any(named: 'idToken'),
+            refreshToken: any(named: 'refreshToken'),
+            uid: any(named: 'uid'),
+          )).thenAnswer((_) async {});
+      when(() => accountCache.upsert(
+            uid: any(named: 'uid'),
+            email: any(named: 'email'),
+            displayName: any(named: 'displayName'),
+          )).thenAnswer((_) async {});
+      when(() => remote.lookup('i-tok')).thenAnswer(
+        (_) async => IdentityLookupUser(
+          localId: 'u-1',
+          email: 'a@b.c',
+          emailVerified: false,
+        ),
+      );
+
+      final res = await repo.signIn(email: 'a@b.c', password: 'pw123456');
+
+      expect((res as Ok<AuthUser>).value.emailVerified, isFalse);
+    });
   });
 
   group('AuthRepositoryImpl.signUp', () {
@@ -143,6 +204,110 @@ void main() {
 
       expect(res.isErr, isTrue);
       expect((res as Err).failure, isA<EmailAlreadyInUseFailure>());
+    });
+
+    test('manda el correo de verificación y deja la cuenta pendiente',
+        () async {
+      when(() => remote.signUp(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+          )).thenAnswer(
+        (_) async => IdentityAuthResponse(
+          idToken: 'i-tok',
+          refreshToken: 'r-tok',
+          localId: 'u-1',
+          email: 'a@b.c',
+        ),
+      );
+      when(() => session.saveSession(
+            idToken: any(named: 'idToken'),
+            refreshToken: any(named: 'refreshToken'),
+            uid: any(named: 'uid'),
+          )).thenAnswer((_) async {});
+      when(() => accountCache.upsert(
+            uid: any(named: 'uid'),
+            email: any(named: 'email'),
+            displayName: any(named: 'displayName'),
+          )).thenAnswer((_) async {});
+      when(() => remote.sendEmailVerification('i-tok'))
+          .thenAnswer((_) async {});
+
+      final res = await repo.signUp(email: 'a@b.c', password: 'pw123456');
+
+      expect((res as Ok<AuthUser>).value.emailVerified, isFalse);
+      verify(() => remote.sendEmailVerification('i-tok')).called(1);
+    });
+
+    test('el registro no se cae si el correo no llega a salir', () async {
+      when(() => remote.signUp(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+          )).thenAnswer(
+        (_) async => IdentityAuthResponse(
+          idToken: 'i-tok',
+          refreshToken: 'r-tok',
+          localId: 'u-1',
+          email: 'a@b.c',
+        ),
+      );
+      when(() => session.saveSession(
+            idToken: any(named: 'idToken'),
+            refreshToken: any(named: 'refreshToken'),
+            uid: any(named: 'uid'),
+          )).thenAnswer((_) async {});
+      when(() => accountCache.upsert(
+            uid: any(named: 'uid'),
+            email: any(named: 'email'),
+            displayName: any(named: 'displayName'),
+          )).thenAnswer((_) async {});
+      when(() => remote.sendEmailVerification(any()))
+          .thenThrow(badResponse('TOO_MANY_ATTEMPTS_TRY_LATER'));
+
+      final res = await repo.signUp(email: 'a@b.c', password: 'pw123456');
+
+      // La cuenta ya está creada: la pantalla de verificación puede reenviar.
+      expect(res.isOk, isTrue);
+    });
+  });
+
+  group('AuthRepositoryImpl traduce los códigos de Identity Toolkit', () {
+    test('ninguno llega crudo a la pantalla', () async {
+      final cases = <String, Type>{
+        'TOO_MANY_ATTEMPTS_TRY_LATER': TooManyAttemptsFailure,
+        'USER_DISABLED': AccountDisabledFailure,
+        'PASSWORD_LOGIN_DISABLED': PasswordLoginDisabledFailure,
+        'OPERATION_NOT_ALLOWED': PasswordLoginDisabledFailure,
+        'INVALID_LOGIN_CREDENTIALS': InvalidCredentialsFailure,
+        'EMAIL_EXISTS': EmailAlreadyInUseFailure,
+      };
+
+      for (final entry in cases.entries) {
+        when(() => remote.signInWithPassword(
+              email: any(named: 'email'),
+              password: any(named: 'password'),
+            )).thenThrow(badResponse(entry.key));
+
+        final res = await repo.signIn(email: 'a@b.c', password: 'pw123456');
+
+        expect(res.isErr, isTrue);
+        expect(
+          (res as Err).failure.runtimeType,
+          entry.value,
+          reason: 'El código ${entry.key} debe llegar traducido.',
+        );
+      }
+    });
+
+    test('un código desconocido cae en ServerFailure, no se inventa', () async {
+      when(() => remote.signInWithPassword(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+          )).thenThrow(badResponse('SOMETHING_NEW'));
+
+      final res = await repo.signIn(email: 'a@b.c', password: 'pw123456');
+
+      expect(res.isErr, isTrue);
+      expect((res as Err).failure, isA<ServerFailure>());
     });
   });
 
@@ -205,6 +370,81 @@ void main() {
 
       expect(res.isOk, isTrue);
       expect((res as Ok).value, isNull);
+    });
+  });
+
+  group('AuthRepositoryImpl.sendEmailVerification', () {
+    test('usa el idToken que hay en la sesión', () async {
+      when(() => session.readIdToken()).thenAnswer((_) async => 'i-tok');
+      when(() => remote.sendEmailVerification('i-tok'))
+          .thenAnswer((_) async {});
+
+      final res = await repo.sendEmailVerification();
+
+      expect(res.isOk, isTrue);
+      verify(() => remote.sendEmailVerification('i-tok')).called(1);
+    });
+
+    test('sin idToken en la sesión devuelve Err', () async {
+      when(() => session.readIdToken()).thenAnswer((_) async => null);
+
+      final res = await repo.sendEmailVerification();
+
+      expect(res.isErr, isTrue);
+      expect((res as Err).failure, isA<UnknownFailure>());
+      verifyNever(() => remote.sendEmailVerification(any()));
+    });
+
+    test('traduce el error del servidor', () async {
+      when(() => session.readIdToken()).thenAnswer((_) async => 'i-tok');
+      when(() => remote.sendEmailVerification(any()))
+          .thenThrow(badResponse('TOO_MANY_ATTEMPTS_TRY_LATER'));
+
+      final res = await repo.sendEmailVerification();
+
+      expect((res as Err).failure, isA<TooManyAttemptsFailure>());
+    });
+  });
+
+  group('AuthRepositoryImpl.signOut', () {
+    test('revoca los tokens del servidor antes de borrar la sesión', () async {
+      when(() => session.readIdToken()).thenAnswer((_) async => 'i-tok');
+      when(() => remote.revokeRefreshTokens('i-tok')).thenAnswer((_) async {});
+      when(() => session.clear()).thenAnswer((_) async {});
+      when(() => accountCache.deleteAll()).thenAnswer((_) async {});
+
+      await repo.signOut();
+
+      verify(() => remote.revokeRefreshTokens('i-tok')).called(1);
+      verify(() => session.clear()).called(1);
+      verify(() => accountCache.deleteAll()).called(1);
+    });
+
+    test('cierra la sesión igual si el servidor no contesta', () async {
+      when(() => session.readIdToken()).thenAnswer((_) async => 'i-tok');
+      when(() => remote.revokeRefreshTokens(any())).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: ''),
+          type: DioExceptionType.connectionError,
+        ),
+      );
+      when(() => session.clear()).thenAnswer((_) async {});
+      when(() => accountCache.deleteAll()).thenAnswer((_) async {});
+
+      await repo.signOut();
+
+      verify(() => session.clear()).called(1);
+    });
+
+    test('sin idToken no llama al servidor y limpia igual', () async {
+      when(() => session.readIdToken()).thenAnswer((_) async => null);
+      when(() => session.clear()).thenAnswer((_) async {});
+      when(() => accountCache.deleteAll()).thenAnswer((_) async {});
+
+      await repo.signOut();
+
+      verifyNever(() => remote.revokeRefreshTokens(any()));
+      verify(() => session.clear()).called(1);
     });
   });
 }
