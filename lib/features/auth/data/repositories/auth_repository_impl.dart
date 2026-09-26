@@ -284,6 +284,9 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> signOut() async {
+    // El refreshToken no caduca solo: sin revocarlo, quien lo tenga puede
+    // seguir pidiendo idTokens después de que el usuario cierre sesión.
+    await _revokeRefreshTokensBestEffort();
     // Cerramos también la sesión nativa de Google para que el siguiente
     // login no entre con el mismo usuario en silencio.
     try {
@@ -294,6 +297,18 @@ class AuthRepositoryImpl implements AuthRepository {
     }
     await _session.clear();
     await _accountCache.deleteAll();
+  }
+
+  /// Sin red o con un idToken ya caducado la sesión se cierra igual: borrar
+  /// los tokens locales es lo que deja al usuario fuera ahora mismo.
+  Future<void> _revokeRefreshTokensBestEffort() async {
+    try {
+      final idToken = await _session.readIdToken();
+      if (idToken == null || idToken.isEmpty) return;
+      await _remote.revokeRefreshTokens(idToken);
+    } catch (_) {
+      return;
+    }
   }
 
   Failure _mapDioError(DioException e) {

@@ -86,6 +86,18 @@ class IdentityToolkitRemote {
     );
   }
 
+  /// Invalida en el servidor los tokens emitidos antes de ahora para la cuenta
+  /// de [idToken] (`validSince`). Un refreshToken filtrado deja de valer.
+  Future<void> revokeRefreshTokens(String idToken) async {
+    await _dio.post<Map<String, dynamic>>(
+      '${FirebaseEndpoints.identityBase}:update?key=${FirebaseEndpoints.apiKey}',
+      data: {
+        'idToken': idToken,
+        'validSince': '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
+      },
+    );
+  }
+
   /// Devuelve el primer usuario de `accounts:lookup` para el idToken dado.
   Future<IdentityLookupUser?> lookup(String idToken) async {
     final res = await _dio.post<Map<String, dynamic>>(

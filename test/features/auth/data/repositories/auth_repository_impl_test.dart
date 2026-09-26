@@ -405,4 +405,46 @@ void main() {
       expect((res as Err).failure, isA<TooManyAttemptsFailure>());
     });
   });
+
+  group('AuthRepositoryImpl.signOut', () {
+    test('revoca los tokens del servidor antes de borrar la sesión', () async {
+      when(() => session.readIdToken()).thenAnswer((_) async => 'i-tok');
+      when(() => remote.revokeRefreshTokens('i-tok')).thenAnswer((_) async {});
+      when(() => session.clear()).thenAnswer((_) async {});
+      when(() => accountCache.deleteAll()).thenAnswer((_) async {});
+
+      await repo.signOut();
+
+      verify(() => remote.revokeRefreshTokens('i-tok')).called(1);
+      verify(() => session.clear()).called(1);
+      verify(() => accountCache.deleteAll()).called(1);
+    });
+
+    test('cierra la sesión igual si el servidor no contesta', () async {
+      when(() => session.readIdToken()).thenAnswer((_) async => 'i-tok');
+      when(() => remote.revokeRefreshTokens(any())).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: ''),
+          type: DioExceptionType.connectionError,
+        ),
+      );
+      when(() => session.clear()).thenAnswer((_) async {});
+      when(() => accountCache.deleteAll()).thenAnswer((_) async {});
+
+      await repo.signOut();
+
+      verify(() => session.clear()).called(1);
+    });
+
+    test('sin idToken no llama al servidor y limpia igual', () async {
+      when(() => session.readIdToken()).thenAnswer((_) async => null);
+      when(() => session.clear()).thenAnswer((_) async {});
+      when(() => accountCache.deleteAll()).thenAnswer((_) async {});
+
+      await repo.signOut();
+
+      verifyNever(() => remote.revokeRefreshTokens(any()));
+      verify(() => session.clear()).called(1);
+    });
+  });
 }

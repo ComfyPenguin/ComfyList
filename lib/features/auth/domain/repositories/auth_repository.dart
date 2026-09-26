@@ -33,5 +33,8 @@ abstract class AuthRepository {
   /// `signUp` ya lo hace solo; esto es para el botón de reenviar.
   Future<Result<void>> sendEmailVerification();
 
+  /// Cierra la sesión: borra los tokens locales y, antes de eso, pide al
+  /// servidor que revoque los emitidos hasta ahora (best-effort — la salida no
+  /// depende de que haya red).
   Future<void> signOut();
 }
