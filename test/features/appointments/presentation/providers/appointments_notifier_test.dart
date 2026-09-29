@@ -7,6 +7,7 @@ import 'package:comfy_list/features/appointments/domain/repositories/appointment
 import 'package:comfy_list/features/appointments/presentation/providers/appointments_provider.dart';
 import 'package:comfy_list/features/appointments/presentation/providers/appointments_state.dart';
 import 'package:comfy_list/features/auth/presentation/providers/auth_state.dart';
+import 'package:comfy_list/features/trash/presentation/providers/trash_provider.dart';
 import 'package:comfy_list/shared/core/failures/failure.dart';
 import 'package:comfy_list/shared/core/result/result.dart';
 import 'package:comfy_list/shared/core/time/clock.dart';
@@ -22,6 +23,11 @@ class _MockRemote extends Mock implements FirestoreAppointmentsRemote {}
 
 void main() {
   late _MockRepo repo;
+
+  setUpAll(() {
+    // mocktail necesita un valor de relleno para los matchers de entidades.
+    registerFallbackValue(buildAppointment());
+  });
 
   setUp(() {
     repo = _MockRepo();
@@ -146,17 +152,21 @@ void main() {
     expect(container.read(appointmentsProvider), isA<AppointmentsLoading>());
   });
 
-  test('delete recuerda la cita y undoLastDelete la devuelve', () async {
+  test('delete guarda la cita en la papelera y undoLastDelete la devuelve',
+      () async {
     final controller = StreamController<List<Appointment>>();
     when(() => repo.watchAppointments('u1'))
         .thenAnswer((_) => controller.stream);
     when(() => repo.deleteAppointment(uid: 'u1', id: 'a1'))
         .thenAnswer((_) async => const Ok(null));
     final appointment = buildAppointment(id: 'a1', title: 'Dentista');
-    when(() => repo.restoreAppointment(uid: 'u1', appointment: appointment))
-        .thenAnswer((_) async => Ok(appointment));
+    when(() => repo.restoreAppointment(
+          uid: 'u1',
+          appointment: any(named: 'appointment'),
+        )).thenAnswer((_) async => Ok(appointment));
 
     final container = createTestContainer(
+      withInMemoryDb: true,
       authedUser: buildAuthUser(),
       repositoryOverrides: {AppointmentsRepository: repo},
     );
@@ -170,8 +180,20 @@ void main() {
     await notifier.delete('a1');
 
     expect(await notifier.undoLastDelete(), isTrue);
-    verify(() => repo.restoreAppointment(uid: 'u1', appointment: appointment))
-        .called(1);
+
+    // Vuelve tal y como estaba: la papelera guarda la cita serializada.
+    final restored = verify(() => repo.restoreAppointment(
+          uid: 'u1',
+          appointment: captureAny(named: 'appointment'),
+        )).captured.single as Appointment;
+    expect(restored.id, 'a1');
+    expect(restored.title, 'Dentista');
+    expect(restored.dateTime, appointment.dateTime);
+
+    expect(
+      await container.read(trashRepositoryProvider).list('u1'),
+      isEmpty,
+    );
   });
 
   test('undoLastDelete dice que no si la restauración falla', () async {
@@ -181,12 +203,15 @@ void main() {
     when(() => repo.deleteAppointment(uid: 'u1', id: 'a1'))
         .thenAnswer((_) async => const Ok(null));
     final appointment = buildAppointment(id: 'a1');
-    when(() => repo.restoreAppointment(uid: 'u1', appointment: appointment))
-        .thenAnswer(
+    when(() => repo.restoreAppointment(
+          uid: 'u1',
+          appointment: any(named: 'appointment'),
+        )).thenAnswer(
       (_) async => const Err<Appointment>(ServerFailure('Error 500')),
     );
 
     final container = createTestContainer(
+      withInMemoryDb: true,
       authedUser: buildAuthUser(),
       repositoryOverrides: {AppointmentsRepository: repo},
     );
@@ -200,5 +225,11 @@ void main() {
     await notifier.delete('a1');
 
     expect(await notifier.undoLastDelete(), isFalse);
+
+    // El borrado sigue en la papelera: se puede reintentar.
+    expect(
+      await container.read(trashRepositoryProvider).list('u1'),
+      hasLength(1),
+    );
   });
 }

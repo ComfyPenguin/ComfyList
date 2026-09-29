@@ -6,6 +6,8 @@ import '../../../../shared/core/failures/failure.dart';
 import '../../../../shared/core/time/clock.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/providers/auth_state.dart';
+import '../../../trash/domain/entities/trash_entry.dart';
+import '../../../trash/presentation/providers/trash_provider.dart';
 import '../../data/datasources/firestore_rest_remote.dart';
 import '../../data/repositories/todos_repository_impl.dart';
 import '../../domain/entities/todo.dart';
@@ -97,12 +99,23 @@ class TodosNotifier extends Notifier<TodosState> {
         );
   }
 
-  /// Último todo borrado. Solo se puede deshacer ese: el aviso que ofrece
-  /// deshacer es único y un borrado nuevo reemplaza al anterior.
-  Todo? _lastDeleted;
-
   Future<void> delete(String id) async {
-    _lastDeleted = _findById(id);
+    final todo = _findById(id);
+    if (todo != null) {
+      await ref.read(trashRepositoryProvider).save(
+            uid: _uid,
+            items: [
+              TrashItem(
+                kind: TrashKind.todo,
+                itemId: todo.id,
+                parentId: _listId,
+                label: todo.title,
+                payload: todo.toJson(),
+              ),
+            ],
+          );
+    }
+
     await ref.read(todosRepositoryProvider).deleteTodo(
           uid: _uid,
           listId: _listId,
@@ -110,19 +123,27 @@ class TodosNotifier extends Notifier<TodosState> {
         );
   }
 
-  /// Devuelve el último todo borrado. Devuelve si se pudo.
+  /// Devuelve el último todo borrado de esta lista. Devuelve si se pudo.
   Future<bool> undoLastDelete() async {
-    final todo = _lastDeleted;
-    if (todo == null) return false;
+    final trash = ref.read(trashRepositoryProvider);
+    final entries = await trash.latestGroup(
+      uid: _uid,
+      kind: TrashKind.todo,
+      parentId: _listId,
+    );
+    if (entries.isEmpty) return false;
 
-    final res = await ref.read(todosRepositoryProvider).restoreTodo(
-          uid: _uid,
-          listId: _listId,
-          todo: todo,
-        );
-    if (res.isErr) return false;
+    final repo = ref.read(todosRepositoryProvider);
+    for (final entry in entries) {
+      final res = await repo.restoreTodo(
+        uid: _uid,
+        listId: entry.parentId ?? _listId,
+        todo: Todo.fromJson(entry.payload),
+      );
+      if (res.isErr) return false;
+    }
 
-    _lastDeleted = null;
+    await trash.remove(entries.map((entry) => entry.rowId).toList());
     return true;
   }
 

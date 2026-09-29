@@ -7,6 +7,7 @@ import 'package:comfy_list/features/todos/domain/entities/todo.dart';
 import 'package:comfy_list/features/todos/domain/repositories/todos_repository.dart';
 import 'package:comfy_list/features/todos/presentation/providers/todos_provider.dart';
 import 'package:comfy_list/features/todos/presentation/providers/todos_state.dart';
+import 'package:comfy_list/features/trash/presentation/providers/trash_provider.dart';
 import 'package:comfy_list/shared/core/failures/failure.dart';
 import 'package:comfy_list/shared/core/result/result.dart';
 import 'package:comfy_list/shared/core/time/clock.dart';
@@ -22,6 +23,11 @@ class _MockRemote extends Mock implements FirestoreRestRemote {}
 
 void main() {
   late _MockRepo repo;
+
+  setUpAll(() {
+    // mocktail necesita un valor de relleno para los matchers de entidades.
+    registerFallbackValue(buildTodo());
+  });
 
   setUp(() {
     repo = _MockRepo();
@@ -106,17 +112,22 @@ void main() {
         )).called(1);
   });
 
-  test('delete recuerda la tarea y undoLastDelete la devuelve', () async {
+  test('delete guarda la tarea en la papelera y undoLastDelete la devuelve',
+      () async {
     final controller = StreamController<List<Todo>>();
     when(() => repo.watchTodos(uid: 'u1', listId: 'L1'))
         .thenAnswer((_) => controller.stream);
     when(() => repo.deleteTodo(uid: 'u1', listId: 'L1', id: 't1'))
         .thenAnswer((_) async => const Ok(null));
     final todo = buildTodo(id: 't1', title: 'Comprar pan');
-    when(() => repo.restoreTodo(uid: 'u1', listId: 'L1', todo: todo))
-        .thenAnswer((_) async => Ok(todo));
+    when(() => repo.restoreTodo(
+          uid: 'u1',
+          listId: 'L1',
+          todo: any(named: 'todo'),
+        )).thenAnswer((_) async => Ok(todo));
 
     final container = createTestContainer(
+      withInMemoryDb: true,
       authedUser: buildAuthUser(),
       repositoryOverrides: {TodosRepository: repo},
     );
@@ -130,11 +141,25 @@ void main() {
     await notifier.delete('t1');
 
     expect(await notifier.undoLastDelete(), isTrue);
-    verify(() => repo.restoreTodo(uid: 'u1', listId: 'L1', todo: todo))
-        .called(1);
+
+    // Vuelve tal y como estaba: la papelera guarda la tarea serializada.
+    final restored = verify(() => repo.restoreTodo(
+          uid: 'u1',
+          listId: 'L1',
+          todo: captureAny(named: 'todo'),
+        )).captured.single as Todo;
+    expect(restored.id, 't1');
+    expect(restored.title, 'Comprar pan');
+    expect(restored.createdAt, todo.createdAt);
+
+    // Y sale de la papelera: ya no hay nada que deshacer.
+    expect(
+      await container.read(trashRepositoryProvider).list('u1'),
+      isEmpty,
+    );
   });
 
-  test('solo se deshace el último borrado', () async {
+  test('deshace los borrados de uno en uno, el último primero', () async {
     final controller = StreamController<List<Todo>>();
     when(() => repo.watchTodos(uid: 'u1', listId: 'L1'))
         .thenAnswer((_) => controller.stream);
@@ -143,13 +168,17 @@ void main() {
           listId: 'L1',
           id: any(named: 'id'),
         )).thenAnswer((_) async => const Ok(null));
+    when(() => repo.restoreTodo(
+          uid: 'u1',
+          listId: 'L1',
+          todo: any(named: 'todo'),
+        )).thenAnswer((_) async => Ok(buildTodo()));
 
     final first = buildTodo(id: 't1');
     final second = buildTodo(id: 't2');
-    when(() => repo.restoreTodo(uid: 'u1', listId: 'L1', todo: second))
-        .thenAnswer((_) async => Ok(second));
 
     final container = createTestContainer(
+      withInMemoryDb: true,
       authedUser: buildAuthUser(),
       repositoryOverrides: {TodosRepository: repo},
     );
@@ -162,11 +191,17 @@ void main() {
     final notifier = container.read(todosProvider('L1').notifier);
     await notifier.delete('t1');
     await notifier.delete('t2');
-    await notifier.undoLastDelete();
 
-    verify(() => repo.restoreTodo(uid: 'u1', listId: 'L1', todo: second))
-        .called(1);
-    verifyNever(() => repo.restoreTodo(uid: 'u1', listId: 'L1', todo: first));
+    expect(await notifier.undoLastDelete(), isTrue);
+    expect(await notifier.undoLastDelete(), isTrue);
+    expect(await notifier.undoLastDelete(), isFalse);
+
+    final restored = verify(() => repo.restoreTodo(
+          uid: 'u1',
+          listId: 'L1',
+          todo: captureAny(named: 'todo'),
+        )).captured.cast<Todo>();
+    expect(restored.map((todo) => todo.id), ['t2', 't1']);
   });
 
   test('undoLastDelete dice que no si la restauración falla', () async {
@@ -176,10 +211,14 @@ void main() {
     when(() => repo.deleteTodo(uid: 'u1', listId: 'L1', id: 't1'))
         .thenAnswer((_) async => const Ok(null));
     final todo = buildTodo(id: 't1');
-    when(() => repo.restoreTodo(uid: 'u1', listId: 'L1', todo: todo))
-        .thenAnswer((_) async => const Err<Todo>(ServerFailure('Error 500')));
+    when(() => repo.restoreTodo(
+          uid: 'u1',
+          listId: 'L1',
+          todo: any(named: 'todo'),
+        )).thenAnswer((_) async => const Err<Todo>(ServerFailure('Error 500')));
 
     final container = createTestContainer(
+      withInMemoryDb: true,
       authedUser: buildAuthUser(),
       repositoryOverrides: {TodosRepository: repo},
     );
@@ -193,6 +232,12 @@ void main() {
     await notifier.delete('t1');
 
     expect(await notifier.undoLastDelete(), isFalse);
+
+    // El borrado sigue en la papelera: se puede reintentar.
+    expect(
+      await container.read(trashRepositoryProvider).list('u1'),
+      hasLength(1),
+    );
   });
 
   test('create Err propagates to state', () async {
