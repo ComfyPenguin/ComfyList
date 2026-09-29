@@ -17,6 +17,8 @@ void main() {
       expect(defaults.use24HourFormat, isTrue);
       expect(defaults.appointmentReminderMinutes, [30]);
       expect(defaults.longPressHintSeen, isFalse);
+      expect(defaults.trashRetentionDays, 0);
+      expect(defaults.emptiesTrashItself, isFalse);
     });
   });
 
@@ -45,6 +47,7 @@ void main() {
         baseline.appointmentReminderMinutes,
       );
       expect(updated.longPressHintSeen, baseline.longPressHintSeen);
+      expect(updated.trashRetentionDays, baseline.trashRetentionDays);
     });
 
     test('devuelve una instancia nueva (inmutable)', () {
@@ -72,6 +75,7 @@ void main() {
         invertSwipeActions: true,
         appointmentReminderMinutes: const [5, 60],
         longPressHintSeen: true,
+        trashRetentionDays: 30,
       );
 
       expect(updated.themeMode, ThemeMode.light);
@@ -82,6 +86,8 @@ void main() {
       expect(updated.invertSwipeActions, isTrue);
       expect(updated.appointmentReminderMinutes, [5, 60]);
       expect(updated.longPressHintSeen, isTrue);
+      expect(updated.trashRetentionDays, 30);
+      expect(updated.emptiesTrashItself, isTrue);
       expect(updated.notificationsEnabled, baseline.notificationsEnabled);
       expect(
         updated.appointmentsCompletionEnabled,
@@ -174,6 +180,20 @@ void main() {
 
     test('sin el margen puesto no cambia nada', () {
       expect(removeReminderMinutes([30], 60), [30]);
+    });
+  });
+
+  group('AppSettings.parseTrashRetentionDays', () {
+    test('deja pasar los plazos que ofrece el ajuste', () {
+      for (final days in trashRetentionDayOptions) {
+        expect(AppSettings.parseTrashRetentionDays(days), days);
+      }
+    });
+
+    test('cualquier otro valor cae a «nunca»', () {
+      expect(AppSettings.parseTrashRetentionDays(5), 0);
+      expect(AppSettings.parseTrashRetentionDays(-1), 0);
+      expect(AppSettings.parseTrashRetentionDays(365), 0);
     });
   });
 

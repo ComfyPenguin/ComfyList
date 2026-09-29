@@ -30,6 +30,7 @@ void main() {
     bool use24HourFormat = true,
     String appointmentReminderMinutes = '30',
     bool longPressHintSeen = false,
+    int trashRetentionDays = 0,
   }) {
     return SettingsRow(
       id: 1,
@@ -43,6 +44,7 @@ void main() {
       use24HourFormat: use24HourFormat,
       appointmentReminderMinutes: appointmentReminderMinutes,
       longPressHintSeen: longPressHintSeen,
+      trashRetentionDays: trashRetentionDays,
       updatedAt: DateTime.utc(2026, 6, 30, 12),
     );
   }
@@ -63,6 +65,27 @@ void main() {
       expect(result.use24HourFormat, isTrue);
       expect(result.appointmentReminderMinutes, [30]);
       expect(result.longPressHintSeen, isFalse);
+      expect(result.trashRetentionDays, 0);
+    });
+
+    test('lee los días que aguanta la papelera', () async {
+      when(
+        () => local.getOrCreate(),
+      ).thenAnswer((_) async => buildRow(trashRetentionDays: 15));
+
+      final result = await repo.load();
+
+      expect(result.trashRetentionDays, 15);
+    });
+
+    test('un plazo que el ajuste no ofrece cae a «nunca»', () async {
+      when(
+        () => local.getOrCreate(),
+      ).thenAnswer((_) async => buildRow(trashRetentionDays: 5));
+
+      final result = await repo.load();
+
+      expect(result.trashRetentionDays, 0);
     });
 
     test('mapea longPressHintSeen desde la fila', () async {
@@ -195,6 +218,16 @@ void main() {
       verify(() => local.updateInvertSwipeActions(true)).called(1);
       verify(() => local.updateUse24HourFormat(false)).called(1);
       verify(() => local.updateLongPressHintSeen(true)).called(1);
+    });
+  });
+
+  group('SettingsRepositoryImpl.setTrashRetentionDays', () {
+    test('delega los días en el local', () async {
+      when(() => local.updateTrashRetentionDays(any())).thenAnswer((_) async {});
+
+      await repo.setTrashRetentionDays(30);
+
+      verify(() => local.updateTrashRetentionDays(30)).called(1);
     });
   });
 

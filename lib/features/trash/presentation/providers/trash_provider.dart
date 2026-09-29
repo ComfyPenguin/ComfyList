@@ -6,6 +6,7 @@ import '../../../../shared/core/failures/failure.dart';
 import '../../../../shared/core/time/clock.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/providers/auth_state.dart';
+import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../data/datasources/firestore_trash_remote.dart';
 import '../../data/repositories/trash_repository_impl.dart';
 import '../../domain/entities/trash_entry.dart';
@@ -68,3 +69,29 @@ class TrashNotifier extends Notifier<TrashState> {
 final trashProvider = NotifierProvider<TrashNotifier, TrashState>(
   TrashNotifier.new,
 );
+
+/// Vacía la papelera sola cuando le toca.
+///
+/// Lo activa `app.dart`, así que corre al abrir la app con sesión y cada vez que
+/// cambia el plazo elegido: no hace falta entrar en la papelera para que la
+/// cuenta se vaya limpiando. Best-effort — si falla, la próxima apertura lo
+/// vuelve a intentar.
+final trashPurgeProvider = Provider<void>((ref) {
+  final repo = ref.watch(trashRepositoryProvider);
+
+  void purge() {
+    final uid = switch (ref.read(authProvider)) {
+      Authenticated(:final user) => user.uid,
+      _ => null,
+    };
+    if (uid == null) return;
+
+    unawaited(
+      repo.purgeExpired(uid: uid, days: ref.read(trashRetentionDaysProvider)),
+    );
+  }
+
+  ref.listen(authProvider, (_, _) => purge());
+  ref.listen(trashRetentionDaysProvider, (_, _) => purge());
+  purge();
+});

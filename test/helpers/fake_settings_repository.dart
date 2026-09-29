@@ -77,4 +77,8 @@ class FakeSettingsRepository implements SettingsRepository {
   @override
   Future<void> setLongPressHintSeen(bool seen) async =>
       _save(_settings.copyWith(longPressHintSeen: seen));
+
+  @override
+  Future<void> setTrashRetentionDays(int days) async =>
+      _save(_settings.copyWith(trashRetentionDays: days));
 }

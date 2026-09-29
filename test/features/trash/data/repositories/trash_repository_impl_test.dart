@@ -156,6 +156,51 @@ void main() {
     expect(remote.entries.map((e) => e.itemId), isNot(contains('t0')));
   });
 
+  /// Un borrado de hace [days] días, como si lo hubiera dejado ahí una versión
+  /// anterior de la app.
+  Future<void> seedEntry(String id, {required int days}) => remote.createEntry(
+        uid: 'u1',
+        groupId: 'g$id',
+        item: item(id: id),
+        deletedAt: DateTime.now().toUtc().subtract(Duration(days: days)),
+      );
+
+  test('purgeExpired borra lo que pasó su plazo y deja lo reciente', () async {
+    await seedEntry('viejo', days: 20);
+    await repo.save(uid: 'u1', items: [item(id: 'nuevo')]);
+
+    final res = await repo.purgeExpired(uid: 'u1', days: 15);
+
+    expect(res.isOk, isTrue);
+    expect(remote.entries.map((e) => e.itemId), ['nuevo']);
+  });
+
+  test('purgeExpired deja lo que todavía no ha cumplido el plazo', () async {
+    await seedEntry('reciente', days: 14);
+
+    await repo.purgeExpired(uid: 'u1', days: 15);
+
+    expect(remote.entries.map((e) => e.itemId), ['reciente']);
+  });
+
+  test('purgeExpired con «nunca» no toca nada', () async {
+    await seedEntry('viejo', days: 300);
+
+    final res = await repo.purgeExpired(uid: 'u1', days: 0);
+
+    expect(res.isOk, isTrue);
+    expect(remote.entries, hasLength(1));
+  });
+
+  test('purgeExpired con la red caída devuelve Err', () async {
+    final offline = TrashRepositoryImpl(_OfflineRemote());
+
+    final res = await offline.purgeExpired(uid: 'u1', days: 7);
+
+    expect(res.isErr, isTrue);
+    offline.dispose();
+  });
+
   test('watch emite la papelera al suscribirse', () async {
     await repo.save(uid: 'u1', items: [item(id: 't1')]);
 

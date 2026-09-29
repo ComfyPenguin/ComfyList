@@ -124,6 +124,28 @@ class TrashRepositoryImpl implements TrashRepository {
   }
 
   @override
+  Future<Result<void>> purgeExpired({
+    required String uid,
+    required int days,
+  }) async {
+    if (days <= 0) return const Ok(null);
+    try {
+      final cutoff = DateTime.now().toUtc().subtract(Duration(days: days));
+      var removed = false;
+      for (final entry in await _remote.listEntries(uid)) {
+        if (entry.deletedAt.isBefore(cutoff)) {
+          await _remote.deleteEntry(uid: uid, id: entry.id);
+          removed = true;
+        }
+      }
+      if (removed) await _refresh(uid);
+      return const Ok(null);
+    } on DioException catch (e) {
+      return Err(_mapDioError(e));
+    }
+  }
+
+  @override
   void pauseAll() => _watcher?.pause();
 
   @override

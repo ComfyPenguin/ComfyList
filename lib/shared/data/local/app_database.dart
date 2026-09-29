@@ -19,7 +19,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -83,7 +83,10 @@ class AppDatabase extends _$AppDatabase {
                   settingsTable.appointmentReminderMinutes:
                       settingsTable.appointmentReminderMinutes.cast<String>(),
                 },
-                newColumns: [settingsTable.longPressHintSeen],
+                newColumns: [
+                  settingsTable.longPressHintSeen,
+                  settingsTable.trashRetentionDays,
+                ],
               ),
             );
           }
@@ -93,6 +96,15 @@ class AppDatabase extends _$AppDatabase {
             await migrator.addColumn(
               settingsTable,
               settingsTable.longPressHintSeen,
+            );
+          }
+          // Quien viene de la v8 o antes ya recibe la columna con la
+          // recreación de la tabla de arriba; solo la v9 y la v10 llegan aquí
+          // sin ella.
+          if (from >= 9 && from < 11) {
+            await migrator.addColumn(
+              settingsTable,
+              settingsTable.trashRetentionDays,
             );
           }
         },

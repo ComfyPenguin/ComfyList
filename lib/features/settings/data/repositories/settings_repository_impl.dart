@@ -25,6 +25,9 @@ class SettingsRepositoryImpl implements SettingsRepository {
         row.appointmentReminderMinutes,
       ),
       longPressHintSeen: row.longPressHintSeen,
+      trashRetentionDays: AppSettings.parseTrashRetentionDays(
+        row.trashRetentionDays,
+      ),
     );
   }
 
@@ -44,6 +47,9 @@ class SettingsRepositoryImpl implements SettingsRepository {
               row.appointmentReminderMinutes,
             ),
             longPressHintSeen: row.longPressHintSeen,
+            trashRetentionDays: AppSettings.parseTrashRetentionDays(
+              row.trashRetentionDays,
+            ),
           ),
         );
   }
@@ -98,5 +104,10 @@ class SettingsRepositoryImpl implements SettingsRepository {
   @override
   Future<void> setLongPressHintSeen(bool seen) {
     return _local.updateLongPressHintSeen(seen);
+  }
+
+  @override
+  Future<void> setTrashRetentionDays(int days) {
+    return _local.updateTrashRetentionDays(days);
   }
 }

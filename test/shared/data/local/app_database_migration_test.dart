@@ -43,6 +43,27 @@ CREATE TABLE settings_table (
 );
 ''';
 
+/// `settings_table` tal y como quedó en la v10: la última antes de que la
+/// papelera supiera vaciarse sola. Es la foto de lo que hay en las
+/// instalaciones que se van a migrar.
+const _v10SettingsTable = '''
+CREATE TABLE settings_table (
+  id INTEGER NOT NULL DEFAULT 1,
+  theme_mode TEXT NOT NULL DEFAULT 'system',
+  notifications_enabled INTEGER NOT NULL DEFAULT 0,
+  appointments_completion_enabled INTEGER NOT NULL DEFAULT 0,
+  completed_to_bottom INTEGER NOT NULL DEFAULT 1,
+  appointments_completed_to_bottom INTEGER NOT NULL DEFAULT 1,
+  appointments_today_on_top INTEGER NOT NULL DEFAULT 1,
+  invert_swipe_actions INTEGER NOT NULL DEFAULT 0,
+  use24_hour_format INTEGER NOT NULL DEFAULT 1,
+  appointment_reminder_minutes TEXT NOT NULL DEFAULT '30',
+  long_press_hint_seen INTEGER NOT NULL DEFAULT 0,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (id)
+);
+''';
+
 void main() {
   late AppDatabase db;
 
@@ -77,6 +98,21 @@ void main() {
     await db.settingsDao.getOrCreate();
     await db.customStatement('DROP TABLE settings_table');
     await db.customStatement(_v9SettingsTable);
+    await db.customStatement(
+      'INSERT INTO settings_table (id, theme_mode, appointment_reminder_minutes, '
+      "updated_at) VALUES (1, '$themeMode', '$appointmentReminderMinutes', 0);",
+    );
+  }
+
+  /// Deja la base de datos como una instalación de la v10: la tabla sin la
+  /// columna del plazo de la papelera y la fila guardada del usuario.
+  Future<void> seedV10({
+    String themeMode = 'dark',
+    String appointmentReminderMinutes = '30',
+  }) async {
+    await db.settingsDao.getOrCreate();
+    await db.customStatement('DROP TABLE settings_table');
+    await db.customStatement(_v10SettingsTable);
     await db.customStatement(
       'INSERT INTO settings_table (id, theme_mode, appointment_reminder_minutes, '
       "updated_at) VALUES (1, '$themeMode', '$appointmentReminderMinutes', 0);",
@@ -184,6 +220,49 @@ void main() {
 
       final streamed = await db.settingsDao.watch().first;
       expect(streamed.longPressHintSeen, isTrue);
+    });
+  });
+
+  group('migración de la v10 a la v11', () {
+    test('añade el plazo de la papelera apagado de fábrica', () async {
+      await seedV10();
+
+      await db.migration.onUpgrade(Migrator(db), 10, 11);
+
+      final row = await db.settingsDao.getOrCreate();
+      expect(row.trashRetentionDays, 0);
+
+      // La columna debe existir de verdad en SQLite, no solo en el código.
+      final columns = await db
+          .customSelect('PRAGMA table_info(settings_table);')
+          .get();
+      expect(
+        columns.any(
+          (column) => column.read<String>('name') == 'trash_retention_days',
+        ),
+        isTrue,
+      );
+    });
+
+    test('conserva el resto de la fila', () async {
+      await seedV10(themeMode: 'light', appointmentReminderMinutes: '0,60');
+
+      await db.migration.onUpgrade(Migrator(db), 10, 11);
+
+      final row = await db.settingsDao.getOrCreate();
+      expect(row.themeMode, 'light');
+      expect(row.appointmentReminderMinutes, '0,60');
+      expect(row.id, 1);
+    });
+
+    test('el plazo se puede escribir y watch emite el valor nuevo', () async {
+      await seedV10();
+
+      await db.migration.onUpgrade(Migrator(db), 10, 11);
+      await db.settingsDao.updateTrashRetentionDays(30);
+
+      final streamed = await db.settingsDao.watch().first;
+      expect(streamed.trashRetentionDays, 30);
     });
   });
 }

@@ -27,6 +27,10 @@ abstract class TrashRepository {
 
   Future<Result<void>> empty(String uid);
 
+  /// Vacía sola lo que lleve más de [days] días en la papelera. `days <= 0` es
+  /// «nunca»: no toca nada.
+  Future<Result<void>> purgeExpired({required String uid, required int days});
+
   /// Pausa y reanuda el polling del watcher activo (ciclo de vida de la app).
   void pauseAll();
   void resumeAll();

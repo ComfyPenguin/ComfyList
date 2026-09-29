@@ -50,6 +50,11 @@ class SettingsTable extends Table {
   BoolColumn get longPressHintSeen =>
       boolean().withDefault(const Constant(false))();
 
+  /// Días que aguanta un borrado en la papelera antes de que la app la vacíe
+  /// sola. `0` es «nunca».
+  IntColumn get trashRetentionDays =>
+      integer().withDefault(const Constant(0))();
+
   DateTimeColumn get updatedAt => dateTime()();
 
   @override

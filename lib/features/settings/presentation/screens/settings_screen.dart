@@ -24,6 +24,7 @@ import '../widgets/notifications_toggle.dart';
 import '../widgets/settings_tile.dart';
 import '../widgets/theme_mode_selector.dart';
 import '../widgets/today_on_top_toggle.dart';
+import '../widgets/trash_retention_selector.dart';
 
 /// Pantalla de ajustes. Vive dentro del [AppShell], que pone el título y la
 /// flecha atrás en su TopBar.
@@ -124,13 +125,16 @@ class SettingsScreen extends ConsumerWidget {
         SettingsTile(
           icon: Icons.restore_from_trash_outlined,
           title: 'Papelera',
-          description: 'Tus listas, tareas y citas borradas.',
+          isFirst: true,
+          isLast: false,
           trailing: Icon(
             Icons.chevron_right_rounded,
             color: context.colors.muted,
           ),
           onTap: () => context.push(Routes.trash),
         ),
+        const SizedBox(height: AppSpacing.joined),
+        const TrashRetentionSelector(isFirst: false, isLast: true),
         const SizedBox(height: AppSpacing.xxxl),
         _SectionHeader(label: 'CITAS', style: sectionStyle),
         const HourFormatSelector(isFirst: true, isLast: false),

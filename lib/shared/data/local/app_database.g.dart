@@ -165,6 +165,17 @@ class $SettingsTableTable extends SettingsTable
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _trashRetentionDaysMeta =
+      const VerificationMeta('trashRetentionDays');
+  @override
+  late final GeneratedColumn<int> trashRetentionDays = GeneratedColumn<int>(
+    'trash_retention_days',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
   );
@@ -189,6 +200,7 @@ class $SettingsTableTable extends SettingsTable
     use24HourFormat,
     appointmentReminderMinutes,
     longPressHintSeen,
+    trashRetentionDays,
     updatedAt,
   ];
   @override
@@ -293,6 +305,15 @@ class $SettingsTableTable extends SettingsTable
         ),
       );
     }
+    if (data.containsKey('trash_retention_days')) {
+      context.handle(
+        _trashRetentionDaysMeta,
+        trashRetentionDays.isAcceptableOrUnknown(
+          data['trash_retention_days']!,
+          _trashRetentionDaysMeta,
+        ),
+      );
+    }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
@@ -354,6 +375,10 @@ class $SettingsTableTable extends SettingsTable
         DriftSqlType.bool,
         data['${effectivePrefix}long_press_hint_seen'],
       )!,
+      trashRetentionDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}trash_retention_days'],
+      )!,
       updatedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
@@ -403,6 +428,10 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
   /// Si `true`, ya se mostró la pista de mantener pulsada una tarjeta para
   /// editarla y no vuelve a aparecer.
   final bool longPressHintSeen;
+
+  /// Días que aguanta un borrado en la papelera antes de que la app la vacíe
+  /// sola. `0` es «nunca».
+  final int trashRetentionDays;
   final DateTime updatedAt;
   const SettingsRow({
     required this.id,
@@ -416,6 +445,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     required this.use24HourFormat,
     required this.appointmentReminderMinutes,
     required this.longPressHintSeen,
+    required this.trashRetentionDays,
     required this.updatedAt,
   });
   @override
@@ -438,6 +468,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       appointmentReminderMinutes,
     );
     map['long_press_hint_seen'] = Variable<bool>(longPressHintSeen);
+    map['trash_retention_days'] = Variable<int>(trashRetentionDays);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
   }
@@ -455,6 +486,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       use24HourFormat: Value(use24HourFormat),
       appointmentReminderMinutes: Value(appointmentReminderMinutes),
       longPressHintSeen: Value(longPressHintSeen),
+      trashRetentionDays: Value(trashRetentionDays),
       updatedAt: Value(updatedAt),
     );
   }
@@ -486,6 +518,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
         json['appointmentReminderMinutes'],
       ),
       longPressHintSeen: serializer.fromJson<bool>(json['longPressHintSeen']),
+      trashRetentionDays: serializer.fromJson<int>(json['trashRetentionDays']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
   }
@@ -510,6 +543,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
         appointmentReminderMinutes,
       ),
       'longPressHintSeen': serializer.toJson<bool>(longPressHintSeen),
+      'trashRetentionDays': serializer.toJson<int>(trashRetentionDays),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
   }
@@ -526,6 +560,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     bool? use24HourFormat,
     String? appointmentReminderMinutes,
     bool? longPressHintSeen,
+    int? trashRetentionDays,
     DateTime? updatedAt,
   }) => SettingsRow(
     id: id ?? this.id,
@@ -543,6 +578,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     appointmentReminderMinutes:
         appointmentReminderMinutes ?? this.appointmentReminderMinutes,
     longPressHintSeen: longPressHintSeen ?? this.longPressHintSeen,
+    trashRetentionDays: trashRetentionDays ?? this.trashRetentionDays,
     updatedAt: updatedAt ?? this.updatedAt,
   );
   SettingsRow copyWithCompanion(SettingsTableCompanion data) {
@@ -576,6 +612,9 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       longPressHintSeen: data.longPressHintSeen.present
           ? data.longPressHintSeen.value
           : this.longPressHintSeen,
+      trashRetentionDays: data.trashRetentionDays.present
+          ? data.trashRetentionDays.value
+          : this.trashRetentionDays,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
@@ -598,6 +637,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
           ..write('use24HourFormat: $use24HourFormat, ')
           ..write('appointmentReminderMinutes: $appointmentReminderMinutes, ')
           ..write('longPressHintSeen: $longPressHintSeen, ')
+          ..write('trashRetentionDays: $trashRetentionDays, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
@@ -616,6 +656,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     use24HourFormat,
     appointmentReminderMinutes,
     longPressHintSeen,
+    trashRetentionDays,
     updatedAt,
   );
   @override
@@ -635,6 +676,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
           other.use24HourFormat == this.use24HourFormat &&
           other.appointmentReminderMinutes == this.appointmentReminderMinutes &&
           other.longPressHintSeen == this.longPressHintSeen &&
+          other.trashRetentionDays == this.trashRetentionDays &&
           other.updatedAt == this.updatedAt);
 }
 
@@ -650,6 +692,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
   final Value<bool> use24HourFormat;
   final Value<String> appointmentReminderMinutes;
   final Value<bool> longPressHintSeen;
+  final Value<int> trashRetentionDays;
   final Value<DateTime> updatedAt;
   const SettingsTableCompanion({
     this.id = const Value.absent(),
@@ -663,6 +706,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     this.use24HourFormat = const Value.absent(),
     this.appointmentReminderMinutes = const Value.absent(),
     this.longPressHintSeen = const Value.absent(),
+    this.trashRetentionDays = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
   SettingsTableCompanion.insert({
@@ -677,6 +721,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     this.use24HourFormat = const Value.absent(),
     this.appointmentReminderMinutes = const Value.absent(),
     this.longPressHintSeen = const Value.absent(),
+    this.trashRetentionDays = const Value.absent(),
     required DateTime updatedAt,
   }) : updatedAt = Value(updatedAt);
   static Insertable<SettingsRow> custom({
@@ -691,6 +736,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     Expression<bool>? use24HourFormat,
     Expression<String>? appointmentReminderMinutes,
     Expression<bool>? longPressHintSeen,
+    Expression<int>? trashRetentionDays,
     Expression<DateTime>? updatedAt,
   }) {
     return RawValuesInsertable({
@@ -711,6 +757,8 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
       if (appointmentReminderMinutes != null)
         'appointment_reminder_minutes': appointmentReminderMinutes,
       if (longPressHintSeen != null) 'long_press_hint_seen': longPressHintSeen,
+      if (trashRetentionDays != null)
+        'trash_retention_days': trashRetentionDays,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
   }
@@ -727,6 +775,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     Value<bool>? use24HourFormat,
     Value<String>? appointmentReminderMinutes,
     Value<bool>? longPressHintSeen,
+    Value<int>? trashRetentionDays,
     Value<DateTime>? updatedAt,
   }) {
     return SettingsTableCompanion(
@@ -745,6 +794,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
       appointmentReminderMinutes:
           appointmentReminderMinutes ?? this.appointmentReminderMinutes,
       longPressHintSeen: longPressHintSeen ?? this.longPressHintSeen,
+      trashRetentionDays: trashRetentionDays ?? this.trashRetentionDays,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
@@ -793,6 +843,9 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     if (longPressHintSeen.present) {
       map['long_press_hint_seen'] = Variable<bool>(longPressHintSeen.value);
     }
+    if (trashRetentionDays.present) {
+      map['trash_retention_days'] = Variable<int>(trashRetentionDays.value);
+    }
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
@@ -817,6 +870,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
           ..write('use24HourFormat: $use24HourFormat, ')
           ..write('appointmentReminderMinutes: $appointmentReminderMinutes, ')
           ..write('longPressHintSeen: $longPressHintSeen, ')
+          ..write('trashRetentionDays: $trashRetentionDays, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
@@ -1173,6 +1227,7 @@ typedef $$SettingsTableTableCreateCompanionBuilder =
       Value<bool> use24HourFormat,
       Value<String> appointmentReminderMinutes,
       Value<bool> longPressHintSeen,
+      Value<int> trashRetentionDays,
       required DateTime updatedAt,
     });
 typedef $$SettingsTableTableUpdateCompanionBuilder =
@@ -1188,6 +1243,7 @@ typedef $$SettingsTableTableUpdateCompanionBuilder =
       Value<bool> use24HourFormat,
       Value<String> appointmentReminderMinutes,
       Value<bool> longPressHintSeen,
+      Value<int> trashRetentionDays,
       Value<DateTime> updatedAt,
     });
 
@@ -1252,6 +1308,11 @@ class $$SettingsTableTableFilterComposer
 
   ColumnFilters<bool> get longPressHintSeen => $composableBuilder(
     column: $table.longPressHintSeen,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get trashRetentionDays => $composableBuilder(
+    column: $table.trashRetentionDays,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1325,6 +1386,11 @@ class $$SettingsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get trashRetentionDays => $composableBuilder(
+    column: $table.trashRetentionDays,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
@@ -1391,6 +1457,11 @@ class $$SettingsTableTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get trashRetentionDays => $composableBuilder(
+    column: $table.trashRetentionDays,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
@@ -1439,6 +1510,7 @@ class $$SettingsTableTableTableManager
                 Value<bool> use24HourFormat = const Value.absent(),
                 Value<String> appointmentReminderMinutes = const Value.absent(),
                 Value<bool> longPressHintSeen = const Value.absent(),
+                Value<int> trashRetentionDays = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
               }) => SettingsTableCompanion(
                 id: id,
@@ -1452,6 +1524,7 @@ class $$SettingsTableTableTableManager
                 use24HourFormat: use24HourFormat,
                 appointmentReminderMinutes: appointmentReminderMinutes,
                 longPressHintSeen: longPressHintSeen,
+                trashRetentionDays: trashRetentionDays,
                 updatedAt: updatedAt,
               ),
           createCompanionCallback:
@@ -1469,6 +1542,7 @@ class $$SettingsTableTableTableManager
                 Value<bool> use24HourFormat = const Value.absent(),
                 Value<String> appointmentReminderMinutes = const Value.absent(),
                 Value<bool> longPressHintSeen = const Value.absent(),
+                Value<int> trashRetentionDays = const Value.absent(),
                 required DateTime updatedAt,
               }) => SettingsTableCompanion.insert(
                 id: id,
@@ -1482,6 +1556,7 @@ class $$SettingsTableTableTableManager
                 use24HourFormat: use24HourFormat,
                 appointmentReminderMinutes: appointmentReminderMinutes,
                 longPressHintSeen: longPressHintSeen,
+                trashRetentionDays: trashRetentionDays,
                 updatedAt: updatedAt,
               ),
           withReferenceMapper: (p0) => p0

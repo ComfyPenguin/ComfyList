@@ -131,4 +131,15 @@ class SettingsDao extends DatabaseAccessor<AppDatabase> with _$SettingsDaoMixin 
       ),
     );
   }
+
+  /// [days] es 0 para «nunca».
+  Future<void> updateTrashRetentionDays(int days) async {
+    await getOrCreate();
+    await (update(settingsTable)..where((t) => t.id.equals(1))).write(
+      SettingsTableCompanion(
+        trashRetentionDays: Value(days),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+  }
 }
