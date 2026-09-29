@@ -17,8 +17,8 @@ void main() {
       expect(defaults.use24HourFormat, isTrue);
       expect(defaults.appointmentReminderMinutes, [30]);
       expect(defaults.longPressHintSeen, isFalse);
-      expect(defaults.trashRetentionDays, 0);
-      expect(defaults.emptiesTrashItself, isFalse);
+      expect(defaults.trashRetentionDays, 30);
+      expect(defaults.emptiesTrashItself, isTrue);
     });
   });
 
@@ -190,10 +190,14 @@ void main() {
       }
     });
 
-    test('cualquier otro valor cae a «nunca»', () {
-      expect(AppSettings.parseTrashRetentionDays(5), 0);
-      expect(AppSettings.parseTrashRetentionDays(-1), 0);
-      expect(AppSettings.parseTrashRetentionDays(365), 0);
+    test('«nunca» es un valor más, no un hueco', () {
+      expect(AppSettings.parseTrashRetentionDays(0), 0);
+    });
+
+    test('cualquier otro valor cae al plazo de fábrica', () {
+      expect(AppSettings.parseTrashRetentionDays(5), 30);
+      expect(AppSettings.parseTrashRetentionDays(-1), 30);
+      expect(AppSettings.parseTrashRetentionDays(365), 30);
     });
   });
 

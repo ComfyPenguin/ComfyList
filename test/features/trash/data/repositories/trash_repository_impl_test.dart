@@ -201,6 +201,50 @@ void main() {
     offline.dispose();
   });
 
+  test('el recorte se lleva borrados enteros, no la mitad de uno', () async {
+    // La cuenta llega al tope con borrados de uno en uno y luego cae una lista
+    // con sus tareas, que es un borrado de tres.
+    for (var i = 0; i < TrashRepositoryImpl.maxEntriesPerUid; i++) {
+      await repo.save(uid: 'u1', items: [item(id: 't$i')]);
+    }
+
+    await repo.save(
+      uid: 'u1',
+      items: [
+        item(id: 'L1', kind: TrashKind.list),
+        item(id: 'tarea1', parentId: 'L1'),
+        item(id: 'tarea2', parentId: 'L1'),
+      ],
+    );
+
+    final kept = remote.entries.map((e) => e.itemId).toList();
+
+    expect(kept, hasLength(TrashRepositoryImpl.maxEntriesPerUid));
+    // La lista se queda entera con sus dos tareas.
+    expect(kept, containsAll(['L1', 'tarea1', 'tarea2']));
+    // Y lo que se fue son los borrados más viejos.
+    expect(kept, isNot(contains('t0')));
+    expect(kept, isNot(contains('t1')));
+    expect(kept, isNot(contains('t2')));
+    expect(kept, contains('t3'));
+  });
+
+  test('un solo borrado que pasa del tope se guarda entero', () async {
+    final items = [
+      for (var i = 0; i < TrashRepositoryImpl.maxEntriesPerUid + 20; i++)
+        item(id: 't$i', parentId: 'L1'),
+    ];
+
+    await repo.save(uid: 'u1', items: items);
+
+    // Antes pasado que partido: sin las tareas, la lista no se restaura.
+    expect(remote.entries, hasLength(items.length));
+    expect(
+      remote.entries.map((e) => e.itemId),
+      containsAll(['t0', 't${items.length - 1}']),
+    );
+  });
+
   test('watch emite la papelera al suscribirse', () async {
     await repo.save(uid: 'u1', items: [item(id: 't1')]);
 

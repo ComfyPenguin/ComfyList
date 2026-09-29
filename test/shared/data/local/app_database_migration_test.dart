@@ -224,13 +224,13 @@ void main() {
   });
 
   group('migración de la v10 a la v11', () {
-    test('añade el plazo de la papelera apagado de fábrica', () async {
+    test('añade el plazo de la papelera con el mes de fábrica', () async {
       await seedV10();
 
       await db.migration.onUpgrade(Migrator(db), 10, 11);
 
       final row = await db.settingsDao.getOrCreate();
-      expect(row.trashRetentionDays, 0);
+      expect(row.trashRetentionDays, 30);
 
       // La columna debe existir de verdad en SQLite, no solo en el código.
       final columns = await db
@@ -263,6 +263,35 @@ void main() {
 
       final streamed = await db.settingsDao.watch().first;
       expect(streamed.trashRetentionDays, 30);
+    });
+  });
+
+  group('migración de la v11 a la v12', () {
+    /// Deja la fila como la dejaba la v11: con «nunca» de fábrica.
+    Future<void> seedV11() async {
+      await db.settingsDao.getOrCreate();
+      await db.customStatement(
+        'UPDATE settings_table SET trash_retention_days = 0 WHERE id = 1',
+      );
+    }
+
+    test('un plazo que nadie eligió pasa al mes de fábrica', () async {
+      await seedV11();
+
+      await db.migration.onUpgrade(Migrator(db), 11, 12);
+
+      final row = await db.settingsDao.getOrCreate();
+      expect(row.trashRetentionDays, 30);
+    });
+
+    test('un plazo ya elegido se respeta', () async {
+      await seedV11();
+      await db.settingsDao.updateTrashRetentionDays(7);
+
+      await db.migration.onUpgrade(Migrator(db), 11, 12);
+
+      final row = await db.settingsDao.getOrCreate();
+      expect(row.trashRetentionDays, 7);
     });
   });
 }

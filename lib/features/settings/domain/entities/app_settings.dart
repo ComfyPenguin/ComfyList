@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
 /// Cuántos recordatorios puede llevar una cita.
-const int maxAppointmentReminders = 5;
-
-/// Días que ofrece el ajuste de la papelera antes de vaciarla sola. `0` es
+const int maxAppointmentReminders = 5;/// Días que ofrece el ajuste de la papelera antes de vaciarla sola. `0` es
 /// «nunca»: los borrados se quedan hasta que el usuario la vacíe a mano.
 const List<int> trashRetentionDayOptions = [0, 7, 15, 30];
+
+/// Días que aguanta la papelera de fábrica: un mes de margen antes de empezar a
+/// vaciarse sola.
+const int defaultTrashRetentionDays = 30;
 
 /// Configuración local de la app (tema y preferencias de usuario).
 @immutable
@@ -61,7 +63,8 @@ class AppSettings {
   final bool longPressHintSeen;
 
   /// Días que aguanta un borrado en la papelera antes de que la app la vacíe
-  /// sola. `0` es «nunca». Es uno de [trashRetentionDayOptions].
+  /// sola: uno de [trashRetentionDayOptions], con `0` para «nunca». De fábrica
+  /// [defaultTrashRetentionDays].
   final int trashRetentionDays;
 
   /// Si la papelera se vacía sola ([trashRetentionDays] distinto de «nunca»).
@@ -78,7 +81,7 @@ class AppSettings {
     use24HourFormat: true,
     appointmentReminderMinutes: [30],
     longPressHintSeen: false,
-    trashRetentionDays: 0,
+    trashRetentionDays: defaultTrashRetentionDays,
   );
 
   AppSettings copyWith({
@@ -143,7 +146,7 @@ class AppSettings {
   /// fila tocada a mano— cae a «nunca», para que el control tenga siempre una
   /// opción que marcar.
   static int parseTrashRetentionDays(int value) =>
-      trashRetentionDayOptions.contains(value) ? value : 0;
+      trashRetentionDayOptions.contains(value) ? value : defaultTrashRetentionDays;
 
   /// Márgenes guardados. Un valor vacío es «sin avisos» y lo que no se pueda
   /// leer se descarta.

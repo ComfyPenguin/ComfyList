@@ -7,6 +7,7 @@ import '../../../../shared/core/time/clock.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/providers/auth_state.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
+import '../../../settings/presentation/providers/settings_state.dart';
 import '../../data/datasources/firestore_trash_remote.dart';
 import '../../data/repositories/trash_repository_impl.dart';
 import '../../domain/entities/trash_entry.dart';
@@ -80,18 +81,22 @@ final trashPurgeProvider = Provider<void>((ref) {
   final repo = ref.watch(trashRepositoryProvider);
 
   void purge() {
+    // Sin preferencias leídas no se sabe qué plazo hay guardado, y purgar con
+    // el de fábrica borraría de más a quien tenga «nunca».
+    final days = switch (ref.read(settingsProvider)) {
+      SettingsData(:final settings) => settings.trashRetentionDays,
+      _ => null,
+    };
     final uid = switch (ref.read(authProvider)) {
       Authenticated(:final user) => user.uid,
       _ => null,
     };
-    if (uid == null) return;
+    if (days == null || uid == null) return;
 
-    unawaited(
-      repo.purgeExpired(uid: uid, days: ref.read(trashRetentionDaysProvider)),
-    );
+    unawaited(repo.purgeExpired(uid: uid, days: days));
   }
 
   ref.listen(authProvider, (_, _) => purge());
-  ref.listen(trashRetentionDaysProvider, (_, _) => purge());
+  ref.listen(settingsProvider, (_, _) => purge());
   purge();
 });

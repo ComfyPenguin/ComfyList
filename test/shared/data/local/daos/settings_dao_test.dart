@@ -29,7 +29,7 @@ void main() {
       expect(row.use24HourFormat, isTrue);
       expect(row.appointmentReminderMinutes, '30');
       expect(row.longPressHintSeen, isFalse);
-      expect(row.trashRetentionDays, 0);
+      expect(row.trashRetentionDays, 30);
     });
 
     test('devuelve la misma fila en llamadas sucesivas y deja una sola row',

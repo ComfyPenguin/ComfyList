@@ -72,6 +72,21 @@ void main() {
     expect(trash.entries, hasLength(1));
   });
 
+  test('sin los ajustes leídos no se purga con el plazo de fábrica', () async {
+    // El plazo de fábrica es un mes: darlo por bueno antes de leer las
+    // preferencias borraría de más a quien tenga «nunca» puesto.
+    final settings = FakeSettingsRepository(
+      settings: buildAppSettings(trashRetentionDays: 0),
+    )..fail = true;
+    final container = containerWith(settings: settings);
+    await seedOldEntry(days: 300);
+
+    container.listen(trashPurgeProvider, (_, _) {});
+    await pumpEventQueue();
+
+    expect(trash.entries, hasLength(1));
+  });
+
   test('sin sesión no hay papelera que vaciar', () async {
     final container = containerWith(
       authState: const Unauthenticated(),

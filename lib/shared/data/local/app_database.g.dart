@@ -174,7 +174,7 @@ class $SettingsTableTable extends SettingsTable
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultValue: const Constant(0),
+    defaultValue: const Constant(30),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -430,7 +430,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
   final bool longPressHintSeen;
 
   /// Días que aguanta un borrado en la papelera antes de que la app la vacíe
-  /// sola. `0` es «nunca».
+  /// sola. `0` es «nunca»; de fábrica, un mes.
   final int trashRetentionDays;
   final DateTime updatedAt;
   const SettingsRow({

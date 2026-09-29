@@ -30,7 +30,7 @@ void main() {
     bool use24HourFormat = true,
     String appointmentReminderMinutes = '30',
     bool longPressHintSeen = false,
-    int trashRetentionDays = 0,
+    int trashRetentionDays = defaultTrashRetentionDays,
   }) {
     return SettingsRow(
       id: 1,
@@ -65,7 +65,7 @@ void main() {
       expect(result.use24HourFormat, isTrue);
       expect(result.appointmentReminderMinutes, [30]);
       expect(result.longPressHintSeen, isFalse);
-      expect(result.trashRetentionDays, 0);
+      expect(result.trashRetentionDays, 30);
     });
 
     test('lee los días que aguanta la papelera', () async {
@@ -78,14 +78,14 @@ void main() {
       expect(result.trashRetentionDays, 15);
     });
 
-    test('un plazo que el ajuste no ofrece cae a «nunca»', () async {
+    test('un valor que el ajuste no ofrece cae al plazo de fábrica', () async {
       when(
         () => local.getOrCreate(),
       ).thenAnswer((_) async => buildRow(trashRetentionDays: 5));
 
       final result = await repo.load();
 
-      expect(result.trashRetentionDays, 0);
+      expect(result.trashRetentionDays, 30);
     });
 
     test('mapea longPressHintSeen desde la fila', () async {

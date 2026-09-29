@@ -19,7 +19,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -105,6 +105,14 @@ class AppDatabase extends _$AppDatabase {
             await migrator.addColumn(
               settingsTable,
               settingsTable.trashRetentionDays,
+            );
+          }
+          if (from < 12) {
+            // La v11 nació con «nunca» por defecto, antes de que la papelera
+            // arrancara con un mes de plazo: ese 0 no lo había elegido nadie.
+            await customStatement(
+              'UPDATE settings_table SET trash_retention_days = 30 '
+              'WHERE trash_retention_days = 0',
             );
           }
         },

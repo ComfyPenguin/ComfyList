@@ -157,10 +157,33 @@ class TrashRepositoryImpl implements TrashRepository {
     _watcherUid = null;
   }
 
-  /// Deja solo los [maxEntriesPerUid] borrados más recientes de la cuenta.
+  /// Deja solo los [maxEntriesPerUid] borrados más recientes de la cuenta, y
+  /// siempre por borrados enteros: una lista y sus tareas van juntas o no van.
   Future<void> _trim(String uid) async {
     final entries = _newestFirst(await _remote.listEntries(uid));
-    for (final entry in entries.skip(maxEntriesPerUid)) {
+    if (entries.length <= maxEntriesPerUid) return;
+
+    final sizes = <String, int>{};
+    for (final entry in entries) {
+      sizes[entry.groupId] = (sizes[entry.groupId] ?? 0) + 1;
+    }
+
+    // Del más nuevo al más viejo mientras el borrado entero quepa; el primero
+    // que no cabe se va con los que le siguen.
+    final kept = <String>{};
+    var keptCount = 0;
+    for (final entry in entries) {
+      if (kept.contains(entry.groupId)) continue;
+      final size = sizes[entry.groupId]!;
+      if (keptCount > 0 && keptCount + size > maxEntriesPerUid) break;
+      kept.add(entry.groupId);
+      keptCount += size;
+    }
+
+    // El más nuevo se queda siempre, aunque él solo pase del tope: partirlo
+    // dejaría una lista sin sus tareas.
+    for (final entry in entries) {
+      if (kept.contains(entry.groupId)) continue;
       await _remote.deleteEntry(uid: uid, id: entry.id);
     }
   }

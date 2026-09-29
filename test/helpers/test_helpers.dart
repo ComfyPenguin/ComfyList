@@ -143,7 +143,7 @@ SettingsRow buildSettingsRow({
   bool use24HourFormat = true,
   String appointmentReminderMinutes = '30',
   bool longPressHintSeen = false,
-  int trashRetentionDays = 0,
+  int trashRetentionDays = defaultTrashRetentionDays,
   DateTime? updatedAt,
 }) {
   return SettingsRow(

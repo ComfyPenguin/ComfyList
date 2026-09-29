@@ -64,11 +64,11 @@ void main() {
     }
   });
 
-  testWidgets('arranca en «nunca»', (tester) async {
+  testWidgets('arranca en el plazo de fábrica', (tester) async {
     await pumpSelector(tester);
 
     final selected = control(tester);
-    expect(selected.options[selected.selectedIndex].label, 'Nunca');
+    expect(selected.options[selected.selectedIndex].label, '30 días');
   });
 
   testWidgets('muestra el plazo guardado', (tester) async {
