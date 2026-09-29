@@ -9,7 +9,7 @@ import 'package:comfy_list/features/todo_lists/presentation/providers/todo_lists
 import 'package:comfy_list/features/todo_lists/presentation/providers/todo_lists_state.dart';
 import 'package:comfy_list/features/todos/domain/entities/todo.dart';
 import 'package:comfy_list/features/todos/domain/repositories/todos_repository.dart';
-import 'package:comfy_list/features/trash/presentation/providers/trash_provider.dart';
+import 'package:comfy_list/features/trash/data/datasources/firestore_trash_remote.dart';
 import 'package:comfy_list/shared/core/failures/failure.dart';
 import 'package:comfy_list/shared/core/result/result.dart';
 import 'package:comfy_list/shared/core/time/clock.dart';
@@ -17,6 +17,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/fake_trash_remote.dart';
 import '../../../../helpers/provider_scope.dart';
 import '../../../../helpers/test_helpers.dart';
 
@@ -28,6 +29,7 @@ class _MockTodosRepo extends Mock implements TodosRepository {}
 
 void main() {
   late _MockRepo repo;
+  late FakeTrashRemote trash;
 
   setUpAll(() {
     // mocktail necesita un valor de relleno para los matchers de entidades.
@@ -51,6 +53,7 @@ void main() {
 
   setUp(() {
     repo = _MockRepo();
+    trash = FakeTrashRemote();
   });
 
   ProviderContainer buildContainer() => createTestContainer(
@@ -181,7 +184,7 @@ void main() {
         )).thenAnswer((_) async => Ok(todo));
 
     final container = createTestContainer(
-      withInMemoryDb: true,
+      remoteOverrides: {FirestoreTrashRemote: trash},
       authedUser: buildAuthUser(),
       repositoryOverrides: {
         TodoListsRepository: repo,
@@ -221,10 +224,7 @@ void main() {
     expect(restoredTodo.id, 't1');
     expect(restoredTodo.title, 'Comprar pan');
 
-    expect(
-      await container.read(trashRepositoryProvider).list('u1'),
-      isEmpty,
-    );
+    expect(trash.entries, isEmpty);
   });
 
   test('bootstrap returns Initial when auth is Unauthenticated', () async {

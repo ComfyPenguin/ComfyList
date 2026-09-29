@@ -186,36 +186,4 @@ void main() {
       expect(streamed.longPressHintSeen, isTrue);
     });
   });
-
-  group('migración de la v10 a la v11', () {
-    test('crea la tabla de la papelera y no toca los ajustes', () async {
-      await db.settingsDao.getOrCreate();
-      await db.settingsDao.updateThemeMode('light');
-      // Una instalación de la v10 todavía no tiene la papelera.
-      await db.customStatement('DROP TABLE trash_table');
-
-      await db.migration.onUpgrade(Migrator(db), 10, 11);
-
-      // La tabla existe de verdad en SQLite y acepta filas.
-      await db.trashDao.insertAll([
-        TrashTableCompanion.insert(
-          uid: 'u1',
-          groupId: 'g1',
-          kind: 'todo',
-          itemId: 't1',
-          parentId: const Value('L1'),
-          label: 'Comprar pan',
-          payload: '{"id":"t1"}',
-          deletedAt: DateTime.now().toUtc(),
-        ),
-      ]);
-      final rows = await db.trashDao.listByUid('u1');
-      expect(rows, hasLength(1));
-      expect(rows.single.parentId, 'L1');
-
-      final settings = await db.settingsDao.getOrCreate();
-      expect(settings.themeMode, 'light');
-      expect(settings.id, 1);
-    });
-  });
 }

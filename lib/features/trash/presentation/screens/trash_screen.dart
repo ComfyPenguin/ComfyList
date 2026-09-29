@@ -15,9 +15,9 @@ import '../providers/trash_restore.dart';
 import '../providers/trash_state.dart';
 import '../widgets/trash_empty_state.dart';
 
-/// Pantalla de la papelera: lo borrado en la app, guardado solo en este
-/// dispositivo. Vive dentro del [AppShell], que pone el título y la flecha
-/// atrás en su TopBar.
+/// Pantalla de la papelera: lo borrado en la app, guardado en la cuenta del
+/// usuario. Vive dentro del [AppShell], que pone el título y la flecha atrás
+/// en su TopBar.
 class TrashScreen extends ConsumerStatefulWidget {
   const TrashScreen({super.key});
 

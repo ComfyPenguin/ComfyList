@@ -114,7 +114,11 @@ class TodoListsNotifier extends Notifier<TodoListsState> {
   /// Devuelve la última lista borrada junto con sus tareas. Devuelve si se pudo.
   Future<bool> undoLastDelete() async {
     final trash = ref.read(trashRepositoryProvider);
-    final entries = await trash.latestGroup(uid: _uid, kind: TrashKind.list);
+    final found = await trash.latestGroup(uid: _uid, kind: TrashKind.list);
+    final entries = found.fold(
+      onOk: (entries) => entries,
+      onErr: (_) => const <TrashEntry>[],
+    );
     if (entries.isEmpty) return false;
 
     // La lista primero: las tareas cuelgan de ella.
@@ -137,7 +141,10 @@ class TodoListsNotifier extends Notifier<TodoListsState> {
       if (restored.isErr) return false;
     }
 
-    await trash.remove(entries.map((entry) => entry.rowId).toList());
+    await trash.remove(
+      uid: _uid,
+      ids: entries.map((entry) => entry.id).toList(growable: false),
+    );
     return true;
   }
 

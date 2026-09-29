@@ -131,9 +131,13 @@ class AppointmentsNotifier extends Notifier<AppointmentsState> {
   /// Devuelve la última cita borrada. Devuelve si se pudo.
   Future<bool> undoLastDelete() async {
     final trash = ref.read(trashRepositoryProvider);
-    final entries = await trash.latestGroup(
+    final found = await trash.latestGroup(
       uid: _uid,
       kind: TrashKind.appointment,
+    );
+    final entries = found.fold(
+      onOk: (entries) => entries,
+      onErr: (_) => const <TrashEntry>[],
     );
     if (entries.isEmpty) return false;
 
@@ -146,7 +150,10 @@ class AppointmentsNotifier extends Notifier<AppointmentsState> {
       if (res.isErr) return false;
     }
 
-    await trash.remove(entries.map((entry) => entry.rowId).toList());
+    await trash.remove(
+      uid: _uid,
+      ids: entries.map((entry) => entry.id).toList(growable: false),
+    );
     return true;
   }
 

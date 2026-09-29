@@ -1,24 +1,33 @@
+import '../../../../shared/core/result/result.dart';
 import '../entities/trash_entry.dart';
 
-/// Contrato de la papelera — la implementación vive en `data/`.
+/// Contrato de la papelera — la implementación vive en `data/`. Guarda en
+/// Firestore (`users/{uid}/trash`), así que todo puede fallar por red.
 abstract class TrashRepository {
-  /// Guarda un borrado: una fila por documento, todas con el mismo grupo.
-  Future<void> save({required String uid, required List<TrashItem> items});
+  /// Guarda un borrado: un documento por elemento, todos con el mismo grupo.
+  Future<Result<void>> save({required String uid, required List<TrashItem> items});
 
   /// El grupo borrado más recientemente de ese tipo (y de esa lista, si es una
   /// tarea), con todas sus filas. Vacío si no queda nada que deshacer.
-  Future<List<TrashEntry>> latestGroup({
+  Future<Result<List<TrashEntry>>> latestGroup({
     required String uid,
     required TrashKind kind,
     String? parentId,
   });
 
   /// Toda la papelera de la cuenta, lo último borrado primero.
-  Future<List<TrashEntry>> list(String uid);
+  Future<Result<List<TrashEntry>>> list(String uid);
 
   Stream<List<TrashEntry>> watch(String uid);
 
-  Future<void> remove(List<int> rowIds);
+  Future<Result<void>> remove({
+    required String uid,
+    required List<String> ids,
+  });
 
-  Future<void> empty(String uid);
+  Future<Result<void>> empty(String uid);
+
+  /// Pausa y reanuda el polling del watcher activo (ciclo de vida de la app).
+  void pauseAll();
+  void resumeAll();
 }

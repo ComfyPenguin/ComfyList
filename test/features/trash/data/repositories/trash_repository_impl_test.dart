@@ -1,148 +1,185 @@
-import 'package:comfy_list/features/trash/data/datasources/drift_trash_local.dart';
+import 'package:comfy_list/features/trash/data/datasources/firestore_trash_remote.dart';
 import 'package:comfy_list/features/trash/data/repositories/trash_repository_impl.dart';
 import 'package:comfy_list/features/trash/domain/entities/trash_entry.dart';
-import 'package:comfy_list/shared/data/local/app_database.dart';
-import 'package:comfy_list/shared/data/local/daos/trash_dao.dart';
-import 'package:drift/native.dart';
+import 'package:comfy_list/shared/core/failures/failure.dart';
+import 'package:comfy_list/shared/core/result/result.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../../helpers/fake_trash_remote.dart';
+
+/// Cuenta sin conexión: cualquier llamada revienta como lo haría Dio.
+class _OfflineRemote implements FirestoreTrashRemote {
+  @override
+  Future<List<TrashEntry>> listEntries(String uid) async => throw _offline();
+
+  @override
+  Future<TrashEntry> createEntry({
+    required String uid,
+    required String groupId,
+    required TrashItem item,
+    required DateTime deletedAt,
+  }) async =>
+      throw _offline();
+
+  @override
+  Future<void> deleteEntry({required String uid, required String id}) async =>
+      throw _offline();
+}
+
+DioException _offline() => DioException(
+      requestOptions: RequestOptions(path: ''),
+      type: DioExceptionType.connectionError,
+    );
+
 void main() {
-  late AppDatabase db;
-  late TrashRepositoryImpl trash;
+  late FakeTrashRemote remote;
+  late TrashRepositoryImpl repo;
 
   setUp(() {
-    db = AppDatabase.forTesting(NativeDatabase.memory());
-    trash = TrashRepositoryImpl(DriftTrashLocal(db.trashDao));
+    remote = FakeTrashRemote();
+    repo = TrashRepositoryImpl(remote);
   });
 
-  tearDown(() => db.close());
+  tearDown(() => repo.dispose());
 
   TrashItem item({
-    TrashKind kind = TrashKind.todo,
     String id = 't1',
-    String label = 'Comprar pan',
-    String? parentId = 'L1',
-  }) {
-    return TrashItem(
-      kind: kind,
-      itemId: id,
-      parentId: parentId,
-      label: label,
-      payload: {'id': id, 'label': label},
-    );
-  }
-
-  TrashItem list({String id = 'L1', String name = 'Compras'}) => TrashItem(
-        kind: TrashKind.list,
+    String? parentId,
+    TrashKind kind = TrashKind.todo,
+  }) =>
+      TrashItem(
+        kind: kind,
         itemId: id,
-        label: name,
-        payload: {'id': id, 'name': name},
+        parentId: parentId,
+        label: 'Comprar $id',
+        payload: {'id': id, 'title': 'Comprar $id'},
       );
 
-  test('guarda el borrado y lo devuelve con su payload', () async {
-    await trash.save(uid: 'u1', items: [list()]);
+  List<TrashEntry> valueOf(Result<List<TrashEntry>> res) =>
+      res.fold(onOk: (entries) => entries, onErr: (f) => fail('Err: $f'));
 
-    final entries = await trash.list('u1');
-    final entry = entries.single;
-    expect(entry.kind, TrashKind.list);
-    expect(entry.itemId, 'L1');
-    expect(entry.label, 'Compras');
-    expect(entry.parentId, isNull);
-    expect(entry.payload, {'id': 'L1', 'name': 'Compras'});
-    expect(
-      entry.deletedAt.difference(DateTime.now().toUtc()).inSeconds.abs() < 5,
-      isTrue,
-      reason: 'deletedAt debe estar dentro de los últimos segundos.',
-    );
+  test('save guarda un documento por elemento y comparte grupo', () async {
+    final res = await repo.save(uid: 'u1', items: [item(), item(id: 't2')]);
+
+    expect(res.isOk, isTrue);
+    expect(remote.entries, hasLength(2));
+    expect(remote.entries.map((e) => e.groupId).toSet(), hasLength(1));
+    expect(remote.entries.map((e) => e.itemId), containsAll(['t1', 't2']));
   });
 
-  test('lo último borrado va primero', () async {
-    await trash.save(uid: 'u1', items: [item(id: 't1')]);
-    await trash.save(uid: 'u1', items: [item(id: 't2')]);
+  test('save sin elementos no escribe nada', () async {
+    final res = await repo.save(uid: 'u1', items: const []);
 
-    final entries = await trash.list('u1');
-    expect(entries.map((entry) => entry.itemId), ['t2', 't1']);
+    expect(res.isOk, isTrue);
+    expect(remote.entries, isEmpty);
   });
 
-  test('no mezcla las papeleras de dos cuentas', () async {
-    await trash.save(uid: 'u1', items: [item(id: 't1')]);
-    await trash.save(uid: 'u2', items: [item(id: 't2')]);
+  test('list devuelve lo último borrado primero', () async {
+    await repo.save(uid: 'u1', items: [item(id: 't1')]);
+    await repo.save(uid: 'u1', items: [item(id: 't2')]);
 
-    expect((await trash.list('u1')).map((e) => e.itemId), ['t1']);
-    expect((await trash.list('u2')).map((e) => e.itemId), ['t2']);
+    final entries = valueOf(await repo.list('u1'));
+
+    expect(entries.map((e) => e.itemId), ['t2', 't1']);
   });
 
-  test('latestGroup devuelve el grupo entero de un borrado con sus tareas',
+  test('latestGroup devuelve el grupo más reciente del tipo y la lista',
       () async {
-    await trash.save(uid: 'u1', items: [list(), item(id: 't1'), item(id: 't2')]);
-
-    final group = await trash.latestGroup(uid: 'u1', kind: TrashKind.list);
-
-    expect(group, hasLength(3));
-    expect(group.map((entry) => entry.itemId), containsAll(['L1', 't1', 't2']));
-  });
-
-  test('latestGroup solo mira las tareas de la lista que se le pide', () async {
-    await trash.save(uid: 'u1', items: [item(id: 't1', parentId: 'L1')]);
-    await trash.save(uid: 'u1', items: [item(id: 't2', parentId: 'L2')]);
-
-    final group = await trash.latestGroup(
+    await repo.save(uid: 'u1', items: [item(id: 't1', parentId: 'L1')]);
+    await repo.save(
       uid: 'u1',
-      kind: TrashKind.todo,
-      parentId: 'L1',
+      items: [item(id: 'a1', kind: TrashKind.appointment)],
+    );
+    await repo.save(uid: 'u1', items: [item(id: 't2', parentId: 'L2')]);
+
+    final todosOfL1 = valueOf(
+      await repo.latestGroup(uid: 'u1', kind: TrashKind.todo, parentId: 'L1'),
+    );
+    expect(todosOfL1.map((e) => e.itemId), ['t1']);
+
+    final appointments = valueOf(
+      await repo.latestGroup(uid: 'u1', kind: TrashKind.appointment),
+    );
+    expect(appointments.map((e) => e.itemId), ['a1']);
+  });
+
+  test('latestGroup de una lista trae también sus tareas', () async {
+    await repo.save(
+      uid: 'u1',
+      items: [
+        item(id: 'L1', kind: TrashKind.list),
+        item(id: 't1', parentId: 'L1'),
+      ],
     );
 
-    expect(group.map((entry) => entry.itemId), ['t1']);
+    final group =
+        valueOf(await repo.latestGroup(uid: 'u1', kind: TrashKind.list));
+
+    expect(group.map((e) => e.itemId), containsAll(['L1', 't1']));
   });
 
-  test('latestGroup vacío cuando no queda nada de ese tipo', () async {
-    await trash.save(uid: 'u1', items: [item()]);
-
-    expect(
-      await trash.latestGroup(uid: 'u1', kind: TrashKind.appointment),
-      isEmpty,
+  test('sin nada guardado no hay grupo que deshacer', () async {
+    final group = valueOf(
+      await repo.latestGroup(uid: 'u1', kind: TrashKind.todo),
     );
+
+    expect(group, isEmpty);
   });
 
-  test('remove saca solo las filas que se le pasan', () async {
-    await trash.save(uid: 'u1', items: [item(id: 't1'), item(id: 't2')]);
+  test('remove borra solo los ids indicados', () async {
+    await repo.save(uid: 'u1', items: [item(id: 't1')]);
+    await repo.save(uid: 'u1', items: [item(id: 't2')]);
+    final oldest = remote.entries.singleWhere((e) => e.itemId == 't1');
 
-    final entries = await trash.list('u1');
-    await trash.remove([entries.first.rowId]);
+    final res = await repo.remove(uid: 'u1', ids: [oldest.id]);
 
-    expect((await trash.list('u1')).map((e) => e.itemId), ['t1']);
+    expect(res.isOk, isTrue);
+    expect(remote.entries.map((e) => e.itemId), ['t2']);
   });
 
-  test('empty vacía la papelera de la cuenta', () async {
-    await trash.save(uid: 'u1', items: [item(id: 't1')]);
-    await trash.save(uid: 'u2', items: [item(id: 't2')]);
+  test('empty deja la papelera vacía', () async {
+    await repo.save(uid: 'u1', items: [item(id: 't1'), item(id: 't2')]);
 
-    await trash.empty('u1');
+    final res = await repo.empty('u1');
 
-    expect(await trash.list('u1'), isEmpty);
-    expect(await trash.list('u2'), hasLength(1));
+    expect(res.isOk, isTrue);
+    expect(remote.entries, isEmpty);
   });
 
-  test('watch emite la papelera cada vez que cambia', () async {
-    final emissions = <List<TrashEntry>>[];
-    final sub = trash.watch('u1').listen(emissions.add);
-    addTearDown(sub.cancel);
-    await pumpEventQueue();
+  test('save recorta lo que pasa del tope de la cuenta', () async {
+    for (var i = 0; i <= TrashRepositoryImpl.maxEntriesPerUid; i++) {
+      await repo.save(uid: 'u1', items: [item(id: 't$i')]);
+    }
 
-    await trash.save(uid: 'u1', items: [item(id: 't1')]);
-    await pumpEventQueue();
-
-    expect(emissions.last.map((entry) => entry.itemId), ['t1']);
+    expect(remote.entries, hasLength(TrashRepositoryImpl.maxEntriesPerUid));
+    expect(remote.entries.map((e) => e.itemId), isNot(contains('t0')));
   });
 
-  test('solo guarda los últimos borrados de la cuenta', () async {
-    final items = [
-      for (var i = 0; i < TrashDao.maxEntriesPerUid + 1; i++) item(id: 't$i'),
-    ];
-    await trash.save(uid: 'u1', items: items);
+  test('watch emite la papelera al suscribirse', () async {
+    await repo.save(uid: 'u1', items: [item(id: 't1')]);
 
-    final entries = await trash.list('u1');
-    expect(entries, hasLength(TrashDao.maxEntriesPerUid));
-    expect(entries.map((entry) => entry.itemId), isNot(contains('t0')));
+    final entries = await repo.watch('u1').first;
+
+    expect(entries.map((e) => e.itemId), ['t1']);
+  });
+
+  test('si la red falla, list lo dice con NetworkFailure', () async {
+    final offline = TrashRepositoryImpl(_OfflineRemote());
+
+    final res = await offline.list('u1');
+
+    expect(res.isErr, isTrue);
+    expect(res.fold(onOk: (_) => null, onErr: (f) => f), isA<NetworkFailure>());
+    offline.dispose();
+  });
+
+  test('save con la red caída devuelve Err', () async {
+    final offline = TrashRepositoryImpl(_OfflineRemote());
+
+    final res = await offline.save(uid: 'u1', items: [item()]);
+
+    expect(res.isErr, isTrue);
+    offline.dispose();
   });
 }

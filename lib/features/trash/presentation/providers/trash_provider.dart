@@ -3,21 +3,26 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/core/failures/failure.dart';
-import '../../../../shared/data/local/database_provider.dart';
+import '../../../../shared/core/time/clock.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/providers/auth_state.dart';
-import '../../data/datasources/drift_trash_local.dart';
+import '../../data/datasources/firestore_trash_remote.dart';
 import '../../data/repositories/trash_repository_impl.dart';
 import '../../domain/entities/trash_entry.dart';
 import '../../domain/repositories/trash_repository.dart';
 import 'trash_state.dart';
 
-final trashLocalProvider = Provider<DriftTrashLocal>((ref) {
-  return DriftTrashLocal(ref.watch(trashDaoProvider));
+final firestoreTrashRemoteProvider = Provider<FirestoreTrashRemote>((ref) {
+  return FirestoreTrashRemote(ref.watch(dioClientProvider).instance);
 });
 
 final trashRepositoryProvider = Provider<TrashRepository>((ref) {
-  return TrashRepositoryImpl(ref.watch(trashLocalProvider));
+  final repo = TrashRepositoryImpl(
+    ref.watch(firestoreTrashRemoteProvider),
+    pollInterval: ref.watch(pollIntervalProvider),
+  );
+  ref.onDispose(repo.dispose);
+  return repo;
 });
 
 /// La papelera de la cuenta activa, reactiva a lo que se vaya borrando.
@@ -32,7 +37,13 @@ class TrashNotifier extends Notifier<TrashState> {
     _sub?.cancel();
     _sub = ref.read(trashRepositoryProvider).watch(auth.user.uid).listen(
           (entries) => state = TrashData(entries),
-          onError: (Object _) => state = const TrashError(CacheFailure()),
+          onError: (Object e, StackTrace st) {
+            if (state is! TrashData) {
+              state = TrashError(e is Failure ? e : const UnknownFailure());
+            }
+            // Si ya hay papelera en pantalla, descartamos el error transitorio
+            // (siguiente poll lo arreglará).
+          },
         );
     ref.onDispose(() => _sub?.cancel());
 
@@ -41,9 +52,10 @@ class TrashNotifier extends Notifier<TrashState> {
 
   /// Saca de la papelera lo que se acaba de devolver a Firestore.
   Future<void> remove(List<TrashEntry> entries) async {
-    await ref
-        .read(trashRepositoryProvider)
-        .remove(entries.map((entry) => entry.rowId).toList(growable: false));
+    await ref.read(trashRepositoryProvider).remove(
+          uid: _uid,
+          ids: entries.map((entry) => entry.id).toList(growable: false),
+        );
   }
 
   Future<void> empty() async {

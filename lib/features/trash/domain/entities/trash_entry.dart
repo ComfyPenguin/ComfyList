@@ -10,8 +10,8 @@ enum TrashKind {
 
   final String value;
 
-  /// Un tipo desconocido (base escrita por otra versión) se trata como tarea:
-  /// no rompe la pantalla y el peor caso es un error al restaurarlo.
+  /// Un tipo desconocido (documento escrito por otra versión) se trata como
+  /// tarea: no rompe la pantalla y el peor caso es un error al restaurarlo.
   static TrashKind parse(String value) => values.firstWhere(
         (kind) => kind.value == value,
         orElse: () => TrashKind.todo,
@@ -31,7 +31,7 @@ class TrashItem {
 
   final TrashKind kind;
 
-  /// Id que el documento tenía en Firestore, para devolverlo con el mismo.
+  /// Id que el documento tenía en su colección, para devolverlo con el mismo.
   final String itemId;
 
   /// Lista a la que pertenece una tarea; `null` en listas y citas.
@@ -44,19 +44,22 @@ class TrashItem {
   final Map<String, dynamic> payload;
 }
 
-/// Una fila de la papelera, ya guardada en local.
+/// Una entrada de la papelera, ya guardada en la cuenta del usuario.
+///
+/// Vive en Firestore (`users/{uid}/trash`), así que sobrevive al borrado de la
+/// app y es la misma en todos sus dispositivos.
 @immutable
 class TrashEntry {
   const TrashEntry({
-    required this.rowId,
+    required this.id,
     required this.uid,
     required this.groupId,
     required this.item,
     required this.deletedAt,
   });
 
-  /// Id de la fila en la base local.
-  final int rowId;
+  /// Id del documento en la colección `trash`.
+  final String id;
 
   final String uid;
 

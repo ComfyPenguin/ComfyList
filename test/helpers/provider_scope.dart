@@ -14,6 +14,8 @@ import 'package:comfy_list/features/todo_lists/presentation/providers/todo_lists
 import 'package:comfy_list/features/todos/data/datasources/firestore_rest_remote.dart';
 import 'package:comfy_list/features/todos/domain/repositories/todos_repository.dart';
 import 'package:comfy_list/features/todos/presentation/providers/todos_provider.dart';
+import 'package:comfy_list/features/trash/data/datasources/firestore_trash_remote.dart';
+import 'package:comfy_list/features/trash/presentation/providers/trash_provider.dart';
 import 'package:comfy_list/shared/data/local/app_database.dart';
 import 'package:comfy_list/shared/data/local/database_provider.dart';
 import 'package:comfy_list/shared/data/secure/secure_session_store.dart';
@@ -156,6 +158,10 @@ Override _remoteOverrideFor(Type type, Object value) {
   if (type == FirestoreAppointmentsRemote) {
     return firestoreAppointmentsRemoteProvider
         .overrideWithValue(value as FirestoreAppointmentsRemote);
+  }
+  if (type == FirestoreTrashRemote) {
+    return firestoreTrashRemoteProvider
+        .overrideWithValue(value as FirestoreTrashRemote);
   }
   throw StateError(
     'createTestContainer: type $type no está registrado en remoteOverrides. '

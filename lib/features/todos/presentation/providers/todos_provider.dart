@@ -126,10 +126,14 @@ class TodosNotifier extends Notifier<TodosState> {
   /// Devuelve el último todo borrado de esta lista. Devuelve si se pudo.
   Future<bool> undoLastDelete() async {
     final trash = ref.read(trashRepositoryProvider);
-    final entries = await trash.latestGroup(
+    final found = await trash.latestGroup(
       uid: _uid,
       kind: TrashKind.todo,
       parentId: _listId,
+    );
+    final entries = found.fold(
+      onOk: (entries) => entries,
+      onErr: (_) => const <TrashEntry>[],
     );
     if (entries.isEmpty) return false;
 
@@ -143,7 +147,10 @@ class TodosNotifier extends Notifier<TodosState> {
       if (res.isErr) return false;
     }
 
-    await trash.remove(entries.map((entry) => entry.rowId).toList());
+    await trash.remove(
+      uid: _uid,
+      ids: entries.map((entry) => entry.id).toList(growable: false),
+    );
     return true;
   }
 

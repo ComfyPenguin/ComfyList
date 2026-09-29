@@ -51,11 +51,12 @@ void main() {
   TrashEntry entry({
     required TrashKind kind,
     String id = 'x1',
+    String entryId = 'e1',
     String? parentId,
     Map<String, dynamic> payload = const {},
   }) {
     return TrashEntry(
-      rowId: 1,
+      id: entryId,
       uid: 'u1',
       groupId: 'g1',
       deletedAt: DateTime.now().toUtc(),

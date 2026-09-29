@@ -7,13 +7,14 @@ import 'package:comfy_list/features/appointments/domain/repositories/appointment
 import 'package:comfy_list/features/appointments/presentation/providers/appointments_provider.dart';
 import 'package:comfy_list/features/appointments/presentation/providers/appointments_state.dart';
 import 'package:comfy_list/features/auth/presentation/providers/auth_state.dart';
-import 'package:comfy_list/features/trash/presentation/providers/trash_provider.dart';
+import 'package:comfy_list/features/trash/data/datasources/firestore_trash_remote.dart';
 import 'package:comfy_list/shared/core/failures/failure.dart';
 import 'package:comfy_list/shared/core/result/result.dart';
 import 'package:comfy_list/shared/core/time/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/fake_trash_remote.dart';
 import '../../../../helpers/provider_scope.dart';
 import '../../../../helpers/test_helpers.dart';
 
@@ -23,6 +24,7 @@ class _MockRemote extends Mock implements FirestoreAppointmentsRemote {}
 
 void main() {
   late _MockRepo repo;
+  late FakeTrashRemote trash;
 
   setUpAll(() {
     // mocktail necesita un valor de relleno para los matchers de entidades.
@@ -31,6 +33,7 @@ void main() {
 
   setUp(() {
     repo = _MockRepo();
+    trash = FakeTrashRemote();
   });
 
   test('el repo de la app toma la cadencia del polling del provider', () {
@@ -166,7 +169,7 @@ void main() {
         )).thenAnswer((_) async => Ok(appointment));
 
     final container = createTestContainer(
-      withInMemoryDb: true,
+      remoteOverrides: {FirestoreTrashRemote: trash},
       authedUser: buildAuthUser(),
       repositoryOverrides: {AppointmentsRepository: repo},
     );
@@ -190,10 +193,7 @@ void main() {
     expect(restored.title, 'Dentista');
     expect(restored.dateTime, appointment.dateTime);
 
-    expect(
-      await container.read(trashRepositoryProvider).list('u1'),
-      isEmpty,
-    );
+    expect(trash.entries, isEmpty);
   });
 
   test('undoLastDelete dice que no si la restauración falla', () async {
@@ -211,7 +211,7 @@ void main() {
     );
 
     final container = createTestContainer(
-      withInMemoryDb: true,
+      remoteOverrides: {FirestoreTrashRemote: trash},
       authedUser: buildAuthUser(),
       repositoryOverrides: {AppointmentsRepository: repo},
     );
@@ -227,9 +227,6 @@ void main() {
     expect(await notifier.undoLastDelete(), isFalse);
 
     // El borrado sigue en la papelera: se puede reintentar.
-    expect(
-      await container.read(trashRepositoryProvider).list('u1'),
-      hasLength(1),
-    );
+    expect(trash.entries, hasLength(1));
   });
 }
