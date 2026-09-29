@@ -15,6 +15,7 @@ import '../features/todo_lists/presentation/providers/todo_lists_provider.dart';
 import '../features/todo_lists/presentation/providers/todo_lists_state.dart';
 import '../features/auth/presentation/screens/sign_up_screen.dart';
 import '../features/settings/presentation/screens/settings_screen.dart';
+import '../features/trash/presentation/screens/trash_screen.dart';
 import '../features/todo_lists/presentation/screens/todo_list_edit_screen.dart';
 import '../features/todo_lists/presentation/screens/todo_lists_screen.dart';
 import '../features/todos/presentation/screens/todo_edit_screen.dart';
@@ -180,6 +181,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: Routes.settings,
             pageBuilder: (context, state) =>
                 _instantPage(const SettingsScreen()),
+          ),
+          GoRoute(
+            path: Routes.trash,
+            pageBuilder: (context, state) => _instantPage(const TrashScreen()),
           ),
         ],
       ),

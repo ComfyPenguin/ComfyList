@@ -7,6 +7,7 @@ class Routes {
   static const String signUp = '/sign-up';
   static const String verifyEmail = '/verify-email';
   static const String settings = '/settings';
+  static const String trash = '/trash';
 
   // Listas de tareas
   static const String todoLists = '/lists';
