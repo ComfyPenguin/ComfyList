@@ -28,8 +28,7 @@ class TrashEmptyState extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Lo que borres se queda aquí, en este dispositivo, para poder '
-              'recuperarlo.',
+              'Aquí aparecerán tus listas, tareas y citas borradas.',
               textAlign: TextAlign.center,
               style: AppTypography.bodyMd.copyWith(color: colors.body),
             ),

@@ -28,9 +28,9 @@ import '../widgets/today_on_top_toggle.dart';
 /// Pantalla de ajustes. Vive dentro del [AppShell], que pone el título y la
 /// flecha atrás en su TopBar.
 ///
-/// Los ajustes generales van arriba sin cabecera; citas y tareas llevan tag de
-/// sección porque agrupan varias preferencias de su feature. Cada grupo usa la
-/// geometría de las listas: radios 32/6 y 2 px entre las tiles.
+/// Los ajustes generales van arriba sin cabecera; debajo, cada grupo lleva su
+/// tag de sección. Cada grupo usa la geometría de las listas: radios 32/6 y
+/// 2 px entre las tiles.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -120,6 +120,18 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
         const SizedBox(height: AppSpacing.xxxl),
+        _SectionHeader(label: 'DATOS', style: sectionStyle),
+        SettingsTile(
+          icon: Icons.restore_from_trash_outlined,
+          title: 'Papelera',
+          description: 'Tus listas, tareas y citas borradas.',
+          trailing: Icon(
+            Icons.chevron_right_rounded,
+            color: context.colors.muted,
+          ),
+          onTap: () => context.push(Routes.trash),
+        ),
+        const SizedBox(height: AppSpacing.xxxl),
         _SectionHeader(label: 'CITAS', style: sectionStyle),
         const HourFormatSelector(isFirst: true, isLast: false),
         const SizedBox(height: AppSpacing.joined),
@@ -144,19 +156,6 @@ class SettingsScreen extends ConsumerWidget {
         const SizedBox(height: AppSpacing.xxxl),
         _SectionHeader(label: 'TAREAS', style: sectionStyle),
         const CompletedToBottomToggle(),
-        const SizedBox(height: AppSpacing.xxxl),
-        _SectionHeader(label: 'DATOS', style: sectionStyle),
-        SettingsTile(
-          icon: Icons.restore_from_trash_outlined,
-          title: 'Papelera',
-          description: 'Lo que borres se guarda aquí, solo en este '
-              'dispositivo, para poder recuperarlo.',
-          trailing: Icon(
-            Icons.chevron_right_rounded,
-            color: context.colors.muted,
-          ),
-          onTap: () => context.push(Routes.trash),
-        ),
       ],
     );
   }
