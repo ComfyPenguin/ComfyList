@@ -1140,16 +1140,574 @@ class AccountCacheTableCompanion extends UpdateCompanion<AccountCacheRow> {
   }
 }
 
+class $TrashTableTable extends TrashTable
+    with TableInfo<$TrashTableTable, TrashRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TrashTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _uidMeta = const VerificationMeta('uid');
+  @override
+  late final GeneratedColumn<String> uid = GeneratedColumn<String>(
+    'uid',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _groupIdMeta = const VerificationMeta(
+    'groupId',
+  );
+  @override
+  late final GeneratedColumn<String> groupId = GeneratedColumn<String>(
+    'group_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
+  @override
+  late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
+    'item_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _parentIdMeta = const VerificationMeta(
+    'parentId',
+  );
+  @override
+  late final GeneratedColumn<String> parentId = GeneratedColumn<String>(
+    'parent_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _labelMeta = const VerificationMeta('label');
+  @override
+  late final GeneratedColumn<String> label = GeneratedColumn<String>(
+    'label',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _payloadMeta = const VerificationMeta(
+    'payload',
+  );
+  @override
+  late final GeneratedColumn<String> payload = GeneratedColumn<String>(
+    'payload',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    uid,
+    groupId,
+    kind,
+    itemId,
+    parentId,
+    label,
+    payload,
+    deletedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'trash_table';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TrashRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('uid')) {
+      context.handle(
+        _uidMeta,
+        uid.isAcceptableOrUnknown(data['uid']!, _uidMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_uidMeta);
+    }
+    if (data.containsKey('group_id')) {
+      context.handle(
+        _groupIdMeta,
+        groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_groupIdMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('item_id')) {
+      context.handle(
+        _itemIdMeta,
+        itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_itemIdMeta);
+    }
+    if (data.containsKey('parent_id')) {
+      context.handle(
+        _parentIdMeta,
+        parentId.isAcceptableOrUnknown(data['parent_id']!, _parentIdMeta),
+      );
+    }
+    if (data.containsKey('label')) {
+      context.handle(
+        _labelMeta,
+        label.isAcceptableOrUnknown(data['label']!, _labelMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_labelMeta);
+    }
+    if (data.containsKey('payload')) {
+      context.handle(
+        _payloadMeta,
+        payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_deletedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TrashRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TrashRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      uid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}uid'],
+      )!,
+      groupId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}group_id'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      itemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}item_id'],
+      )!,
+      parentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}parent_id'],
+      ),
+      label: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}label'],
+      )!,
+      payload: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      )!,
+    );
+  }
+
+  @override
+  $TrashTableTable createAlias(String alias) {
+    return $TrashTableTable(attachedDatabase, alias);
+  }
+}
+
+class TrashRow extends DataClass implements Insertable<TrashRow> {
+  final int id;
+  final String uid;
+
+  /// Agrupa lo que se borró de una vez: una lista se lleva sus tareas, así que
+  /// comparten grupo para poder devolverlo todo junto.
+  final String groupId;
+
+  /// 'list' | 'todo' | 'appointment'
+  final String kind;
+
+  /// Id que el documento tenía en Firestore, para devolverlo con el mismo.
+  final String itemId;
+
+  /// Lista a la que pertenece una tarea; `null` en listas y citas.
+  final String? parentId;
+
+  /// Lo que enseña la papelera: nombre de la lista o título del elemento.
+  final String label;
+
+  /// Entidad serializada tal y como estaba antes de borrarse.
+  final String payload;
+  final DateTime deletedAt;
+  const TrashRow({
+    required this.id,
+    required this.uid,
+    required this.groupId,
+    required this.kind,
+    required this.itemId,
+    this.parentId,
+    required this.label,
+    required this.payload,
+    required this.deletedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['uid'] = Variable<String>(uid);
+    map['group_id'] = Variable<String>(groupId);
+    map['kind'] = Variable<String>(kind);
+    map['item_id'] = Variable<String>(itemId);
+    if (!nullToAbsent || parentId != null) {
+      map['parent_id'] = Variable<String>(parentId);
+    }
+    map['label'] = Variable<String>(label);
+    map['payload'] = Variable<String>(payload);
+    map['deleted_at'] = Variable<DateTime>(deletedAt);
+    return map;
+  }
+
+  TrashTableCompanion toCompanion(bool nullToAbsent) {
+    return TrashTableCompanion(
+      id: Value(id),
+      uid: Value(uid),
+      groupId: Value(groupId),
+      kind: Value(kind),
+      itemId: Value(itemId),
+      parentId: parentId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(parentId),
+      label: Value(label),
+      payload: Value(payload),
+      deletedAt: Value(deletedAt),
+    );
+  }
+
+  factory TrashRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TrashRow(
+      id: serializer.fromJson<int>(json['id']),
+      uid: serializer.fromJson<String>(json['uid']),
+      groupId: serializer.fromJson<String>(json['groupId']),
+      kind: serializer.fromJson<String>(json['kind']),
+      itemId: serializer.fromJson<String>(json['itemId']),
+      parentId: serializer.fromJson<String?>(json['parentId']),
+      label: serializer.fromJson<String>(json['label']),
+      payload: serializer.fromJson<String>(json['payload']),
+      deletedAt: serializer.fromJson<DateTime>(json['deletedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'uid': serializer.toJson<String>(uid),
+      'groupId': serializer.toJson<String>(groupId),
+      'kind': serializer.toJson<String>(kind),
+      'itemId': serializer.toJson<String>(itemId),
+      'parentId': serializer.toJson<String?>(parentId),
+      'label': serializer.toJson<String>(label),
+      'payload': serializer.toJson<String>(payload),
+      'deletedAt': serializer.toJson<DateTime>(deletedAt),
+    };
+  }
+
+  TrashRow copyWith({
+    int? id,
+    String? uid,
+    String? groupId,
+    String? kind,
+    String? itemId,
+    Value<String?> parentId = const Value.absent(),
+    String? label,
+    String? payload,
+    DateTime? deletedAt,
+  }) => TrashRow(
+    id: id ?? this.id,
+    uid: uid ?? this.uid,
+    groupId: groupId ?? this.groupId,
+    kind: kind ?? this.kind,
+    itemId: itemId ?? this.itemId,
+    parentId: parentId.present ? parentId.value : this.parentId,
+    label: label ?? this.label,
+    payload: payload ?? this.payload,
+    deletedAt: deletedAt ?? this.deletedAt,
+  );
+  TrashRow copyWithCompanion(TrashTableCompanion data) {
+    return TrashRow(
+      id: data.id.present ? data.id.value : this.id,
+      uid: data.uid.present ? data.uid.value : this.uid,
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      itemId: data.itemId.present ? data.itemId.value : this.itemId,
+      parentId: data.parentId.present ? data.parentId.value : this.parentId,
+      label: data.label.present ? data.label.value : this.label,
+      payload: data.payload.present ? data.payload.value : this.payload,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrashRow(')
+          ..write('id: $id, ')
+          ..write('uid: $uid, ')
+          ..write('groupId: $groupId, ')
+          ..write('kind: $kind, ')
+          ..write('itemId: $itemId, ')
+          ..write('parentId: $parentId, ')
+          ..write('label: $label, ')
+          ..write('payload: $payload, ')
+          ..write('deletedAt: $deletedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    uid,
+    groupId,
+    kind,
+    itemId,
+    parentId,
+    label,
+    payload,
+    deletedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TrashRow &&
+          other.id == this.id &&
+          other.uid == this.uid &&
+          other.groupId == this.groupId &&
+          other.kind == this.kind &&
+          other.itemId == this.itemId &&
+          other.parentId == this.parentId &&
+          other.label == this.label &&
+          other.payload == this.payload &&
+          other.deletedAt == this.deletedAt);
+}
+
+class TrashTableCompanion extends UpdateCompanion<TrashRow> {
+  final Value<int> id;
+  final Value<String> uid;
+  final Value<String> groupId;
+  final Value<String> kind;
+  final Value<String> itemId;
+  final Value<String?> parentId;
+  final Value<String> label;
+  final Value<String> payload;
+  final Value<DateTime> deletedAt;
+  const TrashTableCompanion({
+    this.id = const Value.absent(),
+    this.uid = const Value.absent(),
+    this.groupId = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.itemId = const Value.absent(),
+    this.parentId = const Value.absent(),
+    this.label = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+  });
+  TrashTableCompanion.insert({
+    this.id = const Value.absent(),
+    required String uid,
+    required String groupId,
+    required String kind,
+    required String itemId,
+    this.parentId = const Value.absent(),
+    required String label,
+    required String payload,
+    required DateTime deletedAt,
+  }) : uid = Value(uid),
+       groupId = Value(groupId),
+       kind = Value(kind),
+       itemId = Value(itemId),
+       label = Value(label),
+       payload = Value(payload),
+       deletedAt = Value(deletedAt);
+  static Insertable<TrashRow> custom({
+    Expression<int>? id,
+    Expression<String>? uid,
+    Expression<String>? groupId,
+    Expression<String>? kind,
+    Expression<String>? itemId,
+    Expression<String>? parentId,
+    Expression<String>? label,
+    Expression<String>? payload,
+    Expression<DateTime>? deletedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (uid != null) 'uid': uid,
+      if (groupId != null) 'group_id': groupId,
+      if (kind != null) 'kind': kind,
+      if (itemId != null) 'item_id': itemId,
+      if (parentId != null) 'parent_id': parentId,
+      if (label != null) 'label': label,
+      if (payload != null) 'payload': payload,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+    });
+  }
+
+  TrashTableCompanion copyWith({
+    Value<int>? id,
+    Value<String>? uid,
+    Value<String>? groupId,
+    Value<String>? kind,
+    Value<String>? itemId,
+    Value<String?>? parentId,
+    Value<String>? label,
+    Value<String>? payload,
+    Value<DateTime>? deletedAt,
+  }) {
+    return TrashTableCompanion(
+      id: id ?? this.id,
+      uid: uid ?? this.uid,
+      groupId: groupId ?? this.groupId,
+      kind: kind ?? this.kind,
+      itemId: itemId ?? this.itemId,
+      parentId: parentId ?? this.parentId,
+      label: label ?? this.label,
+      payload: payload ?? this.payload,
+      deletedAt: deletedAt ?? this.deletedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (uid.present) {
+      map['uid'] = Variable<String>(uid.value);
+    }
+    if (groupId.present) {
+      map['group_id'] = Variable<String>(groupId.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (itemId.present) {
+      map['item_id'] = Variable<String>(itemId.value);
+    }
+    if (parentId.present) {
+      map['parent_id'] = Variable<String>(parentId.value);
+    }
+    if (label.present) {
+      map['label'] = Variable<String>(label.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<String>(payload.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrashTableCompanion(')
+          ..write('id: $id, ')
+          ..write('uid: $uid, ')
+          ..write('groupId: $groupId, ')
+          ..write('kind: $kind, ')
+          ..write('itemId: $itemId, ')
+          ..write('parentId: $parentId, ')
+          ..write('label: $label, ')
+          ..write('payload: $payload, ')
+          ..write('deletedAt: $deletedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $SettingsTableTable settingsTable = $SettingsTableTable(this);
   late final $AccountCacheTableTable accountCacheTable =
       $AccountCacheTableTable(this);
+  late final $TrashTableTable trashTable = $TrashTableTable(this);
   late final SettingsDao settingsDao = SettingsDao(this as AppDatabase);
   late final AccountCacheDao accountCacheDao = AccountCacheDao(
     this as AppDatabase,
   );
+  late final TrashDao trashDao = TrashDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1157,6 +1715,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     settingsTable,
     accountCacheTable,
+    trashTable,
   ];
 }
 
@@ -1701,6 +2260,270 @@ typedef $$AccountCacheTableTableProcessedTableManager =
       AccountCacheRow,
       PrefetchHooks Function()
     >;
+typedef $$TrashTableTableCreateCompanionBuilder =
+    TrashTableCompanion Function({
+      Value<int> id,
+      required String uid,
+      required String groupId,
+      required String kind,
+      required String itemId,
+      Value<String?> parentId,
+      required String label,
+      required String payload,
+      required DateTime deletedAt,
+    });
+typedef $$TrashTableTableUpdateCompanionBuilder =
+    TrashTableCompanion Function({
+      Value<int> id,
+      Value<String> uid,
+      Value<String> groupId,
+      Value<String> kind,
+      Value<String> itemId,
+      Value<String?> parentId,
+      Value<String> label,
+      Value<String> payload,
+      Value<DateTime> deletedAt,
+    });
+
+class $$TrashTableTableFilterComposer
+    extends Composer<_$AppDatabase, $TrashTableTable> {
+  $$TrashTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get uid => $composableBuilder(
+    column: $table.uid,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get groupId => $composableBuilder(
+    column: $table.groupId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get itemId => $composableBuilder(
+    column: $table.itemId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get parentId => $composableBuilder(
+    column: $table.parentId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get label => $composableBuilder(
+    column: $table.label,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$TrashTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $TrashTableTable> {
+  $$TrashTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get uid => $composableBuilder(
+    column: $table.uid,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get groupId => $composableBuilder(
+    column: $table.groupId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get itemId => $composableBuilder(
+    column: $table.itemId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get parentId => $composableBuilder(
+    column: $table.parentId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get label => $composableBuilder(
+    column: $table.label,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$TrashTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TrashTableTable> {
+  $$TrashTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get uid =>
+      $composableBuilder(column: $table.uid, builder: (column) => column);
+
+  GeneratedColumn<String> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get itemId =>
+      $composableBuilder(column: $table.itemId, builder: (column) => column);
+
+  GeneratedColumn<String> get parentId =>
+      $composableBuilder(column: $table.parentId, builder: (column) => column);
+
+  GeneratedColumn<String> get label =>
+      $composableBuilder(column: $table.label, builder: (column) => column);
+
+  GeneratedColumn<String> get payload =>
+      $composableBuilder(column: $table.payload, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+}
+
+class $$TrashTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TrashTableTable,
+          TrashRow,
+          $$TrashTableTableFilterComposer,
+          $$TrashTableTableOrderingComposer,
+          $$TrashTableTableAnnotationComposer,
+          $$TrashTableTableCreateCompanionBuilder,
+          $$TrashTableTableUpdateCompanionBuilder,
+          (TrashRow, BaseReferences<_$AppDatabase, $TrashTableTable, TrashRow>),
+          TrashRow,
+          PrefetchHooks Function()
+        > {
+  $$TrashTableTableTableManager(_$AppDatabase db, $TrashTableTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TrashTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TrashTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TrashTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> uid = const Value.absent(),
+                Value<String> groupId = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<String> itemId = const Value.absent(),
+                Value<String?> parentId = const Value.absent(),
+                Value<String> label = const Value.absent(),
+                Value<String> payload = const Value.absent(),
+                Value<DateTime> deletedAt = const Value.absent(),
+              }) => TrashTableCompanion(
+                id: id,
+                uid: uid,
+                groupId: groupId,
+                kind: kind,
+                itemId: itemId,
+                parentId: parentId,
+                label: label,
+                payload: payload,
+                deletedAt: deletedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String uid,
+                required String groupId,
+                required String kind,
+                required String itemId,
+                Value<String?> parentId = const Value.absent(),
+                required String label,
+                required String payload,
+                required DateTime deletedAt,
+              }) => TrashTableCompanion.insert(
+                id: id,
+                uid: uid,
+                groupId: groupId,
+                kind: kind,
+                itemId: itemId,
+                parentId: parentId,
+                label: label,
+                payload: payload,
+                deletedAt: deletedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$TrashTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TrashTableTable,
+      TrashRow,
+      $$TrashTableTableFilterComposer,
+      $$TrashTableTableOrderingComposer,
+      $$TrashTableTableAnnotationComposer,
+      $$TrashTableTableCreateCompanionBuilder,
+      $$TrashTableTableUpdateCompanionBuilder,
+      (TrashRow, BaseReferences<_$AppDatabase, $TrashTableTable, TrashRow>),
+      TrashRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -1709,4 +2532,6 @@ class $AppDatabaseManager {
       $$SettingsTableTableTableManager(_db, _db.settingsTable);
   $$AccountCacheTableTableTableManager get accountCacheTable =>
       $$AccountCacheTableTableTableManager(_db, _db.accountCacheTable);
+  $$TrashTableTableTableManager get trashTable =>
+      $$TrashTableTableTableManager(_db, _db.trashTable);
 }

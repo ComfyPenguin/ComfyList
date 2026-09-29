@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app_database.dart';
 import 'daos/account_cache_dao.dart';
 import 'daos/settings_dao.dart';
+import 'daos/trash_dao.dart';
 
 /// Singleton de [AppDatabase] al alcance de Riverpod.
 /// Se sobreescribe en tests vía `ProviderScope(overrides: ...)`.
@@ -18,4 +19,8 @@ final settingsDaoProvider = Provider<SettingsDao>(
 
 final accountCacheDaoProvider = Provider<AccountCacheDao>(
   (ref) => ref.watch(appDatabaseProvider).accountCacheDao,
+);
+
+final trashDaoProvider = Provider<TrashDao>(
+  (ref) => ref.watch(appDatabaseProvider).trashDao,
 );
