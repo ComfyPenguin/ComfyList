@@ -7,9 +7,11 @@ import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_stroke.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
+import '../../../../shared/ui/animations/unfold_down.dart';
 import '../../../../shared/ui/dialogs/confirm_action_dialog.dart';
 import '../../../../shared/ui/toast/app_toast.dart';
 import '../../domain/entities/trash_entry.dart';
+import '../../domain/entities/trash_group.dart';
 import '../providers/trash_provider.dart';
 import '../providers/trash_restore.dart';
 import '../providers/trash_state.dart';
@@ -29,12 +31,18 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
   /// Mientras algo vuelve a Firestore no se aceptan más toques.
   bool _busy = false;
 
+  /// Borrados con lo de dentro a la vista. Es solo para mirar: se devuelve el
+  /// borrado entero, con sus tareas, se despliegue o no.
+  final Set<String> _expanded = {};
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(trashProvider);
-    final entries = switch (state) {
-      TrashData(:final entries) => entries,
-      _ => const <TrashEntry>[],
+    // Una fila por borrado: una lista con sus tareas es una sola cosa, aunque
+    // por dentro sean varios documentos.
+    final groups = switch (state) {
+      TrashData(:final entries) => TrashGroup.partition(entries),
+      _ => const <TrashGroup>[],
     };
 
     // El TopBar del shell se superpone al contenido: reservamos su altura
@@ -53,21 +61,23 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
           const _LoadErrorBanner(),
           const SizedBox(height: AppSpacing.md),
         ],
-        if (state is TrashData && entries.isEmpty) const TrashEmptyState(),
-        if (entries.isNotEmpty) ...[
+        if (state is TrashData && groups.isEmpty) const TrashEmptyState(),
+        if (groups.isNotEmpty) ...[
           _Header(
-            count: entries.length,
+            count: groups.length,
             onEmpty: _busy ? null : _emptyTrash,
           ),
           const SizedBox(height: AppSpacing.md),
-          for (final (index, entry) in entries.indexed) ...[
+          for (final (index, group) in groups.indexed) ...[
             if (index > 0) const SizedBox(height: AppSpacing.joined),
             _TrashTile(
-              entry: entry,
+              group: group,
               isFirst: index == 0,
-              isLast: index == entries.length - 1,
+              isLast: index == groups.length - 1,
               enabled: !_busy,
-              onRestore: () => _restore(entries, entry),
+              expanded: _expanded.contains(group.groupId),
+              onToggleExpanded: () => _toggleExpanded(group.groupId),
+              onRestore: () => _restore(group),
             ),
           ],
         ],
@@ -75,19 +85,21 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
     );
   }
 
-  /// Devuelve [entry] a Firestore y lo saca de la papelera. Una lista vuelve
+  void _toggleExpanded(String groupId) {
+    setState(() {
+      if (!_expanded.remove(groupId)) _expanded.add(groupId);
+    });
+  }
+
+  /// Devuelve [group] a Firestore y lo saca de la papelera. Una lista vuelve
   /// con sus tareas: se borraron juntas y comparten grupo.
-  Future<void> _restore(List<TrashEntry> entries, TrashEntry entry) async {
+  Future<void> _restore(TrashGroup group) async {
     if (_busy) return;
     setState(() => _busy = true);
 
-    final group = entries
-        .where((candidate) => candidate.groupId == entry.groupId)
-        .toList(growable: false);
-
     final restored = await ref.read(trashRestorerProvider).restoreGroup(group);
     if (restored) {
-      await ref.read(trashProvider.notifier).remove(group);
+      await ref.read(trashProvider.notifier).remove(group.entries);
     } else if (mounted) {
       AppToast.show(context, AppToast.restoreFailed);
     }
@@ -125,7 +137,7 @@ class _Header extends StatelessWidget {
       children: [
         Expanded(
           child: Text(
-            count == 1 ? '1 elemento guardado' : '$count elementos guardados',
+            count == 1 ? '1 borrado guardado' : '$count borrados guardados',
             style: AppTypography.bodySm.copyWith(color: colors.muted),
           ),
         ),
@@ -139,26 +151,34 @@ class _Header extends StatelessWidget {
   }
 }
 
-/// Fila de la papelera con el aspecto de las tiles de las listas.
+/// Fila de la papelera con el aspecto de las tiles de las listas. Un borrado
+/// con contenido lleva su desplegable: lo de dentro se mira, no se devuelve
+/// suelto.
 class _TrashTile extends StatelessWidget {
   const _TrashTile({
-    required this.entry,
+    required this.group,
     required this.isFirst,
     required this.isLast,
     required this.enabled,
+    required this.expanded,
+    required this.onToggleExpanded,
     required this.onRestore,
   });
 
-  final TrashEntry entry;
+  final TrashGroup group;
   final bool isFirst;
   final bool isLast;
   final bool enabled;
+  final bool expanded;
+  final VoidCallback onToggleExpanded;
   final VoidCallback onRestore;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final label = entry.label.isEmpty ? _kindLabel(entry.kind) : entry.label;
+    final header = group.header;
+    final contents = group.contents;
+    final label = header.label.isEmpty ? _kindLabel(header.kind) : header.label;
 
     return Material(
       color: colors.canvas,
@@ -174,41 +194,116 @@ class _TrashTile extends StatelessWidget {
           AppSpacing.sm,
           AppSpacing.md,
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Icon(_kindIcon(entry.kind), size: 20, color: colors.body),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.bodyMdStrong.copyWith(
-                      color: colors.ink,
-                    ),
+            Row(
+              children: [
+                Icon(_kindIcon(header.kind), size: 20, color: colors.body),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.bodyMdStrong.copyWith(
+                          color: colors.ink,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xxs),
+                      Text(
+                        [
+                          _kindLabel(header.kind),
+                          _whenText(header.deletedAt),
+                          if (contents.isNotEmpty) _contentsCount(contents),
+                        ].join(' · '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.bodySm.copyWith(
+                          color: colors.body,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: AppSpacing.xxs),
-                  Text(
-                    '${_kindLabel(entry.kind)} · ${_whenText(entry.deletedAt)}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.bodySm.copyWith(color: colors.body),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                TextButton.icon(
+                  onPressed: enabled ? onRestore : null,
+                  icon: const Icon(Icons.undo_rounded, size: 18),
+                  label: const Text('Restaurar'),
+                ),
+              ],
+            ),
+            if (contents.isNotEmpty) ...[
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: enabled ? onToggleExpanded : null,
+                  icon: Icon(
+                    expanded
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
+                    size: 18,
                   ),
-                ],
+                  label: Text(
+                    expanded ? 'Ocultar' : _contentsToggle(contents.length),
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            TextButton.icon(
-              onPressed: enabled ? onRestore : null,
-              icon: const Icon(Icons.undo_rounded, size: 18),
-              label: const Text('Restaurar'),
-            ),
+              UnfoldDown(
+                open: expanded,
+                child: Padding(
+                  // Sangradas: lo de dentro de la lista no está al mismo nivel
+                  // que ella.
+                  padding: const EdgeInsets.only(
+                    left: AppSpacing.xl,
+                    right: AppSpacing.sm,
+                    bottom: AppSpacing.xs,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (final (index, entry) in contents.indexed) ...[
+                        if (index > 0) const SizedBox(height: AppSpacing.sm),
+                        _InsideRow(entry: entry),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Lo que se llevó el borrado por dentro. Solo se lee: vuelve con la lista.
+class _InsideRow extends StatelessWidget {
+  const _InsideRow({required this.entry});
+
+  final TrashEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Row(
+      children: [
+        Icon(_kindIcon(entry.kind), size: 16, color: colors.muted),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Text(
+            entry.label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.bodySm.copyWith(color: colors.body),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -245,6 +340,13 @@ IconData _kindIcon(TrashKind kind) => switch (kind) {
       TrashKind.todo => Icons.checklist_rounded,
       TrashKind.appointment => Icons.event_rounded,
     };
+
+/// «3 tareas»: lo que la lista se llevó por dentro.
+String _contentsCount(List<TrashEntry> contents) =>
+    contents.length == 1 ? '1 tarea' : '${contents.length} tareas';
+
+String _contentsToggle(int count) =>
+    count == 1 ? 'Ver la tarea' : 'Ver las $count tareas';
 
 /// «hoy», «ayer» o la fecha: en una papelera lo que importa es cuándo se borró.
 String _whenText(DateTime deletedAt) {

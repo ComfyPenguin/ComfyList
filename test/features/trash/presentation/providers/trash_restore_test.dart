@@ -5,6 +5,7 @@ import 'package:comfy_list/features/todo_lists/domain/repositories/todo_lists_re
 import 'package:comfy_list/features/todos/domain/entities/todo.dart';
 import 'package:comfy_list/features/todos/domain/repositories/todos_repository.dart';
 import 'package:comfy_list/features/trash/domain/entities/trash_entry.dart';
+import 'package:comfy_list/features/trash/domain/entities/trash_group.dart';
 import 'package:comfy_list/features/trash/presentation/providers/trash_restore.dart';
 import 'package:comfy_list/shared/core/failures/failure.dart';
 import 'package:comfy_list/shared/core/result/result.dart';
@@ -175,6 +176,7 @@ void main() {
 
   test('el grupo de una lista devuelve la lista antes que sus tareas',
       () async {
+    // El grupo los pone en orden: la lista primero, que es de quien cuelgan.
     final list = buildTodoList(id: 'L1');
     final todo = buildTodo(id: 't1');
     final order = <String>[];
@@ -193,10 +195,17 @@ void main() {
       return Ok(todo);
     });
 
-    final restored = await container().read(trashRestorerProvider).restoreGroup([
-      entry(kind: TrashKind.todo, id: 't1', parentId: 'L1', payload: todo.toJson()),
-      entry(kind: TrashKind.list, id: 'L1', payload: list.toJson()),
-    ]);
+    final restored = await container().read(trashRestorerProvider).restoreGroup(
+          TrashGroup.partition([
+            entry(
+              kind: TrashKind.todo,
+              id: 't1',
+              parentId: 'L1',
+              payload: todo.toJson(),
+            ),
+            entry(kind: TrashKind.list, id: 'L1', payload: list.toJson()),
+          ]).single,
+        );
 
     expect(restored, isTrue);
     expect(order, ['list', 'todo']);

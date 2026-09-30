@@ -7,6 +7,7 @@ import '../../../todo_lists/presentation/providers/todo_lists_provider.dart';
 import '../../../todos/domain/entities/todo.dart';
 import '../../../todos/presentation/providers/todos_provider.dart';
 import '../../domain/entities/trash_entry.dart';
+import '../../domain/entities/trash_group.dart';
 
 /// Devuelve a Firestore lo que hay en la papelera.
 ///
@@ -17,14 +18,10 @@ class TrashRestorer {
 
   final Ref _ref;
 
-  /// Devuelve un borrado entero: una lista vuelve con sus tareas.
-  Future<bool> restoreGroup(List<TrashEntry> entries) async {
-    // La lista primero: las tareas cuelgan de ella.
-    final ordered = [
-      ...entries.where((entry) => entry.kind == TrashKind.list),
-      ...entries.where((entry) => entry.kind != TrashKind.list),
-    ];
-    for (final entry in ordered) {
+  /// Devuelve un borrado entero: una lista vuelve con sus tareas. El grupo ya
+  /// trae la lista delante, que es de quien cuelgan.
+  Future<bool> restoreGroup(TrashGroup group) async {
+    for (final entry in group.entries) {
       if (!await restore(entry)) return false;
     }
     return true;
