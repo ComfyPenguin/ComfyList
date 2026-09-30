@@ -187,6 +187,21 @@ void main() {
     ]);
   }
 
+  /// Papelera llena: un borrado por cada hueco del tope.
+  void seedFullTrash() {
+    trash = _FixedTrashRepository([
+      for (var i = 0; i < TrashRepository.maxGroupsPerUid; i++)
+        entry(
+          id: 'd$i',
+          group: 'g$i',
+          kind: TrashKind.todo,
+          itemId: 't$i',
+          label: 'Tarea $i',
+          payload: buildTodo(id: 't$i', title: 'Tarea $i').toJson(),
+        ),
+    ]);
+  }
+
   Future<void> pumpScreen(WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2400);
     tester.view.devicePixelRatio = 3;
@@ -310,5 +325,21 @@ void main() {
       ),
     ).called(2);
     expect(trash.removed, ['d2', 'd1', 'd3']);
+  });
+
+  testWidgets('con la papelera llena avisa de que descarta lo más viejo',
+      (tester) async {
+    seedFullTrash();
+    await pumpScreen(tester);
+
+    expect(find.text('100 borrados guardados'), findsOneWidget);
+    expect(find.textContaining('más recientes'), findsOneWidget);
+  });
+
+  testWidgets('con sitio de sobra no hay aviso', (tester) async {
+    seedListWithTasks();
+    await pumpScreen(tester);
+
+    expect(find.textContaining('más recientes'), findsNothing);
   });
 }

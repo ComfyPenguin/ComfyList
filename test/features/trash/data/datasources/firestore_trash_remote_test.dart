@@ -4,6 +4,7 @@ import 'package:comfy_list/features/trash/data/datasources/firestore_trash_remot
 import 'package:comfy_list/features/trash/domain/entities/trash_entry.dart';
 import 'package:comfy_list/shared/core/env/firebase_endpoints.dart';
 import 'package:comfy_list/shared/data/remote/firestore_value_codec.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -47,11 +48,15 @@ void main() {
 
   group('FirestoreTrashRemote', () {
     test('listEntries id del nombre y saca el payload del texto', () async {
-      stubDioGet(dio, body: <String, dynamic>{
-        'documents': [
-          buildDocBody(id: 'd1', parentId: 'L1', label: 'Comprar pan'),
-        ],
-      });
+      stubDioGet(
+        dio,
+        withQueryParameters: true,
+        body: <String, dynamic>{
+          'documents': [
+            buildDocBody(id: 'd1', parentId: 'L1', label: 'Comprar pan'),
+          ],
+        },
+      );
 
       final entries = await remote.listEntries('u1');
 
@@ -65,11 +70,46 @@ void main() {
       expect(entry.parentId, 'L1');
       expect(entry.label, 'Comprar pan');
       expect(entry.payload, {'id': 't1', 'title': 'Comprar pan'});
-      verify(() => dio.get<Map<String, dynamic>>(
+      final params = verify(() => dio.get<Map<String, dynamic>>(
             collection('u1'),
-            options: any(named: 'options'),
-            cancelToken: any(named: 'cancelToken'),
-          )).called(1);
+            queryParameters: captureAny(named: 'queryParameters'),
+          )).captured.single as Map<String, dynamic>;
+      expect(params['pageSize'], isNotNull);
+      expect(params.containsKey('pageToken'), isFalse);
+    });
+
+    test('listEntries sigue las páginas hasta que se acaban', () async {
+      final pages = [
+        {
+          'documents': [buildDocBody(id: 'd1')],
+          'nextPageToken': 'seguir',
+        },
+        {
+          'documents': [buildDocBody(id: 'd2')],
+        },
+      ];
+      var call = 0;
+      when(() => dio.get<Map<String, dynamic>>(
+            any(),
+            queryParameters: any(named: 'queryParameters'),
+          )).thenAnswer(
+        (_) async => Response<Map<String, dynamic>>(
+          requestOptions: RequestOptions(path: ''),
+          data: pages[call++],
+          statusCode: 200,
+        ),
+      );
+
+      final entries = await remote.listEntries('u1');
+
+      expect(entries.map((e) => e.id), ['d1', 'd2']);
+      final params = verify(() => dio.get<Map<String, dynamic>>(
+            any(),
+            queryParameters: captureAny(named: 'queryParameters'),
+          )).captured.cast<Map<String, dynamic>>();
+      expect(params, hasLength(2));
+      expect(params.first.containsKey('pageToken'), isFalse);
+      expect(params.last['pageToken'], 'seguir');
     });
 
     test('un payload que no es JSON no rompe la lectura', () async {
@@ -77,7 +117,11 @@ void main() {
       (body['fields'] as Map<String, dynamic>)['payload'] = {
         'stringValue': 'no soy json',
       };
-      stubDioGet(dio, body: <String, dynamic>{'documents': [body]});
+      stubDioGet(
+        dio,
+        withQueryParameters: true,
+        body: <String, dynamic>{'documents': [body]},
+      );
 
       final entries = await remote.listEntries('u1');
 

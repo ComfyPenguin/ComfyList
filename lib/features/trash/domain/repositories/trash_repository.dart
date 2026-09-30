@@ -4,6 +4,11 @@ import '../entities/trash_entry.dart';
 /// Contrato de la papelera — la implementación vive en `data/`. Guarda en
 /// Firestore (`users/{uid}/trash`), así que todo puede fallar por red.
 abstract class TrashRepository {
+  /// Cuántos borrados guarda la papelera de cada cuenta. El tope cuenta
+  /// borrados, no elementos: una lista con sus tareas es uno solo. Al llenarse,
+  /// el más viejo se descarta solo para dejar sitio al que llega.
+  static const int maxGroupsPerUid = 100;
+
   /// Guarda un borrado: un documento por elemento, todos con el mismo grupo.
   Future<Result<void>> save({required String uid, required List<TrashItem> items});
 

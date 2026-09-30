@@ -12,6 +12,7 @@ import '../../../../shared/ui/dialogs/confirm_action_dialog.dart';
 import '../../../../shared/ui/toast/app_toast.dart';
 import '../../domain/entities/trash_entry.dart';
 import '../../domain/entities/trash_group.dart';
+import '../../domain/repositories/trash_repository.dart';
 import '../providers/trash_provider.dart';
 import '../providers/trash_restore.dart';
 import '../providers/trash_state.dart';
@@ -68,6 +69,10 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
             onEmpty: _busy ? null : _emptyTrash,
           ),
           const SizedBox(height: AppSpacing.md),
+          if (groups.length >= TrashRepository.maxGroupsPerUid) ...[
+            const _FullTrashNotice(),
+            const SizedBox(height: AppSpacing.md),
+          ],
           for (final (index, group) in groups.indexed) ...[
             if (index > 0) const SizedBox(height: AppSpacing.joined),
             _TrashTile(
@@ -300,6 +305,38 @@ class _InsideRow extends StatelessWidget {
             entry.label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
+            style: AppTypography.bodySm.copyWith(color: colors.body),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// La papelera tiene tope: cuando está llena, el borrado más viejo se descarta
+/// solo al entrar uno nuevo. Se avisa para que no desaparezca por sorpresa.
+class _FullTrashNotice extends StatelessWidget {
+  const _FullTrashNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: AppSpacing.xxs),
+          child: Icon(
+            Icons.info_outline_rounded,
+            size: 20,
+            color: colors.warning,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: Text(
+            'La papelera guarda los ${TrashRepository.maxGroupsPerUid} borrados '
+            'más recientes: al llenarse, el más antiguo se descarta.',
             style: AppTypography.bodySm.copyWith(color: colors.body),
           ),
         ),

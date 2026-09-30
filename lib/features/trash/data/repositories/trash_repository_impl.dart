@@ -21,9 +21,6 @@ class TrashRepositoryImpl implements TrashRepository {
   /// [pollIntervalProvider]; los tests lo acortan para no esperar al tick real.
   final Duration pollInterval;
 
-  /// Cuántos borrados se guardan por cuenta: más allá de esto solo hace bulto.
-  static const int maxEntriesPerUid = 100;
-
   _Watcher? _watcher;
   String? _watcherUid;
   DateTime? _lastDeletedAt;
@@ -157,34 +154,24 @@ class TrashRepositoryImpl implements TrashRepository {
     _watcherUid = null;
   }
 
-  /// Deja solo los [maxEntriesPerUid] borrados más recientes de la cuenta, y
-  /// siempre por borrados enteros: una lista y sus tareas van juntas o no van.
+  /// Deja solo los [TrashRepository.maxGroupsPerUid] borrados más recientes de
+  /// la cuenta. Cuenta borrados y no elementos, así que un borrado entra o se
+  /// va entero: una lista sin sus tareas no se puede restaurar.
   Future<void> _trim(String uid) async {
     final entries = _newestFirst(await _remote.listEntries(uid));
-    if (entries.length <= maxEntriesPerUid) return;
 
-    final sizes = <String, int>{};
+    final ids = <String>[];
+    final seen = <String>{};
     for (final entry in entries) {
-      sizes[entry.groupId] = (sizes[entry.groupId] ?? 0) + 1;
+      if (seen.add(entry.groupId)) ids.add(entry.groupId);
     }
+    if (ids.length <= TrashRepository.maxGroupsPerUid) return;
 
-    // Del más nuevo al más viejo mientras el borrado entero quepa; el primero
-    // que no cabe se va con los que le siguen.
-    final kept = <String>{};
-    var keptCount = 0;
+    final dropped = ids.skip(TrashRepository.maxGroupsPerUid).toSet();
     for (final entry in entries) {
-      if (kept.contains(entry.groupId)) continue;
-      final size = sizes[entry.groupId]!;
-      if (keptCount > 0 && keptCount + size > maxEntriesPerUid) break;
-      kept.add(entry.groupId);
-      keptCount += size;
-    }
-
-    // El más nuevo se queda siempre, aunque él solo pase del tope: partirlo
-    // dejaría una lista sin sus tareas.
-    for (final entry in entries) {
-      if (kept.contains(entry.groupId)) continue;
-      await _remote.deleteEntry(uid: uid, id: entry.id);
+      if (dropped.contains(entry.groupId)) {
+        await _remote.deleteEntry(uid: uid, id: entry.id);
+      }
     }
   }
 

@@ -1,6 +1,7 @@
 import 'package:comfy_list/features/trash/data/datasources/firestore_trash_remote.dart';
 import 'package:comfy_list/features/trash/data/repositories/trash_repository_impl.dart';
 import 'package:comfy_list/features/trash/domain/entities/trash_entry.dart';
+import 'package:comfy_list/features/trash/domain/repositories/trash_repository.dart';
 import 'package:comfy_list/shared/core/failures/failure.dart';
 import 'package:comfy_list/shared/core/result/result.dart';
 import 'package:dio/dio.dart';
@@ -148,12 +149,25 @@ void main() {
   });
 
   test('save recorta lo que pasa del tope de la cuenta', () async {
-    for (var i = 0; i <= TrashRepositoryImpl.maxEntriesPerUid; i++) {
+    for (var i = 0; i <= TrashRepository.maxGroupsPerUid; i++) {
       await repo.save(uid: 'u1', items: [item(id: 't$i')]);
     }
 
-    expect(remote.entries, hasLength(TrashRepositoryImpl.maxEntriesPerUid));
+    expect(remote.entries, hasLength(TrashRepository.maxGroupsPerUid));
     expect(remote.entries.map((e) => e.itemId), isNot(contains('t0')));
+  });
+
+  test('el tope cuenta borrados, no elementos', () async {
+    for (var i = 0; i < TrashRepository.maxGroupsPerUid; i++) {
+      await repo.save(uid: 'u1', items: [item(id: 'a$i'), item(id: 'b$i')]);
+    }
+
+    // Cien borrados de dos elementos cada uno caben enteros.
+    expect(
+      remote.entries.map((e) => e.groupId).toSet(),
+      hasLength(TrashRepository.maxGroupsPerUid),
+    );
+    expect(remote.entries, hasLength(TrashRepository.maxGroupsPerUid * 2));
   });
 
   /// Un borrado de hace [days] días, como si lo hubiera dejado ahí una versión
@@ -203,8 +217,9 @@ void main() {
 
   test('el recorte se lleva borrados enteros, no la mitad de uno', () async {
     // La cuenta llega al tope con borrados de uno en uno y luego cae una lista
-    // con sus tareas, que es un borrado de tres.
-    for (var i = 0; i < TrashRepositoryImpl.maxEntriesPerUid; i++) {
+    // con sus tareas: un borrado más, así que se va el más viejo y no un trozo
+    // de la lista.
+    for (var i = 0; i < TrashRepository.maxGroupsPerUid; i++) {
       await repo.save(uid: 'u1', items: [item(id: 't$i')]);
     }
 
@@ -219,25 +234,27 @@ void main() {
 
     final kept = remote.entries.map((e) => e.itemId).toList();
 
-    expect(kept, hasLength(TrashRepositoryImpl.maxEntriesPerUid));
+    expect(
+      remote.entries.map((e) => e.groupId).toSet(),
+      hasLength(TrashRepository.maxGroupsPerUid),
+    );
     // La lista se queda entera con sus dos tareas.
     expect(kept, containsAll(['L1', 'tarea1', 'tarea2']));
-    // Y lo que se fue son los borrados más viejos.
+    // Y lo que se fue es el borrado más viejo.
     expect(kept, isNot(contains('t0')));
-    expect(kept, isNot(contains('t1')));
-    expect(kept, isNot(contains('t2')));
-    expect(kept, contains('t3'));
+    expect(kept, contains('t1'));
   });
 
-  test('un solo borrado que pasa del tope se guarda entero', () async {
+  test('un borrado más largo que el tope cabe entero', () async {
     final items = [
-      for (var i = 0; i < TrashRepositoryImpl.maxEntriesPerUid + 20; i++)
+      for (var i = 0; i < TrashRepository.maxGroupsPerUid + 20; i++)
         item(id: 't$i', parentId: 'L1'),
     ];
 
     await repo.save(uid: 'u1', items: items);
 
-    // Antes pasado que partido: sin las tareas, la lista no se restaura.
+    // Es un solo borrado: el tope no lo parte, que la lista sin sus tareas no
+    // se puede restaurar.
     expect(remote.entries, hasLength(items.length));
     expect(
       remote.entries.map((e) => e.itemId),
