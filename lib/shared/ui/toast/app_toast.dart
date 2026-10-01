@@ -26,6 +26,8 @@ class AppToast {
   static const String undoFailed = 'No se pudo deshacer. Inténtalo de nuevo.';
   static const String restoreFailed =
       'No se ha podido restaurar. Inténtalo de nuevo.';
+  static const String listDeleteFailed =
+      'No se ha podido eliminar la lista. Inténtalo de nuevo.';
   static const String trashEmptied = 'Papelera vaciada.';
   static const String longPressHint =
       'Mantén pulsada una tarjeta para editarla.';

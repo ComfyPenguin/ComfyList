@@ -62,6 +62,40 @@ class _NoTrimRemote implements FirestoreTrashRemote {
       throw _offline();
 }
 
+/// Papelera en la que la primera orden de tirar falla, como una caída de red a
+/// media faena.
+class _FlakyDeleteRemote implements FirestoreTrashRemote {
+  _FlakyDeleteRemote(this._inner);
+
+  final FakeTrashRemote _inner;
+  bool _failed = false;
+
+  @override
+  Future<List<TrashEntry>> listEntries(String uid) => _inner.listEntries(uid);
+
+  @override
+  Future<TrashEntry> createEntry({
+    required String uid,
+    required String groupId,
+    required TrashItem item,
+    required DateTime deletedAt,
+  }) =>
+      _inner.createEntry(
+        uid: uid,
+        groupId: groupId,
+        item: item,
+        deletedAt: deletedAt,
+      );
+
+  @override
+  Future<void> deleteEntry({required String uid, required String id}) async {
+    if (_failed) return _inner.deleteEntry(uid: uid, id: id);
+
+    _failed = true;
+    throw _offline();
+  }
+}
+
 /// Papelera que apunta el orden de las llamadas: sirve para ver si dos
 /// guardados se cuelan el uno en el otro.
 class _RecordingRemote implements FirestoreTrashRemote {
@@ -203,6 +237,24 @@ void main() {
 
     expect(res.isOk, isTrue);
     expect(remote.entries.map((e) => e.itemId), ['t2']);
+  });
+
+  test('remove reintenta al leer lo que no pudo quitar', () async {
+    await repo.save(uid: 'u1', items: [item(id: 't1'), item(id: 't2')]);
+    final ids = remote.entries.map((entry) => entry.id).toList();
+    final flaky = TrashRepositoryImpl(_FlakyDeleteRemote(remote));
+    addTearDown(flaky.dispose);
+
+    // La red se cae en el primer borrado: esa fila se queda y no aborta las
+    // demás.
+    expect((await flaky.remove(uid: 'u1', ids: ids)).isErr, isTrue);
+    expect(remote.entries, hasLength(1));
+
+    // Al leerla, se reintenta: la fila fantasma desaparece sola.
+    final shown = await flaky.watch('u1').first;
+
+    expect(shown, isEmpty);
+    expect(remote.entries, isEmpty);
   });
 
   test('empty deja la papelera vacía', () async {

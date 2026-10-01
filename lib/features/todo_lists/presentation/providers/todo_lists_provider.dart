@@ -81,10 +81,13 @@ class TodoListsNotifier extends Notifier<TodoListsState> {
         );
   }
 
-  Future<void> delete(String id) async {
+  /// Borra [id] con sus tareas. Devuelve si pudo: sin leerlas no hay copia que
+  /// valga en la papelera, y el borrado se las lleva en cascada.
+  Future<bool> delete(String id) async {
     final list = _findById(id);
     // Las tareas hay que leerlas antes: el borrado se las lleva en cascada.
     final todos = await _todosOf(id);
+    if (todos == null) return false;
 
     if (list != null) {
       await ref.read(trashRepositoryProvider).save(
@@ -109,6 +112,7 @@ class TodoListsNotifier extends Notifier<TodoListsState> {
     }
 
     await ref.read(todoListsRepositoryProvider).deleteList(uid: _uid, id: id);
+    return true;
   }
 
   /// Devuelve la última lista borrada junto con sus tareas. Devuelve si se pudo.
@@ -148,12 +152,13 @@ class TodoListsNotifier extends Notifier<TodoListsState> {
     return true;
   }
 
-  Future<List<Todo>> _todosOf(String listId) async {
+  /// Las tareas de la lista, o `null` si no se han podido leer.
+  Future<List<Todo>?> _todosOf(String listId) async {
     final res = await ref.read(todosRepositoryProvider).fetchTodos(
           uid: _uid,
           listId: listId,
         );
-    return res.fold(onOk: (items) => items, onErr: (_) => const <Todo>[]);
+    return res.fold(onOk: (items) => items, onErr: (_) => null);
   }
 
   TodoList? _findById(String id) {

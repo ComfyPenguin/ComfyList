@@ -198,7 +198,7 @@ void main() {
     await pumpEventQueue();
 
     final notifier = container.read(todoListsProvider.notifier);
-    await notifier.delete('L1');
+    expect(await notifier.delete('L1'), isTrue);
 
     // Las tareas se leen antes de borrar: si no, se perderían en el deshacer.
     verifyInOrder([
@@ -224,6 +224,40 @@ void main() {
     expect(restoredTodo.id, 't1');
     expect(restoredTodo.title, 'Comprar pan');
 
+    expect(trash.entries, isEmpty);
+  });
+
+  test('sin poder leer las tareas no borra la lista', () async {
+    final controller = StreamController<List<TodoList>>();
+    when(() => repo.watchLists('u1')).thenAnswer((_) => controller.stream);
+
+    final list = buildTodoList(id: 'L1');
+    final todosRepo = _MockTodosRepo();
+    when(() => todosRepo.fetchTodos(uid: 'u1', listId: 'L1'))
+        .thenAnswer((_) async => const Err<List<Todo>>(NetworkFailure()));
+
+    final container = createTestContainer(
+      remoteOverrides: {FirestoreTrashRemote: trash},
+      authedUser: buildAuthUser(),
+      repositoryOverrides: {
+        TodoListsRepository: repo,
+        TodosRepository: todosRepo,
+      },
+    );
+    addTearDown(controller.close);
+
+    expect(container.read(todoListsProvider), isA<TodoListsLoading>());
+    controller.add([list]);
+    await pumpEventQueue();
+
+    final notifier = container.read(todoListsProvider.notifier);
+
+    // Ni borra ni guarda una copia a medias: las tareas se irían en cascada sin
+    // poder volver.
+    expect(await notifier.delete('L1'), isFalse);
+    verifyNever(
+      () => repo.deleteList(uid: any(named: 'uid'), id: any(named: 'id')),
+    );
     expect(trash.entries, isEmpty);
   });
 
