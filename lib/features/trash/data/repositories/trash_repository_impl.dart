@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 
 import '../../../../shared/core/failures/failure.dart';
+import '../../../../shared/core/logging/debug_log.dart';
 import '../../../../shared/core/result/result.dart';
 import '../../../../shared/core/time/clock.dart';
 import '../../domain/entities/trash_entry.dart';
@@ -25,12 +26,29 @@ class TrashRepositoryImpl implements TrashRepository {
   String? _watcherUid;
   DateTime? _lastDeletedAt;
 
+  /// Los guardados van encadenados: cada uno recorta leyendo toda la colección,
+  /// y dos a la vez deciden sobre la misma foto y dejan la cuenta por encima
+  /// del tope.
+  Future<void> _writes = Future.value();
+
   @override
   Future<Result<void>> save({
     required String uid,
     required List<TrashItem> items,
+  }) {
+    if (items.isEmpty) return Future.value(const Ok(null));
+
+    final done = _writes.then((_) => _saveNow(uid: uid, items: items));
+    // La cola sigue aunque un guardado reviente: el siguiente no hereda su
+    // error.
+    _writes = done.then((_) {}, onError: (_) {});
+    return done;
+  }
+
+  Future<Result<void>> _saveNow({
+    required String uid,
+    required List<TrashItem> items,
   }) async {
-    if (items.isEmpty) return const Ok(null);
     try {
       final deletedAt = _nextDeletedAt();
       final groupId = deletedAt.microsecondsSinceEpoch.toString();
@@ -42,7 +60,8 @@ class TrashRepositoryImpl implements TrashRepository {
           deletedAt: deletedAt,
         );
       }
-      await _trim(uid);
+      final entries = await _remote.listEntries(uid);
+      await _trim(_remote, uid, entries);
       await _refresh(uid);
       return const Ok(null);
     } on DioException catch (e) {
@@ -154,27 +173,6 @@ class TrashRepositoryImpl implements TrashRepository {
     _watcherUid = null;
   }
 
-  /// Deja solo los [TrashRepository.maxGroupsPerUid] borrados más recientes de
-  /// la cuenta. Cuenta borrados y no elementos, así que un borrado entra o se
-  /// va entero: una lista sin sus tareas no se puede restaurar.
-  Future<void> _trim(String uid) async {
-    final entries = _newestFirst(await _remote.listEntries(uid));
-
-    final ids = <String>[];
-    final seen = <String>{};
-    for (final entry in entries) {
-      if (seen.add(entry.groupId)) ids.add(entry.groupId);
-    }
-    if (ids.length <= TrashRepository.maxGroupsPerUid) return;
-
-    final dropped = ids.skip(TrashRepository.maxGroupsPerUid).toSet();
-    for (final entry in entries) {
-      if (dropped.contains(entry.groupId)) {
-        await _remote.deleteEntry(uid: uid, id: entry.id);
-      }
-    }
-  }
-
   Future<void> _refresh(String uid) async {
     if (_watcherUid != uid) return;
     await _watcher?.refreshNow();
@@ -275,8 +273,12 @@ class _Watcher {
 
   Future<void> refreshNow() async {
     try {
+      // Leer también recorta: si la cuenta se quedó por encima del tope (un
+      // recorte que falló, dos borrados que se pisaron), entrar en la papelera
+      // lo arregla sin esperar al siguiente borrado.
       final entries = await _remote.listEntries(uid);
-      if (!_controller.isClosed) _controller.add(_newestFirst(entries));
+      final shown = await _trim(_remote, uid, entries);
+      if (!_controller.isClosed) _controller.add(shown);
     } catch (e, st) {
       if (!_controller.isClosed) _controller.addError(e, st);
     }
@@ -286,6 +288,45 @@ class _Watcher {
     _timer?.cancel();
     _controller.close();
   }
+}
+
+/// Recorta la papelera a los [TrashRepository.maxGroupsPerUid] borrados más
+/// recientes y devuelve lo que queda, ya lo último borrado primero. Cuenta
+/// borrados y no elementos, así que un borrado entra o se va entero: una lista
+/// sin sus tareas no se puede restaurar. Se llama al guardar y al leer, que del
+/// tope responde la cuenta y no el último recorte.
+///
+/// Best-effort: lo que no se pueda tirar se queda y se reintenta en la pasada
+/// siguiente, que la papelera se enseña igual.
+Future<List<TrashEntry>> _trim(
+  FirestoreTrashRemote remote,
+  String uid,
+  List<TrashEntry> entries,
+) async {
+  final sorted = _newestFirst(entries);
+
+  final ids = <String>[];
+  final seen = <String>{};
+  for (final entry in sorted) {
+    if (seen.add(entry.groupId)) ids.add(entry.groupId);
+  }
+  if (ids.length <= TrashRepository.maxGroupsPerUid) return sorted;
+
+  final dropped = ids.skip(TrashRepository.maxGroupsPerUid).toSet();
+  final shown = <TrashEntry>[];
+  for (final entry in sorted) {
+    if (!dropped.contains(entry.groupId)) {
+      shown.add(entry);
+      continue;
+    }
+    try {
+      await remote.deleteEntry(uid: uid, id: entry.id);
+    } on DioException catch (e) {
+      debugLog('El recorte de la papelera falló: ${e.type}');
+      shown.add(entry);
+    }
+  }
+  return shown;
 }
 
 /// Lo último borrado primero; el id desempata (los elementos de un mismo

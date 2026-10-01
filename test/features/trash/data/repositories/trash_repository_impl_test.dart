@@ -33,6 +33,72 @@ DioException _offline() => DioException(
       type: DioExceptionType.connectionError,
     );
 
+/// Papelera que deja leer y guardar, pero no tirar: el recorte no puede
+/// depender de que sus borrados salgan bien.
+class _NoTrimRemote implements FirestoreTrashRemote {
+  _NoTrimRemote(this._inner);
+
+  final FakeTrashRemote _inner;
+
+  @override
+  Future<List<TrashEntry>> listEntries(String uid) => _inner.listEntries(uid);
+
+  @override
+  Future<TrashEntry> createEntry({
+    required String uid,
+    required String groupId,
+    required TrashItem item,
+    required DateTime deletedAt,
+  }) =>
+      _inner.createEntry(
+        uid: uid,
+        groupId: groupId,
+        item: item,
+        deletedAt: deletedAt,
+      );
+
+  @override
+  Future<void> deleteEntry({required String uid, required String id}) async =>
+      throw _offline();
+}
+
+/// Papelera que apunta el orden de las llamadas: sirve para ver si dos
+/// guardados se cuelan el uno en el otro.
+class _RecordingRemote implements FirestoreTrashRemote {
+  _RecordingRemote(this._inner);
+
+  final FakeTrashRemote _inner;
+  final List<String> calls = [];
+
+  @override
+  Future<List<TrashEntry>> listEntries(String uid) {
+    calls.add('list');
+    return _inner.listEntries(uid);
+  }
+
+  @override
+  Future<TrashEntry> createEntry({
+    required String uid,
+    required String groupId,
+    required TrashItem item,
+    required DateTime deletedAt,
+  }) {
+    calls.add('create:${item.itemId}');
+    return _inner.createEntry(
+      uid: uid,
+      groupId: groupId,
+      item: item,
+      deletedAt: deletedAt,
+    );
+  }
+
+  @override
+  Future<void> deleteEntry({required String uid, required String id}) {
+    calls.add('delete:$id');
+    return _inner.deleteEntry(uid: uid, id: id);
+  }
+}
+
 void main() {
   late FakeTrashRemote remote;
   late TrashRepositoryImpl repo;
@@ -262,12 +328,87 @@ void main() {
     );
   });
 
+  /// Siembra el tope más dos borrados, cada uno más nuevo que el anterior: el
+  /// estado que deja un recorte que no llegó a salir.
+  Future<void> seedOverCap(FakeTrashRemote target) async {
+    for (var i = 0; i < TrashRepository.maxGroupsPerUid + 2; i++) {
+      await target.createEntry(
+        uid: 'u1',
+        groupId: 'g$i',
+        item: item(id: 't$i'),
+        deletedAt: DateTime.now().toUtc().subtract(Duration(minutes: 200 - i)),
+      );
+    }
+  }
+
   test('watch emite la papelera al suscribirse', () async {
     await repo.save(uid: 'u1', items: [item(id: 't1')]);
 
     final entries = await repo.watch('u1').first;
 
     expect(entries.map((e) => e.itemId), ['t1']);
+  });
+
+  test('watch recorta lo que pase del tope al leer la papelera', () async {
+    // Papelera sembrada al margen de `save` (un recorte que falló, dos
+    // borrados que se pisaron): entrar la arregla.
+    await seedOverCap(remote);
+
+    final entries = await repo.watch('u1').first;
+
+    // Lo que se enseña ya es lo recortado: no hay filas que no se puedan
+    // restaurar.
+    expect(
+      entries.map((e) => e.groupId).toSet(),
+      hasLength(TrashRepository.maxGroupsPerUid),
+    );
+    expect(entries.map((e) => e.itemId), isNot(contains('t0')));
+    expect(entries.map((e) => e.itemId), isNot(contains('t1')));
+    expect(entries.map((e) => e.itemId), containsAll(['t2', 't101']));
+    expect(remote.entries, hasLength(TrashRepository.maxGroupsPerUid));
+  });
+
+  test('si el recorte al leer falla, la papelera se enseña igual', () async {
+    final stuck = FakeTrashRemote();
+    await seedOverCap(stuck);
+    final stubborn = TrashRepositoryImpl(_NoTrimRemote(stuck));
+    addTearDown(stubborn.dispose);
+
+    final entries = await stubborn.watch('u1').first;
+
+    // Ni error ni papelera a medias: se enseña lo que hay y el recorte se
+    // reintenta en la siguiente pasada.
+    expect(entries, hasLength(TrashRepository.maxGroupsPerUid + 2));
+    expect(stuck.entries, hasLength(TrashRepository.maxGroupsPerUid + 2));
+  });
+
+  test('dos guardados solapados van de uno en uno y respetan el tope', () async {
+    final recorder = _RecordingRemote(remote);
+    final serial = TrashRepositoryImpl(recorder);
+    addTearDown(serial.dispose);
+
+    for (var i = 0; i < TrashRepository.maxGroupsPerUid; i++) {
+      await serial.save(uid: 'u1', items: [item(id: 't$i')]);
+    }
+
+    recorder.calls.clear();
+    await Future.wait([
+      serial.save(uid: 'u1', items: [item(id: 'a')]),
+      serial.save(uid: 'u1', items: [item(id: 'b')]),
+    ]);
+
+    // El segundo no empieza hasta que el primero ha recortado: si no, los dos
+    // deciden sobre la misma foto y la cuenta se queda larga. Los borrados van
+    // entre medias, así que el orden se mira sin ellos.
+    expect(
+      recorder.calls.where((call) => !call.startsWith('delete:')),
+      ['create:a', 'list', 'create:b', 'list'],
+    );
+    expect(
+      remote.entries.map((e) => e.groupId).toSet(),
+      hasLength(TrashRepository.maxGroupsPerUid),
+    );
+    expect(remote.entries.map((e) => e.itemId), containsAll(['a', 'b']));
   });
 
   test('si la red falla, list lo dice con NetworkFailure', () async {
