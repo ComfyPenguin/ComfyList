@@ -4,11 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/core/failures/failure.dart';
 import '../../../../shared/core/time/clock.dart';
+import '../../../../shared/data/local/database_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/providers/auth_state.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../../settings/presentation/providers/settings_state.dart';
 import '../../data/datasources/firestore_trash_remote.dart';
+import '../../data/datasources/trash_pending_store.dart';
 import '../../data/repositories/trash_repository_impl.dart';
 import '../../domain/entities/trash_entry.dart';
 import '../../domain/repositories/trash_repository.dart';
@@ -21,6 +23,7 @@ final firestoreTrashRemoteProvider = Provider<FirestoreTrashRemote>((ref) {
 final trashRepositoryProvider = Provider<TrashRepository>((ref) {
   final repo = TrashRepositoryImpl(
     ref.watch(firestoreTrashRemoteProvider),
+    pending: DriftTrashPendingStore(ref.watch(trashPendingDaoProvider)),
     pollInterval: ref.watch(pollIntervalProvider),
   );
   ref.onDispose(repo.dispose);

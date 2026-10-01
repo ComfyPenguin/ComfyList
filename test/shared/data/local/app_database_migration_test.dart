@@ -294,4 +294,53 @@ void main() {
       expect(row.trashRetentionDays, 7);
     });
   });
+
+  group('migración de la v12 a la v13', () {
+    /// Deja la base como una instalación de la v12, sin la tabla de pendientes.
+    Future<void> seedV12() async {
+      await db.settingsDao.getOrCreate();
+      await db.customStatement('DROP TABLE trash_pending_table');
+    }
+
+    test('crea la tabla donde se apuntan los pendientes', () async {
+      await seedV12();
+
+      await db.migration.onUpgrade(Migrator(db), 12, 13);
+
+      final columns = await db
+          .customSelect('PRAGMA table_info(trash_pending_table);')
+          .get();
+      final names = [for (final column in columns) column.read<String>('name')];
+      expect(names, containsAll(['uid', 'doc_id', 'created_at']));
+    });
+
+    test('los pendientes se pueden apuntar, podar y quitar', () async {
+      await seedV12();
+
+      await db.migration.onUpgrade(Migrator(db), 12, 13);
+      await db.trashPendingDao.add(uid: 'u1', docId: 'd1');
+      await db.trashPendingDao.add(uid: 'u1', docId: 'd2');
+      await db.trashPendingDao.add(uid: 'u2', docId: 'd3');
+
+      expect(await db.trashPendingDao.idsOf('u1'), containsAll(['d1', 'd2']));
+      expect(await db.trashPendingDao.idsOf('u2'), ['d3']);
+
+      await db.trashPendingDao.keepOnly(uid: 'u1', ids: {'d1'});
+      expect(await db.trashPendingDao.idsOf('u1'), ['d1']);
+      expect(await db.trashPendingDao.idsOf('u2'), ['d3']);
+
+      await db.trashPendingDao.remove(uid: 'u1', docId: 'd1');
+      expect(await db.trashPendingDao.idsOf('u1'), isEmpty);
+    });
+
+    test('conserva los ajustes guardados', () async {
+      await seedV12();
+      await db.settingsDao.updateTrashRetentionDays(7);
+
+      await db.migration.onUpgrade(Migrator(db), 12, 13);
+
+      final row = await db.settingsDao.getOrCreate();
+      expect(row.trashRetentionDays, 7);
+    });
+  });
 }

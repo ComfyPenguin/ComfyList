@@ -7,6 +7,7 @@ import 'package:comfy_list/shared/core/result/result.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../../helpers/fake_trash_pending_store.dart';
 import '../../../../helpers/fake_trash_remote.dart';
 
 /// Cuenta sin conexión: cualquier llamada revienta como lo haría Dio.
@@ -139,7 +140,7 @@ void main() {
 
   setUp(() {
     remote = FakeTrashRemote();
-    repo = TrashRepositoryImpl(remote);
+    repo = TrashRepositoryImpl(remote, pending: FakeTrashPendingStore());
   });
 
   tearDown(() => repo.dispose());
@@ -242,7 +243,11 @@ void main() {
   test('remove reintenta al leer lo que no pudo quitar', () async {
     await repo.save(uid: 'u1', items: [item(id: 't1'), item(id: 't2')]);
     final ids = remote.entries.map((entry) => entry.id).toList();
-    final flaky = TrashRepositoryImpl(_FlakyDeleteRemote(remote));
+    final pending = FakeTrashPendingStore();
+    final flaky = TrashRepositoryImpl(
+      _FlakyDeleteRemote(remote),
+      pending: pending,
+    );
     addTearDown(flaky.dispose);
 
     // La red se cae en el primer borrado: esa fila se queda y no aborta las
@@ -254,6 +259,28 @@ void main() {
     final shown = await flaky.watch('u1').first;
 
     expect(shown, isEmpty);
+    expect(remote.entries, isEmpty);
+  });
+
+  test('lo pendiente sobrevive al cierre de la app', () async {
+    final pending = FakeTrashPendingStore();
+    await repo.save(uid: 'u1', items: [item(id: 't1')]);
+    final id = remote.entries.single.id;
+
+    // Sesión que se cae justo después de restaurar: la fila se queda apuntada.
+    final fallen = TrashRepositoryImpl(
+      _FlakyDeleteRemote(remote),
+      pending: pending,
+    );
+    expect((await fallen.remove(uid: 'u1', ids: [id])).isErr, isTrue);
+    fallen.dispose();
+    expect(remote.entries, hasLength(1));
+
+    // Otra sesión, con el mismo almacén: al abrir la papelera se reintenta.
+    final restarted = TrashRepositoryImpl(remote, pending: pending);
+    addTearDown(restarted.dispose);
+
+    expect(await restarted.watch('u1').first, isEmpty);
     expect(remote.entries, isEmpty);
   });
 
@@ -325,7 +352,10 @@ void main() {
   });
 
   test('purgeExpired con la red caída devuelve Err', () async {
-    final offline = TrashRepositoryImpl(_OfflineRemote());
+    final offline = TrashRepositoryImpl(
+      _OfflineRemote(),
+      pending: FakeTrashPendingStore(),
+    );
 
     final res = await offline.purgeExpired(uid: 'u1', days: 7);
 
@@ -423,7 +453,10 @@ void main() {
   test('si el recorte al leer falla, la papelera se enseña igual', () async {
     final stuck = FakeTrashRemote();
     await seedOverCap(stuck);
-    final stubborn = TrashRepositoryImpl(_NoTrimRemote(stuck));
+    final stubborn = TrashRepositoryImpl(
+      _NoTrimRemote(stuck),
+      pending: FakeTrashPendingStore(),
+    );
     addTearDown(stubborn.dispose);
 
     final entries = await stubborn.watch('u1').first;
@@ -436,7 +469,10 @@ void main() {
 
   test('dos guardados solapados van de uno en uno y respetan el tope', () async {
     final recorder = _RecordingRemote(remote);
-    final serial = TrashRepositoryImpl(recorder);
+    final serial = TrashRepositoryImpl(
+      recorder,
+      pending: FakeTrashPendingStore(),
+    );
     addTearDown(serial.dispose);
 
     for (var i = 0; i < TrashRepository.maxGroupsPerUid; i++) {
@@ -464,7 +500,10 @@ void main() {
   });
 
   test('si la red falla, list lo dice con NetworkFailure', () async {
-    final offline = TrashRepositoryImpl(_OfflineRemote());
+    final offline = TrashRepositoryImpl(
+      _OfflineRemote(),
+      pending: FakeTrashPendingStore(),
+    );
 
     final res = await offline.list('u1');
 
@@ -474,7 +513,10 @@ void main() {
   });
 
   test('save con la red caída devuelve Err', () async {
-    final offline = TrashRepositoryImpl(_OfflineRemote());
+    final offline = TrashRepositoryImpl(
+      _OfflineRemote(),
+      pending: FakeTrashPendingStore(),
+    );
 
     final res = await offline.save(uid: 'u1', items: [item()]);
 

@@ -9,12 +9,17 @@ import '../../../../shared/core/time/clock.dart';
 import '../../domain/entities/trash_entry.dart';
 import '../../domain/repositories/trash_repository.dart';
 import '../datasources/firestore_trash_remote.dart';
+import '../datasources/trash_pending_store.dart';
 
 /// Papelera en Firestore (`users/{uid}/trash`), con polling como el resto de
 /// features: el stream emite la lista tras un fetch inicial, refresca por timer
 /// y se fuerza una emisión tras cada mutación.
 class TrashRepositoryImpl implements TrashRepository {
-  TrashRepositoryImpl(this._remote, {this.pollInterval = defaultPollInterval});
+  TrashRepositoryImpl(
+    this._remote, {
+    required TrashPendingStore pending,
+    this.pollInterval = defaultPollInterval,
+  }) : _pending = pending;
 
   final FirestoreTrashRemote _remote;
 
@@ -31,10 +36,10 @@ class TrashRepositoryImpl implements TrashRepository {
   /// del tope.
   Future<void> _writes = Future.value();
 
-  /// Ids que no se pudieron tirar de la papelera, por uid: se reintentan en cada
-  /// lectura (ver `_Watcher`) para que no queden filas de documentos que ya
-  /// están de vuelta en la app.
-  final Map<String, Set<String>> _pendingRemovals = {};
+  /// Lo que no se pudo tirar de la papelera se apunta aquí y se reintenta en
+  /// cada lectura (ver `_Watcher`): son filas de documentos que ya están de
+  /// vuelta en la app. Persiste para que el reintento sobreviva al cierre.
+  final TrashPendingStore _pending;
 
   @override
   Future<Result<void>> save({
@@ -107,12 +112,7 @@ class TrashRepositoryImpl implements TrashRepository {
   Stream<List<TrashEntry>> watch(String uid) {
     if (_watcher == null || _watcherUid != uid) {
       _watcher?.dispose();
-      _watcher = _Watcher(
-        uid,
-        _remote,
-        pollInterval,
-        _pendingRemovals.putIfAbsent(uid, () => <String>{}),
-      );
+      _watcher = _Watcher(uid, _remote, pollInterval, _pending);
       _watcherUid = uid;
     }
     return _watcher!.stream;
@@ -139,10 +139,11 @@ class TrashRepositoryImpl implements TrashRepository {
   Future<DioException?> _deleteEntry(String uid, String id) async {
     try {
       await _remote.deleteEntry(uid: uid, id: id);
+      await _pending.remove(uid: uid, docId: id);
       return null;
     } on DioException catch (e) {
       debugLog('La papelera no pudo tirar un borrado: ${e.type}');
-      _pendingRemovals.putIfAbsent(uid, () => <String>{}).add(id);
+      await _pending.add(uid: uid, docId: id);
       return e;
     }
   }
@@ -193,7 +194,6 @@ class TrashRepositoryImpl implements TrashRepository {
     _watcher?.dispose();
     _watcher = null;
     _watcherUid = null;
-    _pendingRemovals.clear();
   }
 
   Future<void> _refresh(String uid) async {
@@ -262,7 +262,7 @@ class _Watcher {
 
   /// Borrados que no se pudieron quitar en su día y se reintentan en cada
   /// lectura: ya están de vuelta en la app, así que la fila sobra.
-  final Set<String> _pending;
+  final TrashPendingStore _pending;
 
   late final StreamController<List<TrashEntry>> _controller;
   Timer? _timer;
@@ -304,8 +304,10 @@ class _Watcher {
       final entries = await _remote.listEntries(uid);
       // Lo que ya no está en la papelera no hay que tirarlo: lo quitó otra
       // lectura, otro dispositivo o el tope.
-      final alive = {for (final entry in entries) entry.id};
-      _pending.removeWhere((id) => !alive.contains(id));
+      await _pending.keepOnly(
+        uid: uid,
+        ids: {for (final entry in entries) entry.id},
+      );
       // Leer también recorta: si la cuenta se quedó por encima del tope (un
       // recorte que falló, dos borrados que se pisaron), entrar en la papelera
       // lo arregla sin esperar al siguiente borrado.
@@ -318,10 +320,10 @@ class _Watcher {
 
   /// Vuelve a tirar lo que quedó pendiente de quitar tras restaurarlo.
   Future<void> _retryPending() async {
-    for (final id in [..._pending]) {
+    for (final id in await _pending.idsOf(uid)) {
       try {
         await _remote.deleteEntry(uid: uid, id: id);
-        _pending.remove(id);
+        await _pending.remove(uid: uid, docId: id);
       } on DioException catch (e) {
         debugLog('La papelera no pudo quitar lo pendiente: ${e.type}');
       }

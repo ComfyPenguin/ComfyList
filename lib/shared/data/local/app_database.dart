@@ -3,14 +3,16 @@ import 'package:drift_flutter/drift_flutter.dart';
 
 import 'daos/account_cache_dao.dart';
 import 'daos/settings_dao.dart';
+import 'daos/trash_pending_dao.dart';
 import 'tables/account_cache_table.dart';
 import 'tables/settings_table.dart';
+import 'tables/trash_pending_table.dart';
 
 part 'app_database.g.dart';
 
 @DriftDatabase(
-  tables: [SettingsTable, AccountCacheTable],
-  daos: [SettingsDao, AccountCacheDao],
+  tables: [SettingsTable, AccountCacheTable, TrashPendingTable],
+  daos: [SettingsDao, AccountCacheDao, TrashPendingDao],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(driftDatabase(name: 'comfy_list'));
@@ -19,7 +21,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -114,6 +116,9 @@ class AppDatabase extends _$AppDatabase {
               'UPDATE settings_table SET trash_retention_days = 30 '
               'WHERE trash_retention_days = 0',
             );
+          }
+          if (from < 13) {
+            await migrator.createTable(trashPendingTable);
           }
         },
       );
