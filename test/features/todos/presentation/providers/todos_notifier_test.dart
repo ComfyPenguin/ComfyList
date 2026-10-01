@@ -8,6 +8,7 @@ import 'package:comfy_list/features/todos/domain/repositories/todos_repository.d
 import 'package:comfy_list/features/todos/presentation/providers/todos_provider.dart';
 import 'package:comfy_list/features/todos/presentation/providers/todos_state.dart';
 import 'package:comfy_list/features/trash/data/datasources/firestore_trash_remote.dart';
+import 'package:comfy_list/features/trash/domain/entities/trash_entry.dart';
 import 'package:comfy_list/shared/core/failures/failure.dart';
 import 'package:comfy_list/shared/core/result/result.dart';
 import 'package:comfy_list/shared/core/time/clock.dart';
@@ -202,6 +203,80 @@ void main() {
           todo: captureAny(named: 'todo'),
         )).captured.cast<Todo>();
     expect(restored.map((todo) => todo.id), ['t2', 't1']);
+  });
+
+  test('undoLastDelete con el grupo de la lista delante devuelve solo tareas',
+      () async {
+    final controller = StreamController<List<Todo>>();
+    when(() => repo.watchTodos(uid: 'u1', listId: 'L1'))
+        .thenAnswer((_) => controller.stream);
+    when(() => repo.restoreTodo(
+          uid: 'u1',
+          listId: 'L1',
+          todo: any(named: 'todo'),
+        )).thenAnswer((_) async => Ok(buildTodo()));
+
+    // Lo último que entró en la papelera es el borrado de la lista L1: el grupo
+    // lleva la lista delante y sus tareas detrás, y la lista no se puede leer
+    // como una tarea.
+    final list = buildTodoList(id: 'L1');
+    final now = DateTime.now().toUtc();
+    await trash.createEntry(
+      uid: 'u1',
+      groupId: 'g1',
+      item: TrashItem(
+        kind: TrashKind.todo,
+        itemId: 't1',
+        parentId: 'L1',
+        label: 'Pan',
+        payload: buildTodo(id: 't1', title: 'Pan').toJson(),
+      ),
+      deletedAt: now.subtract(const Duration(minutes: 1)),
+    );
+    await trash.createEntry(
+      uid: 'u1',
+      groupId: 'g2',
+      item: TrashItem(
+        kind: TrashKind.list,
+        itemId: list.id,
+        label: list.name,
+        payload: list.toJson(),
+      ),
+      deletedAt: now,
+    );
+    await trash.createEntry(
+      uid: 'u1',
+      groupId: 'g2',
+      item: TrashItem(
+        kind: TrashKind.todo,
+        itemId: 't2',
+        parentId: list.id,
+        label: 'Leche',
+        payload: buildTodo(id: 't2', title: 'Leche').toJson(),
+      ),
+      deletedAt: now,
+    );
+
+    final container = createTestContainer(
+      remoteOverrides: {FirestoreTrashRemote: trash},
+      authedUser: buildAuthUser(),
+      repositoryOverrides: {TodosRepository: repo},
+    );
+    addTearDown(controller.close);
+
+    final notifier = container.read(todosProvider('L1').notifier);
+
+    expect(await notifier.undoLastDelete(), isTrue);
+
+    // Vuelve la tarea del grupo, y solo ella: la lista sigue en la papelera,
+    // que todavía no está de vuelta en la app.
+    final restored = verify(() => repo.restoreTodo(
+          uid: 'u1',
+          listId: 'L1',
+          todo: captureAny(named: 'todo'),
+        )).captured.single as Todo;
+    expect(restored.id, 't2');
+    expect(trash.entries.map((e) => e.itemId), ['t1', 'L1']);
   });
 
   test('undoLastDelete dice que no si la restauración falla', () async {

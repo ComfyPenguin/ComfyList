@@ -135,10 +135,15 @@ class TodosNotifier extends Notifier<TodosState> {
       onOk: (entries) => entries,
       onErr: (_) => const <TrashEntry>[],
     );
-    if (entries.isEmpty) return false;
+    // El grupo puede traer la lista delante si se borró con sus tareas: aquí
+    // solo vuelven las tareas, que la lista se queda en la papelera.
+    final todos = entries
+        .where((entry) => entry.kind == TrashKind.todo)
+        .toList(growable: false);
+    if (todos.isEmpty) return false;
 
     final repo = ref.read(todosRepositoryProvider);
-    for (final entry in entries) {
+    for (final entry in todos) {
       final res = await repo.restoreTodo(
         uid: _uid,
         listId: entry.parentId ?? _listId,
@@ -149,7 +154,7 @@ class TodosNotifier extends Notifier<TodosState> {
 
     await trash.remove(
       uid: _uid,
-      ids: entries.map((entry) => entry.id).toList(growable: false),
+      ids: todos.map((entry) => entry.id).toList(growable: false),
     );
     return true;
   }
