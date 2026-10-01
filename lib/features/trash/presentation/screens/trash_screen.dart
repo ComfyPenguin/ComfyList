@@ -46,6 +46,15 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
       _ => const <TrashGroup>[],
     };
 
+    // El tope cuenta borrados guardados (un `groupId` por hueco) y a las listas
+    // se les cuelgan las tareas que se borraron antes: se pueden ocupar más
+    // huecos que filas se ven.
+    final slots = switch (state) {
+      TrashData(:final entries) =>
+        entries.map((entry) => entry.groupId).toSet().length,
+      _ => 0,
+    };
+
     // El TopBar del shell se superpone al contenido: reservamos su altura
     // (iconButton + padding del AppBar) más un margen hasta la primera fila.
     final topOffset = MediaQuery.paddingOf(context).top + 56 + AppSpacing.md;
@@ -69,7 +78,7 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
             onEmpty: _busy ? null : _emptyTrash,
           ),
           const SizedBox(height: AppSpacing.md),
-          if (groups.length >= TrashRepository.maxGroupsPerUid) ...[
+          if (slots >= TrashRepository.maxGroupsPerUid) ...[
             const _FullTrashNotice(),
             const SizedBox(height: AppSpacing.md),
           ],

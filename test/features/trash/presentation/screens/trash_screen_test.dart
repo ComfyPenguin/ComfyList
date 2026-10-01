@@ -342,4 +342,53 @@ void main() {
 
     expect(find.textContaining('más recientes'), findsNothing);
   });
+
+  testWidgets('el aviso cuenta huecos guardados, no filas', (tester) async {
+    // 98 borrados sueltos, una lista con su tarea y una tarea que se borró
+    // antes que la lista: 100 huecos ocupados, pero la pantalla junta la tarea
+    // con la lista y solo enseña 99 filas.
+    final list = buildTodoList(id: 'L1', name: 'Compras');
+    trash = _FixedTrashRepository([
+      entry(
+        id: 'hanging',
+        group: 'gOrphan',
+        kind: TrashKind.todo,
+        itemId: 't0',
+        parentId: 'L1',
+        label: 'Pan',
+        payload: buildTodo(id: 't0', title: 'Pan').toJson(),
+      ),
+      entry(
+        id: 'dList',
+        group: 'gList',
+        kind: TrashKind.list,
+        itemId: 'L1',
+        label: 'Compras',
+        payload: list.toJson(),
+      ),
+      entry(
+        id: 'dTask',
+        group: 'gList',
+        kind: TrashKind.todo,
+        itemId: 't1',
+        parentId: 'L1',
+        label: 'Leche',
+        payload: buildTodo(id: 't1', title: 'Leche').toJson(),
+      ),
+      for (var i = 0; i < 98; i++)
+        entry(
+          id: 'd$i',
+          group: 'g$i',
+          kind: TrashKind.todo,
+          itemId: 'x$i',
+          label: 'Tarea $i',
+          payload: buildTodo(id: 'x$i', title: 'Tarea $i').toJson(),
+        ),
+    ]);
+
+    await pumpScreen(tester);
+
+    expect(find.text('99 borrados guardados'), findsOneWidget);
+    expect(find.textContaining('más recientes'), findsOneWidget);
+  });
 }
