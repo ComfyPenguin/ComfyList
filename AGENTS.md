@@ -27,6 +27,7 @@ flutter run                 # Lanzar app
 dart run build_runner build  # Codegen Drift (tras modificar tablas/DAOs)
 dart run build_runner watch  # Codegen en modo watch
 flutter analyze             # Análisis estático
+dart tool/release.dart plan  # Próxima versión (dry-run)
 ```
 
 ## Copy & Language
@@ -67,4 +68,5 @@ El detalle vive en **`docs/gotchas.md`**. Índice por áreas:
 - **Recordatorios**: hasta 5 márgenes, plan puro + scheduler y notificaciones best-effort.
 - **Entidades y estado**: `copyWith` con flags (`clearDescription`/`clearLocation`).
 - **Tests**: DB en memoria y `createTestContainer`.
+- **Releases**: versionado por conventional commits, GitHub Releases con APK/AAB y firma por secrets.
 - **Ramas**: `merge --no-ff` en `develop` y borrado tras comprobar contención.

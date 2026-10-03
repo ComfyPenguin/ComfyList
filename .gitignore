@@ -51,3 +51,8 @@ app.*.map.json
 # cada persona la aporta en su clon y no se versiona.
 android/app/google-services.json
 lib/firebase_options.dart
+
+# Firma de release de Android: el keystore y sus credenciales llegan en CI
+# desde GitHub Secrets (ver .github/workflows/release.yml).
+android/key.properties
+android/app/upload-keystore.jks
