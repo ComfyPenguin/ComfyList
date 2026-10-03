@@ -5,34 +5,20 @@ App TODO multiplataforma con sincronización via Firebase.
 ## Stack
 
 - **UI**: Flutter (Material Design 3)
-- **State**: Riverpod (`Notifier<T>` + `sealed class` State por feature)
-- **Routing**: GoRouter con `ShellRoute` para navegación persistente
-- **HTTP**: Dio (NO `cloud_firestore` / `firebase_auth` — todo via REST API de Firebase)
+- **State**: Riverpod
+- **Routing**: GoRouter
+- **HTTP**: Dio
 - **Local DB**: Drift (SQLite) con `build_runner` para codegen
-- **Tokens**: `flutter_secure_storage` via `SecureSessionStore`
-- **Auth**: Identity Toolkit REST API + Google Sign-In (solo Android)
+- **Tokens**: `flutter_secure_storage`
+- **Auth**: Identity Toolkit REST API + Google Sign-In
 
 ## Architecture
 
-Feature-first + Clean Architecture (3 capas por feature):
+Feature-first + Clean Architecture (3 capas por feature). Detalle en **`docs/architecture.md`**:
 
-```
-lib/features/<feature>/
-├── data/
-│   ├── datasources/       ← Remote/local datasources (Dio calls)
-│   ├── models/            ← DTOs con serialización
-│   └── repositories/      ← Implementaciones del repositorio
-├── domain/
-│   ├── entities/          ← Modelos de dominio (inmutables, copyWith)
-│   └── repositories/      ← Interfaces abstractas
-└── presentation/
-    ├── providers/         ← Riverpod Notifier + State
-    ├── screens/           ← Pantallas
-    └── widgets/           ← Widgets específicos
-```
-
-Cada feature usa un `Repository` abstracto en `domain/`, implementado en `data/repositories/`.
-Los Notifiers se suscriben al stream del repo y actualizan estado reactivamente.
+- **Capas**: `data/` (datasources, models, repositorios), `domain/` (entidades, repositorios abstractos) y `presentation/` (providers, screens, widgets).
+- **State**: `Notifier<T>` + `sealed class` State (`Initial`/`Loading`/`Data`/`Error`), activados desde el router en `_AppStateListenable`.
+- **Routing**: `ShellRoute` con `AppShell`; las rutas de edición viven fuera del shell y las transiciones son instantáneas (`_instantPage()`).
 
 ## Commands
 
@@ -42,27 +28,6 @@ dart run build_runner build  # Codegen Drift (tras modificar tablas/DAOs)
 dart run build_runner watch  # Codegen en modo watch
 flutter analyze             # Análisis estático
 ```
-
-## Modelo de datos (Drift)
-
-- Schema v13 con migraciones `onUpgrade` secuenciales (una condición `if (from < N)` por columna añadida, y `schemaVersion` a juego). Un cambio de tipo de columna no es un `addColumn`: pide `migrator.alterTable(TableMigration(...))` con el `columnTransformer` que la convierta. Ojo: `alterTable` recrea la tabla con el esquema **actual**, así que las columnas añadidas después de esa versión van en su `newColumns` y su propio `addColumn` se condiciona a las versiones que sí llegan sin ella (`if (from == N)`, o un rango).
-- **Tablas**: `settings_table` (singleton id=1), `account_cache_table`, `trash_pending_table`
-- `AppDatabase` se instancia en `main()` y se inyecta via `ProviderScope` override
-- Tests: `AppDatabase.forTesting(NativeDatabase.memory())`
-
-## State Management
-
-- `Notifier<T>` + `sealed class` State con variantes: `Initial`, `Loading`, `Data`, `Error`
-- Providers se activan desde el router en `_AppStateListenable`
-- `todosProvider` usa `NotifierProvider.family` (parametrizado por `listId`)
-- `appDatabaseProvider` declara `throw UnimplementedError` y se sobrescribe en `main()`
-
-## Routing (GoRouter)
-
-- `ShellRoute` con `AppShell` (BottomBar + AppBar + FAB persistente)
-- **Edición fuera del shell**: rutas como `/lists/new`, `/lists/:id/edit` se declaran fuera del `ShellRoute`
-- `_instantPage()`: todas las transiciones son instantáneas (`CustomTransitionPage` duración 0)
-- Redirect logic en `routerProvider`: splash → auth check → precarga datos → home
 
 ## Copy & Language
 
@@ -91,17 +56,15 @@ flutter analyze             # Análisis estático
 
 ## Gotchas
 
-- **No Firebase SDK**: Todo Firebase va via REST API con Dio (Identity Toolkit + Firestore REST). `firebase_core` solo existe para compatibilidad; no importar `cloud_firestore` ni `firebase_auth`.
-- **Config de Firebase fuera del repo**: `android/app/google-services.json` y `lib/firebase_options.dart` los genera `flutterfire configure` (config en `firebase.json`) y están ignorados por git. En un clon nuevo hay que generarlos o pedirlos: sin `google-services.json` el build de Android falla (el plugin `com.google.gms.google-services` lo exige). **Las reglas de Firestore van en `firestore.rules`** y se despliegan con `firebase deploy --only firestore:rules`: son el único control de acceso real, porque la app habla con Firestore REST y la apiKey es pública. Los datos cuelgan de `users/{uid}`, así que la regla exige `request.auth.uid == uid` sobre todo `users/{uid}/**`, más `request.auth.token.email_verified == true` (una cuenta sin verificar no toca datos ni por REST). En la app, el correo sin verificar deja el estado en `AuthUnverifiedEmail` y el router solo permite `/verify-email` (`VerifyEmailScreen`), donde se puede comprobar, reenviar el correo o cerrar sesión.
-- **Cerrar sesión revoca los tokens en el servidor**: `accounts:update` con `validSince` y el idToken del usuario — el refreshToken no caduca solo. Es best-effort (sin red la sesión local se borra igual) y `validSince` sale del reloj del dispositivo, así que un reloj muy adelantado dejaría a esa cuenta fuera hasta esa hora.
-- **Nada de backup ni de logs con datos de cuenta**: `android:allowBackup="false"` más `res/xml/data_extraction_rules.xml` — sin lo segundo, Android 12+ sigue traspasando los datos al móvil nuevo y cualquier modo sin reglas propias queda activo. Para logs que lleven correo, uid o datos del token, `debugLog` (`shared/core/logging/`) en vez de `debugPrint`, que sigue escribiendo en release.
-- **La apiKey solo abre tres APIs**: en Google Cloud (Credenciales → restricciones de API) está limitada a Identity Toolkit, Token Service y Cloud Firestore, así que cualquier llamada nueva a otra API de Google falla con `403 API_KEY_SERVICE_BLOCKED` aunque el código esté bien: hay que sumar esa API a la lista. Va sin restricción de aplicación a propósito — las llamadas salen con Dio y no llevan las cabeceras `X-Android-Package`/`X-Android-Cert` que Android exige, y la misma clave la usan los builds de escritorio.
-- **Dos clientes Dio**: `instance` (con auth interceptor) y `authClient` (sin interceptor, para signUp/signIn).
-- **copyWith con flags**: Entidades usan `clearDescription`/`clearLocation` booleanas (no nullable fields) para distinguir "no tocar" de "poner a null".
-- **Google Sign-In**: Solo Android en `main()` con `Platform.isAndroid`.
-- **Notificaciones**: `NotificationsService.init()` dentro de try-catch (best-effort, falla silenciosamente en Linux). El scheduling (`schedule`/`cancelAll`) también es best-effort.
-- **Recordatorios de citas**: hasta 5 márgenes por cita (`AppSettings.appointmentReminderMinutes`, en minutos y sin repetidos). En Ajustes se añaden desde un menú (`showReminderLeadMenu`) y se quitan tocando su pastilla. `appointmentRemindersProvider` (activado en `app.dart`) escucha citas y ajustes y reescribe el plan entero con `AppointmentRemindersScheduler`. La lógica de qué avisar es pura (`buildAppointmentReminders`), y cada margen lleva su propio id de notificación: `notificationIdFor(id, minutes: n)`.
-- **Contraseñas**: la política vive en `PasswordPolicy` (`auth/domain/entities`): 8 caracteres como mínimo, con una letra y un número. Firebase solo impone su mínimo de 6 y no es configurable sin Identity Platform, así que la comprobación es local, antes de llamar a la API; el registro la enseña en vivo con `PasswordRulesChecklist`.
-- **Deshacer borrados (papelera)**: cada borrado se guarda antes en `users/{uid}/trash` (un documento por elemento, y los de un mismo borrado comparten `groupId`), así que la papelera es la misma en todos los dispositivos del usuario y sobrevive a desinstalar la app. El `payload` va como JSON en un campo de texto: `FirestoreValueCodec` solo entiende valores planos. `FirestoreTrashRemote.listEntries` pide la colección paginando (300 por vuelta y sigue el `nextPageToken` hasta agotarla): Firestore corta la respuesta en páginas y una sola petición se dejaría fuera las últimas, con lo que el tope y la pantalla contarían de menos. `TrashRepositoryImpl` va con polling como el resto de features (`pollIntervalProvider`, un `Watcher` por uid), encadena los guardados —el recorte de uno no se solapa con el siguiente: dos a la vez deciden sobre la misma foto y la cuenta se queda por encima del tope— y recorta por encima de `TrashRepository.maxGroupsPerUid` (100) borrados por cuenta, tanto al guardar un borrado como al leer la papelera —así una cuenta que se quedó por encima del tope (un recorte que falló, dos dispositivos que se pisaron) se arregla al entrar, y el recorte es best-effort: si no puede tirar algo, se queda para la siguiente pasada y la pantalla enseña la papelera igual—; cuenta borrados, no documentos, así que una lista con 40 tareas ocupa un solo hueco, por borrados enteros y del más viejo primero (`_trim` nunca parte un grupo). Al llegar al tope se descarta el borrado más viejo para dejar sitio al que entra, y la pantalla lo avisa con `_FullTrashNotice` cuando está llena. La marca de tiempo de cada borrado es siempre creciente (`_nextDeletedAt`): el reloj del sistema no llega al microsegundo y dos borrados seguidos acabarían en el mismo grupo. `undoLastDelete()` devuelve el último grupo de ese tipo; el aviso lo ofrece `AppToast.showUndo` (8 s con acción, 2 s sin ella) y solo ofrece el último, así que para varios borrados está la pantalla Papelera (`/trash`, entrada en Ajustes), que restaura de uno en uno (`TrashRestorer`) o vacía todo. La pantalla agrupa por `groupId` (`TrashGroup.partition`): una lista borrada con sus tareas es **una** fila con un desplegable para mirar qué se llevó, y el «Restaurar» devuelve el grupo entero se despliegue o no. Una tarea que se borró *antes* que su lista se cuelga de la fila de la lista aunque sea otro borrado: sola se escribiría bajo una lista que no está y no volvería, así que no tiene fila propia hasta que la lista vuelva. Restaurar es reescribir el documento con su mismo id (`patch` sobre un documento inexistente lo crea). Quitar de la papelera lo ya restaurado es best-effort: `remove` no aborta si un borrado falla, apunta el que no pudo tirar en `trash_pending_table` (vía `TrashPendingStore`, así el reintento sobrevive a cerrar la app) y el `Watcher` lo reintenta antes de cada lectura, podando los que ya no están en la papelera: una fila fantasma (documento ya de vuelta) desaparece sola en cuanto hay red. Al borrar una lista, sus tareas se leen *antes* — el borrado se las lleva en cascada — para poder guardarlas también; si esa lectura falla, no se borra nada (la copia se quedaría sin ellas y no volverían) y la pantalla avisa con `AppToast.listDeleteFailed`. Con el ajuste «Borrado automático» en un plazo (`trashRetentionDays`, 7/15/30 días; 0 = «nunca»; de fábrica 30), `trashPurgeProvider` — que activa `app.dart` — llama a `purgeExpired` al abrir la app con sesión y cada vez que cambia el plazo, así que no hace falta entrar en la papelera para que la cuenta se vaya limpiando. Solo purga cuando los ajustes están leídos: con el plazo de fábrica como comodín borraría de más a quien tenga «nunca» puesto.
-- **Ramas**: las features se fusionan en `develop` con `git merge --no-ff`, para dejar el commit de merge como en el resto del historial; la rama se borra después, en local (`git branch -d`) y en remoto (`git push origin --delete <rama>`). Antes de borrarla, comprobar que está contenida del todo: `git branch --no-merged develop` y `git log develop..<rama>` tienen que salir vacíos.
-- **DB override en tests**: `ProviderScope` con `overrideWithValue` en test permite inyectar DB en memoria. `createTestContainer` la inyecta sola al sobreescribir `FirestoreTrashRemote`, porque el repo real de la papelera usa la DB para los pendientes.
+El detalle vive en **`docs/gotchas.md`**. Índice por áreas:
+
+- **Firebase y red**: REST con Dio (nada de SDK), dos clientes (`instance`/`authClient`) y apiKey limitada a tres APIs.
+- **Config y build**: `google-services.json` y `firebase_options.dart` fuera del repo; reglas en `firestore.rules`.
+- **Auth**: correo sin verificar bloqueado por el router, `validSince` al cerrar sesión y política de contraseñas local.
+- **Privacidad**: sin backup en Android y sin logs con datos de cuenta (`debugLog`).
+- **Drift**: migraciones secuenciales, tablas y `appDatabaseProvider`.
+- **Papelera**: `users/{uid}/trash`, tope de 100 borrados, `groupId` y purga por plazo.
+- **Recordatorios**: hasta 5 márgenes, plan puro + scheduler y notificaciones best-effort.
+- **Entidades y estado**: `copyWith` con flags (`clearDescription`/`clearLocation`).
+- **Tests**: DB en memoria y `createTestContainer`.
+- **Ramas**: `merge --no-ff` en `develop` y borrado tras comprobar contención.

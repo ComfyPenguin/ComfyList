@@ -26,7 +26,7 @@ con correo y contraseña, **sin añadir el SDK de Firebase**: el flujo tiene que
 - `auth_repository_impl.dart:287` — `signOut()` ya envuelve `GoogleSignIn.instance.signOut()`
   en try-catch, así que hoy el logout no falla en escritorio.
 - `FirebaseEndpoints.apiKey` está restringida a Identity Toolkit + Token Service + Firestore
-  (ver AGENTS.md). El flujo nuevo **no necesita tocar esa lista**: el canje del `code` va a
+  (ver `docs/gotchas.md`). El flujo nuevo **no necesita tocar esa lista**: el canje del `code` va a
   `oauth2.googleapis.com`, que no usa apiKey.
 - Piezas que ya valen tal cual: `SecureSessionStore` (Windows DPAPI; Linux `libsecret` + keyring),
   la `sealed class` de `Failure`, `AuthState` y el propio botón.
