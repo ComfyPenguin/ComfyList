@@ -61,6 +61,7 @@ Trampas y decisiones no obvias del proyecto, por área. `AGENTS.md` solo enlaza 
 - **DB en memoria**: `AppDatabase.forTesting(NativeDatabase.memory())`, inyectada con `ProviderScope` + `overrideWithValue`.
 - **`createTestContainer`** la inyecta sola al sobreescribir `FirestoreTrashRemote`, porque el repo real de la papelera usa la DB para los pendientes.
 - **`sqlite3` 3.x trae su binario por native assets** (hook cacheado en `.dart_tool/hooks_runner`): ni en local ni en CI hace falta instalar la librería de SQLite del sistema.
+- **El CI exige el lockfile al día**: `flutter pub get --enforce-lockfile` falla si un cambio en `pubspec.yaml` no va acompañado de su `pubspec.lock` actualizado.
 
 ## Releases
 

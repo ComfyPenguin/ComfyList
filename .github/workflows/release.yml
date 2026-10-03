@@ -83,8 +83,8 @@ jobs:
           storeFile=upload-keystore.jks
           EOF
 
-      - name: flutter pub get
-        run: flutter pub get
+      - name: Comprobar que pubspec.lock está al día
+        run: flutter pub get --enforce-lockfile
 
       - name: Escribir la versión en pubspec.yaml
         run: dart tool/release.dart apply "$VERSION" "$BUILD_NUMBER"

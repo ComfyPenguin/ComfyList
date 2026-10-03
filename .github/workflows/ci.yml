@@ -24,8 +24,8 @@ jobs:
           channel: stable
           cache: true
 
-      - name: flutter pub get
-        run: flutter pub get
+      - name: Comprobar que pubspec.lock está al día
+        run: flutter pub get --enforce-lockfile
 
       - name: flutter analyze
         run: flutter analyze
