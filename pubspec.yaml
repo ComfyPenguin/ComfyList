@@ -20,7 +20,7 @@ dependencies:
   http: ^1.6.0
 
   # Routing
-  go_router: ^17.2.3
+  go_router: ^18.0.2
 
   # Local DB
   drift: ^2.20.0
