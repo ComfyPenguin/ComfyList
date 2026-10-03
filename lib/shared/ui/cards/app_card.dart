@@ -2,33 +2,38 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_theme.dart';
 
-/// `card-content` del DESIGN.md — canvas + radio xl 16 px,
-/// padding xxl, sin sombra (Level 0 flat).
+/// `card-content` del DESIGN.md — superficie `canvasSoft` con radio xl, sin
+/// sombra ni borde (Level 0 flat). Es el bloque de los estados vacíos.
+///
+/// Las cards que van sobre el canvas con contorno y radio 32 son otra pieza
+/// (`SwipeActionsCard` y las previews de los formularios).
 class AppCard extends StatelessWidget {
   const AppCard({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(AppSpacing.xxl),
-    this.onTap,
+    this.padding = _rowPadding,
   });
+
+  /// Padding por defecto: el alto de una fila con switch.
+  static const EdgeInsets _rowPadding = EdgeInsets.symmetric(
+    horizontal: AppSpacing.lg,
+    vertical: AppSpacing.sm,
+  );
 
   final Widget child;
   final EdgeInsetsGeometry padding;
-  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Material(
-      color: theme.cardTheme.color,
-      shape: theme.cardTheme.shape,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
+    return Container(
+      decoration: BoxDecoration(
+        color: context.colors.canvasSoft,
         borderRadius: AppRadius.brXl,
-        child: Padding(padding: padding, child: child),
       ),
+      padding: padding,
+      child: child,
     );
   }
 }

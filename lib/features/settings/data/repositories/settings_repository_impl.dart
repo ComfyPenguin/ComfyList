@@ -17,7 +17,17 @@ class SettingsRepositoryImpl implements SettingsRepository {
       notificationsEnabled: row.notificationsEnabled,
       appointmentsCompletionEnabled: row.appointmentsCompletionEnabled,
       completedToBottom: row.completedToBottom,
+      appointmentsCompletedToBottom: row.appointmentsCompletedToBottom,
+      appointmentsTodayOnTop: row.appointmentsTodayOnTop,
+      invertSwipeActions: row.invertSwipeActions,
       use24HourFormat: row.use24HourFormat,
+      appointmentReminderMinutes: AppSettings.parseReminderMinutes(
+        row.appointmentReminderMinutes,
+      ),
+      longPressHintSeen: row.longPressHintSeen,
+      trashRetentionDays: AppSettings.parseTrashRetentionDays(
+        row.trashRetentionDays,
+      ),
     );
   }
 
@@ -29,7 +39,17 @@ class SettingsRepositoryImpl implements SettingsRepository {
             notificationsEnabled: row.notificationsEnabled,
             appointmentsCompletionEnabled: row.appointmentsCompletionEnabled,
             completedToBottom: row.completedToBottom,
+            appointmentsCompletedToBottom: row.appointmentsCompletedToBottom,
+            appointmentsTodayOnTop: row.appointmentsTodayOnTop,
+            invertSwipeActions: row.invertSwipeActions,
             use24HourFormat: row.use24HourFormat,
+            appointmentReminderMinutes: AppSettings.parseReminderMinutes(
+              row.appointmentReminderMinutes,
+            ),
+            longPressHintSeen: row.longPressHintSeen,
+            trashRetentionDays: AppSettings.parseTrashRetentionDays(
+              row.trashRetentionDays,
+            ),
           ),
         );
   }
@@ -55,7 +75,39 @@ class SettingsRepositoryImpl implements SettingsRepository {
   }
 
   @override
+  Future<void> setAppointmentsCompletedToBottom(bool enabled) {
+    return _local.updateAppointmentsCompletedToBottom(enabled);
+  }
+
+  @override
+  Future<void> setAppointmentsTodayOnTop(bool enabled) {
+    return _local.updateAppointmentsTodayOnTop(enabled);
+  }
+
+  @override
+  Future<void> setInvertSwipeActions(bool enabled) {
+    return _local.updateInvertSwipeActions(enabled);
+  }
+
+  @override
   Future<void> setUse24HourFormat(bool enabled) {
     return _local.updateUse24HourFormat(enabled);
+  }
+
+  @override
+  Future<void> setAppointmentReminderMinutes(List<int> minutes) {
+    return _local.updateAppointmentReminderMinutes(
+      AppSettings.reminderMinutesToString(minutes),
+    );
+  }
+
+  @override
+  Future<void> setLongPressHintSeen(bool seen) {
+    return _local.updateLongPressHintSeen(seen);
+  }
+
+  @override
+  Future<void> setTrashRetentionDays(int days) {
+    return _local.updateTrashRetentionDays(days);
   }
 }

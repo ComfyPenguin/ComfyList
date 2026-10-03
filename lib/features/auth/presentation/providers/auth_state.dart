@@ -21,6 +21,13 @@ class Authenticated extends AuthState {
   final AuthUser user;
 }
 
+/// Sesión válida, pero el correo todavía no está verificado: la app no deja
+/// pasar hasta que el usuario abra el enlace del correo.
+class AuthUnverifiedEmail extends AuthState {
+  const AuthUnverifiedEmail(this.user);
+  final AuthUser user;
+}
+
 class Unauthenticated extends AuthState {
   const Unauthenticated();
 }

@@ -3,10 +3,14 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/core/failures/failure.dart';
+import '../../../../shared/core/time/clock.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/providers/auth_state.dart';
+import '../../../trash/domain/entities/trash_entry.dart';
+import '../../../trash/presentation/providers/trash_provider.dart';
 import '../../data/datasources/firestore_appointments_remote.dart';
 import '../../data/repositories/appointments_repository_impl.dart';
+import '../../domain/entities/appointment.dart';
 import '../../domain/repositories/appointments_repository.dart';
 import 'appointments_state.dart';
 
@@ -16,8 +20,10 @@ final firestoreAppointmentsRemoteProvider =
 });
 
 final appointmentsRepositoryProvider = Provider<AppointmentsRepository>((ref) {
-  final repo =
-      AppointmentsRepositoryImpl(ref.watch(firestoreAppointmentsRemoteProvider));
+  final repo = AppointmentsRepositoryImpl(
+    ref.watch(firestoreAppointmentsRemoteProvider),
+    pollInterval: ref.watch(pollIntervalProvider),
+  );
   ref.onDispose(repo.dispose);
   return repo;
 });
@@ -41,7 +47,11 @@ class AppointmentsNotifier extends Notifier<AppointmentsState> {
     _sub = repo.watchAppointments(uid).listen(
       (items) => state = AppointmentsData(items),
       onError: (Object e, StackTrace st) {
-        state = AppointmentsError(e is Failure ? e : const UnknownFailure());
+        if (state is! AppointmentsData) {
+          state = AppointmentsError(e is Failure ? e : const UnknownFailure());
+        }
+        // Si ya tenemos datos en pantalla, descartamos el error transitorio
+        // (siguiente poll lo arreglará). Evita parpadeo de error tras resume.
       },
     );
     ref.onDispose(() => _sub?.cancel());
@@ -97,10 +107,63 @@ class AppointmentsNotifier extends Notifier<AppointmentsState> {
   }
 
   Future<void> delete(String id) async {
+    final appointment = _findById(id);
+    if (appointment != null) {
+      await ref.read(trashRepositoryProvider).save(
+            uid: _uid,
+            items: [
+              TrashItem(
+                kind: TrashKind.appointment,
+                itemId: appointment.id,
+                label: appointment.title,
+                payload: appointment.toJson(),
+              ),
+            ],
+          );
+    }
+
     await ref.read(appointmentsRepositoryProvider).deleteAppointment(
           uid: _uid,
           id: id,
         );
+  }
+
+  /// Devuelve la última cita borrada. Devuelve si se pudo.
+  Future<bool> undoLastDelete() async {
+    final trash = ref.read(trashRepositoryProvider);
+    final found = await trash.latestGroup(
+      uid: _uid,
+      kind: TrashKind.appointment,
+    );
+    final entries = found.fold(
+      onOk: (entries) => entries,
+      onErr: (_) => const <TrashEntry>[],
+    );
+    if (entries.isEmpty) return false;
+
+    final repo = ref.read(appointmentsRepositoryProvider);
+    for (final entry in entries) {
+      final res = await repo.restoreAppointment(
+        uid: _uid,
+        appointment: Appointment.fromJson(entry.payload),
+      );
+      if (res.isErr) return false;
+    }
+
+    await trash.remove(
+      uid: _uid,
+      ids: entries.map((entry) => entry.id).toList(growable: false),
+    );
+    return true;
+  }
+
+  Appointment? _findById(String id) {
+    final current = state;
+    if (current is! AppointmentsData) return null;
+    for (final appointment in current.items) {
+      if (appointment.id == id) return appointment;
+    }
+    return null;
   }
 }
 

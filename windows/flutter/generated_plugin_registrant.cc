@@ -8,7 +8,6 @@
 
 #include <firebase_core/firebase_core_plugin_c_api.h>
 #include <flutter_secure_storage_windows/flutter_secure_storage_windows_plugin.h>
-#include <rive_native/rive_native_plugin.h>
 #include <screen_retriever_windows/screen_retriever_windows_plugin_c_api.h>
 #include <window_manager/window_manager_plugin.h>
 
@@ -17,8 +16,6 @@ void RegisterPlugins(flutter::PluginRegistry* registry) {
       registry->GetRegistrarForPlugin("FirebaseCorePluginCApi"));
   FlutterSecureStorageWindowsPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("FlutterSecureStorageWindowsPlugin"));
-  RiveNativePluginRegisterWithRegistrar(
-      registry->GetRegistrarForPlugin("RiveNativePlugin"));
   ScreenRetrieverWindowsPluginCApiRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("ScreenRetrieverWindowsPluginCApi"));
   WindowManagerPluginRegisterWithRegistrar(

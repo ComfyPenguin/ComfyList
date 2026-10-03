@@ -4,10 +4,9 @@ import 'app_colors.dart';
 export 'app_colors.dart';
 import 'app_radius.dart';
 import 'app_spacing.dart';
+import 'app_stroke.dart';
 import 'app_typography.dart';
 
-/// Construye los `ThemeData` claro/oscuro a partir de los tokens del DS
-/// (DESIGN.md — Uber-inspired: duet blanco/negro, geometría pill).
 class AppTheme {
   AppTheme._();
 
@@ -35,7 +34,9 @@ class AppTheme {
       surface: c.canvas,
       onSurface: c.ink,
       surfaceContainerHighest: c.canvasSoft,
-      outline: c.hairline,
+      // Mismo hairline que las cards: el trazo de los contornos sobre canvas
+      // sale siempre del token derivado, no de un gris fijo de la paleta.
+      outline: c.cardBorder,
       outlineVariant: c.hairlineSoft,
     );
 
@@ -64,23 +65,6 @@ class AppTheme {
         titleTextStyle: AppTypography.displaySm.copyWith(color: c.ink),
         iconTheme: IconThemeData(color: c.ink),
       ),
-      // button-primary: pill negro, peso 500, padding md/md.
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: c.primary,
-          foregroundColor: c.onPrimary,
-          disabledBackgroundColor: c.surfacePressed,
-          disabledForegroundColor: c.muted,
-          textStyle: AppTypography.buttonMd,
-          minimumSize: const Size(0, 44),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.xl,
-            vertical: AppSpacing.md,
-          ),
-          shape: const RoundedRectangleBorder(borderRadius: AppRadius.brPill),
-          elevation: 0,
-        ),
-      ),
       // button-secondary: pill blanco con borde hairline.
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
@@ -93,7 +77,7 @@ class AppTheme {
             vertical: AppSpacing.md,
           ),
           shape: const RoundedRectangleBorder(borderRadius: AppRadius.brPill),
-          side: BorderSide(color: c.hairline),
+          side: BorderSide(color: c.cardBorder),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
@@ -117,7 +101,7 @@ class AppTheme {
         ),
         hintStyle: AppTypography.bodyMd.copyWith(color: c.mutedSoft),
         labelStyle: AppTypography.bodySm.copyWith(color: c.body),
-        floatingLabelStyle: AppTypography.bodySmStrong.copyWith(color: c.ink),
+        floatingLabelStyle: AppTypography.fieldLabel(c.ink),
         border: const OutlineInputBorder(
           borderRadius: AppRadius.brMd,
           borderSide: BorderSide.none,
@@ -128,7 +112,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppRadius.brMd,
-          borderSide: BorderSide(color: c.ink, width: 1.5),
+          borderSide: BorderSide(color: c.ink, width: AppStroke.focused),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: AppRadius.brMd,
@@ -136,25 +120,13 @@ class AppTheme {
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: AppRadius.brMd,
-          borderSide: BorderSide(color: c.error, width: 1.5),
+          borderSide: BorderSide(color: c.error, width: AppStroke.focused),
         ),
       ),
-      dividerTheme:
-          DividerThemeData(color: c.hairline, thickness: 1, space: 1),
-      // Switch ink/canvas — sin tintes de marca extra.
-      switchTheme: SwitchThemeData(
-        thumbColor: WidgetStateProperty.resolveWith(
-          (states) =>
-              states.contains(WidgetState.selected) ? c.onPrimary : c.canvas,
-        ),
-        trackColor: WidgetStateProperty.resolveWith(
-          (states) =>
-              states.contains(WidgetState.selected) ? c.primary : c.hairline,
-        ),
-        trackOutlineColor: WidgetStateProperty.resolveWith(
-          (states) =>
-              states.contains(WidgetState.selected) ? c.primary : c.hairline,
-        ),
+      dividerTheme: DividerThemeData(
+        color: c.cardBorder,
+        thickness: 1,
+        space: 1,
       ),
       checkboxTheme: CheckboxThemeData(
         side: BorderSide(color: c.hairlineMid, width: 1.5),
@@ -165,12 +137,6 @@ class AppTheme {
         checkColor: WidgetStateProperty.all(c.onPrimary),
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.brMd),
       ),
-      snackBarTheme: SnackBarThemeData(
-        backgroundColor: c.surfaceDark,
-        contentTextStyle: AppTypography.bodySm.copyWith(color: c.onDark),
-        behavior: SnackBarBehavior.floating,
-        shape: const RoundedRectangleBorder(borderRadius: AppRadius.brXl),
-      ),
       dialogTheme: DialogThemeData(
         backgroundColor: c.canvas,
         surfaceTintColor: c.canvas,
@@ -180,10 +146,16 @@ class AppTheme {
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: c.canvas,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+        // Espejo del TopBar: mismo radio y hairline (ver app_shell.dart).
+        shape: RoundedRectangleBorder(
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(24),
+          ),
+          side: BorderSide(color: c.cardBorder, width: AppStroke.hairline),
         ),
         showDragHandle: true,
+        // 2x el default M3 (32x4) para mayor affordance del drag.
+        dragHandleSize: const Size(64, 4),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: c.primary,

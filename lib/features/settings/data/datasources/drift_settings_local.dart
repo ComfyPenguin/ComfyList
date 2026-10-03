@@ -20,6 +20,24 @@ class DriftSettingsLocal {
   Future<void> updateCompletedToBottom(bool enabled) =>
       _dao.updateCompletedToBottom(enabled);
 
+  Future<void> updateAppointmentsCompletedToBottom(bool enabled) =>
+      _dao.updateAppointmentsCompletedToBottom(enabled);
+
+  Future<void> updateAppointmentsTodayOnTop(bool enabled) =>
+      _dao.updateAppointmentsTodayOnTop(enabled);
+
+  Future<void> updateInvertSwipeActions(bool enabled) =>
+      _dao.updateInvertSwipeActions(enabled);
+
   Future<void> updateUse24HourFormat(bool enabled) =>
       _dao.updateUse24HourFormat(enabled);
+
+  Future<void> updateAppointmentReminderMinutes(String minutes) =>
+      _dao.updateAppointmentReminderMinutes(minutes);
+
+  Future<void> updateLongPressHintSeen(bool seen) =>
+      _dao.updateLongPressHintSeen(seen);
+
+  Future<void> updateTrashRetentionDays(int days) =>
+      _dao.updateTrashRetentionDays(days);
 }

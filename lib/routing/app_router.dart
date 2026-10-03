@@ -5,22 +5,24 @@ import 'package:lottie/lottie.dart';
 
 import '../features/appointments/presentation/providers/appointments_provider.dart';
 import '../features/appointments/presentation/providers/appointments_state.dart';
-import '../features/appointments/presentation/screens/appointment_detail_screen.dart';
 import '../features/appointments/presentation/screens/appointment_edit_screen.dart';
 import '../features/appointments/presentation/screens/appointments_screen.dart';
 import '../features/auth/presentation/providers/auth_provider.dart';
 import '../features/auth/presentation/providers/auth_state.dart';
 import '../features/auth/presentation/screens/sign_in_screen.dart';
+import '../features/auth/presentation/screens/verify_email_screen.dart';
 import '../features/todo_lists/presentation/providers/todo_lists_provider.dart';
 import '../features/todo_lists/presentation/providers/todo_lists_state.dart';
 import '../features/auth/presentation/screens/sign_up_screen.dart';
 import '../features/settings/presentation/screens/settings_screen.dart';
+import '../features/trash/presentation/screens/trash_screen.dart';
 import '../features/todo_lists/presentation/screens/todo_list_edit_screen.dart';
 import '../features/todo_lists/presentation/screens/todo_lists_screen.dart';
 import '../features/todos/presentation/screens/todo_edit_screen.dart';
 import '../features/todos/presentation/screens/todos_screen.dart';
 import '../shared/core/theme/app_theme.dart';
 import '../shared/ui/navigation/app_shell.dart';
+import '../shared/ui/secure_screen.dart';
 import 'routes.dart';
 
 /// Adapta el estado de auth y datos al `Listenable` de GoRouter.
@@ -58,10 +60,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       final auth = ref.read(authProvider);
       final loggingIn = state.matchedLocation == Routes.signIn ||
           state.matchedLocation == Routes.signUp;
+      final verifying = state.matchedLocation == Routes.verifyEmail;
 
       // Mientras el bootstrap (auto-login) decide, no redirigimos:
       // _HomeGate muestra el splash hasta que haya veredicto.
       if (auth is AuthInitial || auth is AuthLoading) return null;
+
+      // Con el correo sin verificar la app no se puede usar: la única salida
+      // hacia delante es la pantalla de verificación.
+      if (auth is AuthUnverifiedEmail) {
+        return verifying ? null : Routes.verifyEmail;
+      }
+      if (verifying) {
+        return auth is Authenticated ? Routes.home : Routes.signIn;
+      }
 
       final isAuth = auth is Authenticated;
       if (!isAuth && !loggingIn) return Routes.signIn;
@@ -88,50 +100,22 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: Routes.home,
         pageBuilder: (context, state) => _instantPage(const _HomeGate()),
       ),
+      // Las pantallas de acceso van blindadas: sin capturas mientras se
+      // escribe la contraseña.
       GoRoute(
         path: Routes.signIn,
-        pageBuilder: (context, state) => _instantPage(const SignInScreen()),
+        pageBuilder: (context, state) =>
+            _instantPage(const SecureScreen(child: SignInScreen())),
       ),
       GoRoute(
         path: Routes.signUp,
-        pageBuilder: (context, state) => _instantPage(const SignUpScreen()),
-      ),
-
-      // Pantalla de ajustes fuera del shell (pantalla limpia sin BottomBar).
-      GoRoute(
-        path: Routes.settings,
-        pageBuilder: (context, state) => _instantPage(const SettingsScreen()),
-      ),
-
-      // Rutas de edición fuera del shell. Se declaran ANTES del ShellRoute
-      // para que GoRouter resuelva los segmentos literales (`/lists/new`,
-      // `/lists/:listId/edit`, etc.) antes que el comodín `/lists/:listId`
-      // del shell, evitando que `:listId` capture el literal `new`.
-      GoRoute(
-        path: Routes.todoListNew,
         pageBuilder: (context, state) =>
-            _instantPage(const TodoListEditScreen()),
+            _instantPage(const SecureScreen(child: SignUpScreen())),
       ),
       GoRoute(
-        path: '/lists/:listId/edit',
-        pageBuilder: (context, state) => _instantPage(
-            TodoListEditScreen(id: state.pathParameters['listId'])),
-      ),
-
-      GoRoute(
-        path: Routes.appointmentNew,
+        path: Routes.verifyEmail,
         pageBuilder: (context, state) =>
-            _instantPage(const AppointmentEditScreen()),
-      ),
-      GoRoute(
-        path: '/appointments/:id/detail',
-        pageBuilder: (context, state) => _instantPage(
-            AppointmentDetailScreen(id: state.pathParameters['id']!)),
-      ),
-      GoRoute(
-        path: '/appointments/:id/edit',
-        pageBuilder: (context, state) => _instantPage(
-            AppointmentEditScreen(id: state.pathParameters['id'])),
+            _instantPage(const SecureScreen(child: VerifyEmailScreen())),
       ),
 
       // Shell persistente: TopBar + BottomBar + FAB compartidos.
@@ -144,11 +128,23 @@ final routerProvider = Provider<GoRouter>((ref) {
             pageBuilder: (context, state) =>
                 _instantPage(const TodoListsScreen()),
           ),
+          // Declarada antes de `/lists/:listId` para que el literal `new` no
+          // sea capturado por el parámetro `:listId`.
+          GoRoute(
+            path: Routes.todoListNew,
+            pageBuilder: (context, state) =>
+                _instantPage(const TodoListEditScreen()),
+          ),
           GoRoute(
             path: '/lists/:listId',
             pageBuilder: (context, state) => _instantPage(
                 TodosScreen(listId: state.pathParameters['listId']!)),
             routes: [
+              GoRoute(
+                path: 'edit',
+                pageBuilder: (context, state) => _instantPage(
+                    TodoListEditScreen(id: state.pathParameters['listId'])),
+              ),
               GoRoute(
                 path: 'todos/new',
                 pageBuilder: (context, state) => _instantPage(
@@ -167,6 +163,28 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: Routes.appointments,
             pageBuilder: (context, state) =>
                 _instantPage(const AppointmentsScreen()),
+          ),
+          GoRoute(
+            path: Routes.appointmentNew,
+            pageBuilder: (context, state) =>
+                _instantPage(const AppointmentEditScreen()),
+          ),
+          GoRoute(
+            path: '/appointments/:id/edit',
+            pageBuilder: (context, state) => _instantPage(
+                AppointmentEditScreen(id: state.pathParameters['id'])),
+          ),
+          // Dentro del shell para usar su TopBar, como las pantallas de
+          // edición: el nombre de la pantalla y la flecha atrás los pone el
+          // shell y la BottomBar se oculta.
+          GoRoute(
+            path: Routes.settings,
+            pageBuilder: (context, state) =>
+                _instantPage(const SettingsScreen()),
+          ),
+          GoRoute(
+            path: Routes.trash,
+            pageBuilder: (context, state) => _instantPage(const TrashScreen()),
           ),
         ],
       ),
@@ -218,8 +236,8 @@ class _SplashScreen extends StatelessWidget {
                   ),
                 ),
                 Image.asset(
-                  'assets/logo-no-text-background.png',
-                  width: 200,
+                  'assets/logo-face.png',
+                  width: 140,
                 ),
               ],
             ),

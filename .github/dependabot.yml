@@ -1,0 +1,38 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Europe/Madrid
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: ci
+    labels:
+      - dependencies
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: pub
+    directory: "/"
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Europe/Madrid
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    labels:
+      - dependencies
+    groups:
+      dart:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch

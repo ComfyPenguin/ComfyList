@@ -39,6 +39,25 @@ class WeakPasswordFailure extends AuthFailure {
   const WeakPasswordFailure() : super('La contraseña es demasiado débil.');
 }
 
+/// Firebase corta el grifo tras varios intentos fallidos: es su protección
+/// contra la fuerza bruta, no un fallo de red.
+class TooManyAttemptsFailure extends AuthFailure {
+  const TooManyAttemptsFailure()
+      : super('Demasiados intentos fallidos. Espera unos minutos e inténtalo de nuevo.');
+}
+
+/// Cuenta deshabilitada desde la consola de Firebase.
+class AccountDisabledFailure extends AuthFailure {
+  const AccountDisabledFailure()
+      : super('Esta cuenta está deshabilitada.');
+}
+
+/// El proyecto tiene desactivado el acceso con correo y contraseña.
+class PasswordLoginDisabledFailure extends AuthFailure {
+  const PasswordLoginDisabledFailure()
+      : super('El acceso con correo y contraseña está desactivado.');
+}
+
 /// El usuario cerró el popup nativo de Google sin completar el inicio de sesión.
 /// No es un error real — la UI debería silenciarlo o mostrar mensaje neutro.
 class GoogleSignInCancelledFailure extends AuthFailure {

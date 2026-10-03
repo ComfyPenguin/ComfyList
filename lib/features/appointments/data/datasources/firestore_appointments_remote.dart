@@ -89,4 +89,16 @@ class FirestoreAppointmentsRemote {
   }) async {
     await _dio.delete<void>('${_collectionPath(uid)}/$id');
   }
+
+  /// Vuelve a escribir el documento de [appointment] con su mismo id.
+  Future<Appointment> restoreAppointment({
+    required String uid,
+    required Appointment appointment,
+  }) async {
+    final res = await _dio.patch<Map<String, dynamic>>(
+      '${_collectionPath(uid)}/${appointment.id}',
+      data: AppointmentDto.toRestoreBody(appointment),
+    );
+    return AppointmentDto.fromDocument(res.data!);
+  }
 }

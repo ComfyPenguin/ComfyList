@@ -6,11 +6,14 @@ import '../../../../routing/routes.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
-import '../../../../shared/ui/buttons/app_primary_button.dart';
+import '../../../../shared/ui/buttons/primary_button.dart';
 import '../../../../shared/ui/inputs/app_text_field.dart';
+import '../../domain/entities/email_policy.dart';
+import '../../domain/entities/password_policy.dart';
 import '../providers/auth_provider.dart';
 import '../providers/auth_state.dart';
 import '../widgets/google_sign_in_section.dart';
+import '../widgets/password_rules_checklist.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
   const SignUpScreen({super.key});
@@ -26,6 +29,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   String? _emailError;
   String? _passwordError;
   String? _confirmError;
+  bool _obscurePassword = true;
+  bool _obscureConfirm = true;
 
   @override
   void dispose() {
@@ -37,11 +42,12 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
   bool _validate() {
     setState(() {
-      _emailError =
-          _emailCtrl.text.contains('@') ? null : 'Introduce un correo válido.';
-      _passwordError = _passwordCtrl.text.length >= 6
+      _emailError = EmailPolicy.isValid(_emailCtrl.text)
           ? null
-          : 'La contraseña debe tener al menos 6 caracteres.';
+          : 'Introduce un correo válido.';
+      _passwordError = PasswordPolicy.isValid(_passwordCtrl.text)
+          ? null
+          : 'La contraseña no cumple los requisitos.';
       _confirmError = _passwordConfirmCtrl.text == _passwordCtrl.text
           ? null
           : 'Las contraseñas no coinciden.';
@@ -49,6 +55,37 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     return _emailError == null &&
         _passwordError == null &&
         _confirmError == null;
+  }
+
+  /// Toggle circular de visibilidad de la contraseña (mismo estilo que el
+  /// login, con espaciado exterior para separarlo del borde del campo).
+  Widget _buildVisibilityToggle({
+    required bool obscure,
+    required VoidCallback onToggle,
+    required AppColors colors,
+  }) {
+    return Padding(
+      // Espaciado fuera del toggle para separarlo del borde del campo.
+      padding: const EdgeInsets.only(right: AppSpacing.md),
+      child: SizedBox(
+        width: 36,
+        height: 36,
+        child: Material(
+          color: Colors.transparent,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: onToggle,
+            child: Icon(
+              obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+              size: 22,
+              color: colors.muted,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _submit() async {
@@ -76,14 +113,36 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    'Crea tu cuenta',
-                    style: AppTypography.displayXl.copyWith(color: colors.ink),
+                  // Logo de la app encima del título.
+                  Image.asset(
+                    'assets/logo-face.png',
+                    width: 120,
+                    height: 120,
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    'Tu lista de tareas siempre contigo, en todos tus dispositivos.',
-                    style: AppTypography.bodyMd.copyWith(color: colors.body),
+                  const SizedBox(height: AppSpacing.lg),
+                  // Título de la pantalla de registro bicolor (igual que el login).
+                  // Ocupa el mismo ancho que los campos del formulario.
+                  SizedBox(
+                    width: double.infinity,
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'REGÍSTRATE',
+                            style: TextStyle(color: colors.ink),
+                          ),
+                          TextSpan(
+                            text: ' AHORA',
+                            style: TextStyle(color: colors.muted),
+                          ),
+                        ],
+                      ),
+                      style: AppTypography.displayXl.copyWith(
+                        fontFamily: 'Fredoka',
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.xxxl),
                   AppTextField(
@@ -92,24 +151,86 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     hint: 'tu@correo.com',
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
+                    autofillHints: const [AutofillHints.email],
+                    // Si se borra el correo se eliminan también las
+                    // contraseñas para ocultar sus campos de nuevo.
+                    onChanged: (_) {
+                      if (_emailCtrl.text.trim().isEmpty) {
+                        _passwordCtrl.clear();
+                        _passwordConfirmCtrl.clear();
+                        _emailError = null;
+                        _passwordError = null;
+                        _confirmError = null;
+                      }
+                      setState(() {});
+                    },
                     errorText: _emailError,
+                    cardStyle: true,
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  AppTextField(
-                    controller: _passwordCtrl,
-                    label: 'Contraseña',
-                    obscureText: true,
-                    textInputAction: TextInputAction.next,
-                    errorText: _passwordError,
+                  // Los campos siguientes aparecen con un slide desde el campo
+                  // superior al rellenar el anterior.
+                  _RevealSlide(
+                    visible: _emailCtrl.text.trim().isNotEmpty,
+                    child: AppTextField(
+                      controller: _passwordCtrl,
+                      label: 'Contraseña',
+                      obscureText: _obscurePassword,
+                      textInputAction: TextInputAction.next,
+                      // `newPassword` hace que el gestor ofrezca guardarla
+                      // (y genere una) en vez de rellenar la de siempre.
+                      autofillHints: const [AutofillHints.newPassword],
+                      // Si se borra la contraseña se elimina también la
+                      // confirmación para ocultar ese campo de nuevo.
+                      onChanged: (_) {
+                        if (_passwordCtrl.text.isEmpty) {
+                          _passwordConfirmCtrl.clear();
+                          _confirmError = null;
+                        }
+                        // Con los requisitos a la vista, dejar el aviso
+                        // rojo cuando ya se cumplen sobra: se limpia solo.
+                        if (_passwordError != null &&
+                            PasswordPolicy.isValid(_passwordCtrl.text)) {
+                          _passwordError = null;
+                        }
+                        setState(() {});
+                      },
+                      errorText: _passwordError,
+                      cardStyle: true,
+                      suffixIcon: _buildVisibilityToggle(
+                        obscure: _obscurePassword,
+                        onToggle: () => setState(
+                          () => _obscurePassword = !_obscurePassword,
+                        ),
+                        colors: colors,
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  AppTextField(
-                    controller: _passwordConfirmCtrl,
-                    label: 'Repite la contraseña',
-                    obscureText: true,
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (_) => _submit(),
-                    errorText: _confirmError,
+                  _RevealSlide(
+                    visible: _passwordCtrl.text.isNotEmpty,
+                    child: AppTextField(
+                      controller: _passwordConfirmCtrl,
+                      label: 'Repite la contraseña',
+                      obscureText: _obscureConfirm,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => _submit(),
+                      errorText: _confirmError,
+                      cardStyle: true,
+                      suffixIcon: _buildVisibilityToggle(
+                        obscure: _obscureConfirm,
+                        onToggle: () => setState(
+                          () => _obscureConfirm = !_obscureConfirm,
+                        ),
+                        colors: colors,
+                      ),
+                    ),
+                  ),
+                  // Los requisitos van tras el par de contraseñas: entre las
+                  // dos quedaban separadas y parecía que faltaba un campo.
+                  _RevealSlide(
+                    visible: _passwordCtrl.text.isNotEmpty,
+                    child: PasswordRulesChecklist(
+                      password: _passwordCtrl.text,
+                    ),
                   ),
                   if (error != null) ...[
                     const SizedBox(height: AppSpacing.md),
@@ -119,7 +240,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     ),
                   ],
                   const SizedBox(height: AppSpacing.xxl),
-                  AppPrimaryButton(
+                  PrimaryButton(
                     label: 'Crear cuenta',
                     onPressed: _submit,
                     isLoading: isLoading,
@@ -129,9 +250,62 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   const SizedBox(height: AppSpacing.md),
                   TextButton(
                     onPressed: () => context.go(Routes.signIn),
-                    child: const Text('¿Ya tienes cuenta? Inicia sesión'),
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: '¿Ya tienes cuenta? ',
+                            style: TextStyle(color: colors.muted),
+                          ),
+                          const TextSpan(
+                            text: 'Inicia sesión',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Envoltorio que muestra [child] con un slide desde el campo superior + fade
+/// cuando [visible] pasa a `true`. Cuando se oculta, se colapsa sin dejar
+/// hueco (la altura anima con el propio slide).
+class _RevealSlide extends StatelessWidget {
+  const _RevealSlide({required this.visible, required this.child});
+
+  final bool visible;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRect(
+      child: AnimatedAlign(
+        alignment: Alignment.topCenter,
+        heightFactor: visible ? 1 : 0,
+        curve: Curves.easeOutCubic,
+        duration: const Duration(milliseconds: 350),
+        child: AnimatedOpacity(
+          opacity: visible ? 1 : 0,
+          curve: Curves.easeOut,
+          duration: const Duration(milliseconds: 250),
+          child: FractionalTranslation(
+            translation: visible
+                ? Offset.zero
+                : const Offset(0, -0.4), // desliza desde arriba (campo previo)
+            child: IgnorePointer(
+              ignoring: !visible,
+              child: Padding(
+                // Espaciado que antes daba el SizedBox entre campos.
+                padding: const EdgeInsets.only(top: AppSpacing.md),
+                child: child,
               ),
             ),
           ),

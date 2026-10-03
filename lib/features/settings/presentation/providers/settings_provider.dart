@@ -29,6 +29,10 @@ class SettingsNotifier extends Notifier<SettingsState> {
     return const SettingsInitial();
   }
 
+  /// Vuelve a leer las preferencias tras un fallo, para el reintento de la
+  /// pantalla de ajustes.
+  Future<void> reload() => _bootstrap();
+
   Future<void> _bootstrap() async {
     state = const SettingsLoading();
     final repo = ref.read(settingsRepositoryProvider);
@@ -60,8 +64,28 @@ class SettingsNotifier extends Notifier<SettingsState> {
   Future<void> setCompletedToBottom(bool enabled) =>
       ref.read(settingsRepositoryProvider).setCompletedToBottom(enabled);
 
+  Future<void> setAppointmentsCompletedToBottom(bool enabled) =>
+      ref
+          .read(settingsRepositoryProvider)
+          .setAppointmentsCompletedToBottom(enabled);
+
+  Future<void> setAppointmentsTodayOnTop(bool enabled) =>
+      ref.read(settingsRepositoryProvider).setAppointmentsTodayOnTop(enabled);
+
+  Future<void> setInvertSwipeActions(bool enabled) =>
+      ref.read(settingsRepositoryProvider).setInvertSwipeActions(enabled);
+
   Future<void> setUse24HourFormat(bool enabled) =>
       ref.read(settingsRepositoryProvider).setUse24HourFormat(enabled);
+
+  Future<void> setAppointmentReminderMinutes(List<int> minutes) =>
+      ref.read(settingsRepositoryProvider).setAppointmentReminderMinutes(minutes);
+
+  Future<void> setLongPressHintSeen(bool seen) =>
+      ref.read(settingsRepositoryProvider).setLongPressHintSeen(seen);
+
+  Future<void> setTrashRetentionDays(int days) =>
+      ref.read(settingsRepositoryProvider).setTrashRetentionDays(days);
 }
 
 final settingsProvider =
@@ -73,5 +97,33 @@ final themeModeProvider = Provider<ThemeMode>((ref) {
   return switch (state) {
     SettingsData(:final settings) => settings.themeMode,
     _ => ThemeMode.system,
+  };
+});
+
+/// Formato de hora elegido — devuelve el por defecto mientras carga.
+final use24HourFormatProvider = Provider<bool>((ref) {
+  final state = ref.watch(settingsProvider);
+  return switch (state) {
+    SettingsData(:final settings) => settings.use24HourFormat,
+    _ => AppSettings.defaults.use24HourFormat,
+  };
+});
+
+/// Márgenes de los recordatorios de citas — los de por defecto mientras carga.
+final appointmentReminderMinutesProvider = Provider<List<int>>((ref) {
+  final state = ref.watch(settingsProvider);
+  return switch (state) {
+    SettingsData(:final settings) => settings.appointmentReminderMinutes,
+    _ => AppSettings.defaults.appointmentReminderMinutes,
+  };
+});
+
+/// Días que aguanta un borrado en la papelera (0 = nunca) — el de por defecto
+/// mientras carga.
+final trashRetentionDaysProvider = Provider<int>((ref) {
+  final state = ref.watch(settingsProvider);
+  return switch (state) {
+    SettingsData(:final settings) => settings.trashRetentionDays,
+    _ => AppSettings.defaults.trashRetentionDays,
   };
 });

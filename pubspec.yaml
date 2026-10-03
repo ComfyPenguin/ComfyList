@@ -1,5 +1,5 @@
 name: comfy_list
-description: "App de TODOs multiplataforma con sincronización vía Firebase"
+description: "App de TODOs y citas multiplataforma con sincronización vía Firebase"
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -40,10 +40,11 @@ dependencies:
 
   # Notificaciones locales
   flutter_local_notifications: ^21.0.0
+  # Zonas horarias: `zonedSchedule` recibe la hora como TZDateTime
+  timezone: ^0.11.0
 
   # Animaciones / assets
   flutter_animate: ^4.5.2
-  rive: ^0.14.6
   lottie: ^3.3.3
   flutter_svg: ^2.3.0
 
@@ -57,6 +58,7 @@ dependencies:
   # Localización de widgets Material/Cupertino
   flutter_localizations:
     sdk: flutter
+  marquee: ^2.3.0
 
 dev_dependencies:
   flutter_test:
@@ -84,6 +86,9 @@ flutter:
     - family: PlusJakartaSans
       fonts:
         - asset: "assets/fonts/PlusJakartaSans-VariableFont.ttf"
+    - family: Fredoka
+      fonts:
+        - asset: "assets/fonts/Fredoka-VariableFont.ttf"
 
 flutter_launcher_icons:
   android: true

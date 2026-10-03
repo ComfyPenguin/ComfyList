@@ -5,7 +5,9 @@ class Routes {
   static const String home = '/';
   static const String signIn = '/sign-in';
   static const String signUp = '/sign-up';
+  static const String verifyEmail = '/verify-email';
   static const String settings = '/settings';
+  static const String trash = '/trash';
 
   // Listas de tareas
   static const String todoLists = '/lists';
@@ -22,6 +24,4 @@ class Routes {
   static const String appointments = '/appointments';
   static const String appointmentNew = '/appointments/new';
   static String appointmentEdit(String id) => '/appointments/$id/edit';
-  static String appointmentDetail(String id) =>
-      '/appointments/$id/detail';
 }

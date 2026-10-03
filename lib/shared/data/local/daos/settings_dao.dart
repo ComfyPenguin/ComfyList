@@ -71,11 +71,73 @@ class SettingsDao extends DatabaseAccessor<AppDatabase> with _$SettingsDaoMixin 
     );
   }
 
+  Future<void> updateAppointmentsCompletedToBottom(bool enabled) async {
+    await getOrCreate();
+    await (update(settingsTable)..where((t) => t.id.equals(1))).write(
+      SettingsTableCompanion(
+        appointmentsCompletedToBottom: Value(enabled),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+  }
+
+  Future<void> updateAppointmentsTodayOnTop(bool enabled) async {
+    await getOrCreate();
+    await (update(settingsTable)..where((t) => t.id.equals(1))).write(
+      SettingsTableCompanion(
+        appointmentsTodayOnTop: Value(enabled),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+  }
+
+  Future<void> updateInvertSwipeActions(bool enabled) async {
+    await getOrCreate();
+    await (update(settingsTable)..where((t) => t.id.equals(1))).write(
+      SettingsTableCompanion(
+        invertSwipeActions: Value(enabled),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+  }
+
   Future<void> updateUse24HourFormat(bool enabled) async {
     await getOrCreate();
     await (update(settingsTable)..where((t) => t.id.equals(1))).write(
       SettingsTableCompanion(
         use24HourFormat: Value(enabled),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+  }
+
+  /// [minutes] es la lista de márgenes ya serializada (separada por comas).
+  Future<void> updateAppointmentReminderMinutes(String minutes) async {
+    await getOrCreate();
+    await (update(settingsTable)..where((t) => t.id.equals(1))).write(
+      SettingsTableCompanion(
+        appointmentReminderMinutes: Value(minutes),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+  }
+
+  Future<void> updateLongPressHintSeen(bool seen) async {
+    await getOrCreate();
+    await (update(settingsTable)..where((t) => t.id.equals(1))).write(
+      SettingsTableCompanion(
+        longPressHintSeen: Value(seen),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+  }
+
+  /// [days] es 0 para «nunca».
+  Future<void> updateTrashRetentionDays(int days) async {
+    await getOrCreate();
+    await (update(settingsTable)..where((t) => t.id.equals(1))).write(
+      SettingsTableCompanion(
+        trashRetentionDays: Value(days),
         updatedAt: Value(DateTime.now().toUtc()),
       ),
     );

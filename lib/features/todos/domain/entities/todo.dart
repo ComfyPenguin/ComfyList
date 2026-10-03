@@ -18,6 +18,25 @@ class Todo {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  /// Serialización para guardarla en local (papelera).
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'description': description,
+        'isDone': isDone,
+        'createdAt': createdAt.toIso8601String(),
+        'updatedAt': updatedAt.toIso8601String(),
+      };
+
+  factory Todo.fromJson(Map<String, dynamic> json) => Todo(
+        id: json['id'] as String,
+        title: json['title'] as String,
+        description: json['description'] as String?,
+        isDone: json['isDone'] as bool,
+        createdAt: DateTime.parse(json['createdAt'] as String),
+        updatedAt: DateTime.parse(json['updatedAt'] as String),
+      );
+
   Todo copyWith({
     String? id,
     String? title,

@@ -18,5 +18,21 @@ abstract class SettingsRepository {
 
   Future<void> setCompletedToBottom(bool enabled);
 
+  Future<void> setAppointmentsCompletedToBottom(bool enabled);
+
+  Future<void> setAppointmentsTodayOnTop(bool enabled);
+
+  Future<void> setInvertSwipeActions(bool enabled);
+
   Future<void> setUse24HourFormat(bool enabled);
+
+  Future<void> setAppointmentReminderMinutes(List<int> minutes);
+
+  /// Marca que ya se mostró la pista de mantener pulsada una tarjeta para
+  /// editarla, para que no vuelva a aparecer.
+  Future<void> setLongPressHintSeen(bool seen);
+
+  /// Días que aguanta un borrado en la papelera antes de vaciarla sola; `0` es
+  /// «nunca».
+  Future<void> setTrashRetentionDays(int days);
 }

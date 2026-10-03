@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
+import '../../../../shared/ui/buttons/primary_button.dart';
+import '../../../../shared/ui/completed_status_indicator.dart';
+import '../../../../shared/ui/pending_status_indicator.dart';
 import '../../domain/entities/todo.dart';
 import '../providers/todos_provider.dart';
 import '../providers/todos_state.dart';
 
 /// Bottom sheet que muestra los detalles de una tarea (solo lectura).
 ///
-/// Se presenta mediante `showModalBottomSheet` desde la lista de tareas.
-/// Al pulsar «Editar» cierra el sheet y navega a la pantalla de edición
-/// a través del callback [onEdit].
+/// Comparte la composición visual del detalle de citas: título y estado en la
+/// cabecera, descripción sobre una superficie elevada y una acción principal
+/// de edición al final.
 class TodoDetailSheet extends ConsumerWidget {
   const TodoDetailSheet({
     super.key,
@@ -32,14 +36,24 @@ class TodoDetailSheet extends ConsumerWidget {
     final state = ref.watch(todosProvider(listId));
     final colors = context.colors;
 
-    return switch (state) {
-      TodosInitial() || TodosLoading() => Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxxl),
-          child: const Center(child: CircularProgressIndicator()),
+    // El 85 % es un tope, no la altura de la hoja: quien la mide es el contenido,
+    // así que las ramas sin contenido no lo llenan (`heightFactor: 1`).
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
+      ),
+      child: switch (state) {
+        TodosInitial() || TodosLoading() => const Padding(
+          padding: EdgeInsets.symmetric(vertical: AppSpacing.xxxl),
+          child: Center(
+            heightFactor: 1,
+            child: CircularProgressIndicator(),
+          ),
         ),
-      TodosError(:final failure) => Padding(
+        TodosError(:final failure) => Padding(
           padding: const EdgeInsets.all(AppSpacing.xxxl),
           child: Center(
+            heightFactor: 1,
             child: Text(
               failure.message,
               textAlign: TextAlign.center,
@@ -47,8 +61,9 @@ class TodoDetailSheet extends ConsumerWidget {
             ),
           ),
         ),
-      TodosData(:final items) => _buildContent(context, items, colors),
-    };
+        TodosData(:final items) => _buildContent(context, items, colors),
+      },
+    );
   }
 
   Widget _buildContent(
@@ -57,15 +72,16 @@ class TodoDetailSheet extends ConsumerWidget {
     AppColors colors,
   ) {
     final todo = items.cast<Todo?>().firstWhere(
-          (t) => t?.id == todoId,
-          orElse: () => null,
-        );
+      (t) => t?.id == todoId,
+      orElse: () => null,
+    );
 
     // Si la tarea fue eliminada mientras el sheet estaba abierto.
     if (todo == null) {
       return Padding(
         padding: const EdgeInsets.all(AppSpacing.xxxl),
         child: Center(
+          heightFactor: 1,
           child: Text(
             'Tarea no encontrada.',
             textAlign: TextAlign.center,
@@ -75,78 +91,113 @@ class TodoDetailSheet extends ConsumerWidget {
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.xxxl,
-        AppSpacing.sm,
-        AppSpacing.xxxl,
-        AppSpacing.xxxl,
-      ),
+    final isDark = colors.isDarkCanvas;
+    final datesMatch = todo.createdAt.isAtSameMomentAs(todo.updatedAt);
+    final metadataLabel = datesMatch ? 'Creada' : 'Última edición';
+    final metadataDate = datesMatch ? todo.createdAt : todo.updatedAt;
+
+    return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Cabecera: título + botón editar.
-          Row(
-            children: [
-              Expanded(
+          // Cabecera: título y estado, igual que en el detalle de citas.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xxxl,
+              AppSpacing.sm,
+              AppSpacing.xxxl,
+              0,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    todo.title,
+                    style: AppTypography.displayMd.copyWith(
+                      color: colors.ink,
+                      decoration: todo.isDone
+                          ? TextDecoration.lineThrough
+                          : null,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                todo.isDone
+                    ? const CompletedStatusIndicator()
+                    : const PendingStatusIndicator(),
+              ],
+            ),
+          ),
+          if (todo.description != null && todo.description!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xxxl,
+                AppSpacing.xxxl,
+                AppSpacing.xxxl,
+                0,
+              ),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                decoration: BoxDecoration(
+                  color: isDark ? colors.surfacePressed : colors.canvasSoft,
+                  borderRadius: AppRadius.brXl,
+                  boxShadow: isDark
+                      ? [
+                          BoxShadow(
+                            color: colors.ink.withValues(alpha: 0.20),
+                            blurRadius: 12,
+                            spreadRadius: 1,
+                          ),
+                          BoxShadow(
+                            color: colors.ink.withValues(alpha: 0.12),
+                            blurRadius: 28,
+                            spreadRadius: 2,
+                          ),
+                        ]
+                      : [
+                          BoxShadow(
+                            color: colors.shadowDark.withValues(alpha: 0.30),
+                            blurRadius: 14,
+                            offset: const Offset(0, 6),
+                          ),
+                          BoxShadow(
+                            color: colors.shadowDark.withValues(alpha: 0.18),
+                            blurRadius: 28,
+                            offset: Offset.zero,
+                          ),
+                        ],
+                ),
                 child: Text(
-                  'Detalles de la tarea',
-                  style: AppTypography.displaySm.copyWith(color: colors.ink),
+                  todo.description!,
+                  style: AppTypography.bodyMd.copyWith(color: colors.body),
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.edit_outlined),
-                tooltip: 'Editar',
-                onPressed: onEdit,
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.xl),
-
-          // Badge de estado.
-          _StatusBadge(isDone: todo.isDone, colors: colors),
-          const SizedBox(height: AppSpacing.xl),
-
-          // Título.
-          Text(
-            todo.title,
-            style: AppTypography.displayMd.copyWith(
-              color: colors.ink,
-              decoration: todo.isDone ? TextDecoration.lineThrough : null,
+            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xxxl,
+              AppSpacing.xxxl,
+              AppSpacing.xxxl,
+              AppSpacing.xxxl,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                PrimaryButton(label: 'Editar', onPressed: onEdit, expand: true),
+                const SizedBox(height: AppSpacing.lg),
+                _MetaRow(
+                  label: metadataLabel,
+                  value: _formatDate(metadataDate),
+                  colors: colors,
+                ),
+                SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
+              ],
             ),
           ),
-
-          // Descripción.
-          if (todo.description != null && todo.description!.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.xl),
-            Text(
-              'Notas',
-              style: AppTypography.bodySmStrong.copyWith(color: colors.muted),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              todo.description!,
-              style: AppTypography.bodyMd.copyWith(color: colors.body),
-            ),
-          ],
-
-          // Fechas.
-          const SizedBox(height: AppSpacing.xxxl),
-          _MetaRow(
-            label: 'Creada',
-            value: _formatDate(todo.createdAt),
-            colors: colors,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          _MetaRow(
-            label: 'Actualizada',
-            value: _formatDate(todo.updatedAt),
-            colors: colors,
-          ),
-          const SizedBox(height: AppSpacing.xxxl),
-          // Espacio inferior para seguridad del sheet.
-          SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
         ],
       ),
     );
@@ -155,8 +206,18 @@ class TodoDetailSheet extends ConsumerWidget {
   /// Formatea una fecha en español: «15 may 2026, 18:30».
   static String _formatDate(DateTime dt) {
     const months = [
-      'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-      'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+      'ene',
+      'feb',
+      'mar',
+      'abr',
+      'may',
+      'jun',
+      'jul',
+      'ago',
+      'sep',
+      'oct',
+      'nov',
+      'dic',
     ];
     final h = dt.hour.toString().padLeft(2, '0');
     final m = dt.minute.toString().padLeft(2, '0');
@@ -164,37 +225,7 @@ class TodoDetailSheet extends ConsumerWidget {
   }
 }
 
-/// Badge pill que indica si la tarea está completada o pendiente.
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.isDone, required this.colors});
-
-  final bool isDone;
-  final AppColors colors;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: isDone
-            ? colors.success.withValues(alpha: 0.1)
-            : colors.warning.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(100),
-      ),
-      child: Text(
-        isDone ? 'Completada' : 'Pendiente',
-        style: AppTypography.bodySmStrong.copyWith(
-          color: isDone ? colors.success : colors.warning,
-        ),
-      ),
-    );
-  }
-}
-
-/// Fila de metadato: etiqueta en muted + valor en body.
+/// Fila de metadato alineada como en el detalle de citas.
 class _MetaRow extends StatelessWidget {
   const _MetaRow({
     required this.label,
@@ -208,22 +239,23 @@ class _MetaRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 100,
-          child: Text(
+    return Center(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
             label,
             style: AppTypography.bodySm.copyWith(color: colors.muted),
           ),
-        ),
-        Expanded(
-          child: Text(
+          const SizedBox(width: AppSpacing.sm),
+          Text('•', style: AppTypography.bodySm.copyWith(color: colors.muted)),
+          const SizedBox(width: AppSpacing.sm),
+          Text(
             value,
-            style: AppTypography.bodySm.copyWith(color: colors.body),
+            style: AppTypography.bodySm.copyWith(color: colors.muted),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

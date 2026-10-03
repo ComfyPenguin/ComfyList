@@ -1,0 +1,175 @@
+import 'package:flutter/material.dart';
+
+import '../../../../shared/core/theme/app_radius.dart';
+import '../../../../shared/core/theme/app_spacing.dart';
+import '../../../../shared/core/theme/app_stroke.dart';
+import '../../../../shared/core/theme/app_theme.dart';
+import '../../../../shared/core/theme/app_typography.dart';
+import '../../../../shared/ui/inputs/app_switch.dart';
+import '../../domain/entities/app_settings.dart';
+import '../providers/settings_state.dart';
+
+/// Indicador del hueco del switch mientras se leen las preferencias.
+class SettingsTileSpinner extends StatelessWidget {
+  const SettingsTileSpinner({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      width: 24,
+      height: 24,
+      child: CircularProgressIndicator(strokeWidth: 2),
+    );
+  }
+}
+
+/// Switch de una preferencia según el estado de lectura: con los datos guarda
+/// su valor, mientras se leen muestra un indicador y si falla la lectura queda
+/// deshabilitado. El aviso del fallo lo da el banner de la pantalla, una sola
+/// vez, no cada fila.
+class SettingsSwitch extends StatelessWidget {
+  const SettingsSwitch({
+    super.key,
+    required this.state,
+    required this.value,
+    this.onChanged,
+  });
+
+  final SettingsState state;
+  final bool Function(AppSettings settings) value;
+  final ValueChanged<bool>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (state) {
+      SettingsData(:final settings) => AppSwitch(
+        value: value(settings),
+        onChanged: onChanged,
+      ),
+      SettingsError() => const AppSwitch(value: false, onChanged: null),
+      SettingsInitial() || SettingsLoading() => const SettingsTileSpinner(),
+    };
+  }
+}
+
+/// Fila de ajustes con el aspecto de las tiles de las listas: superficie
+/// `canvas` con borde hairline y los radios que le tocan dentro de su grupo
+/// ([isFirst]/[isLast]).
+///
+/// El icono va delante del título, en la misma línea y sin contenedor, para que
+/// el texto arranque en el relleno del tile y la descripción use todo el ancho.
+class SettingsTile extends StatelessWidget {
+  const SettingsTile({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.description,
+    this.trailing,
+    this.child,
+    this.enabled = true,
+    this.isFirst = true,
+    this.isLast = true,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+
+  /// Línea de apoyo bajo el título. Opcional: solo la llevan las filas que
+  /// necesitan decir algo que el título no puede explicar por sí solo.
+  final String? description;
+
+  /// Control al final de la fila — el switch de la preferencia.
+  final Widget? trailing;
+
+  /// Contenido a lo ancho bajo el título, para las filas cuyo control no cabe
+  /// en una línea (los selectores de tema y de formato de hora).
+  final Widget? child;
+
+  final bool enabled;
+  final bool isFirst;
+  final bool isLast;
+  final VoidCallback? onTap;
+
+  static const double _iconSize = 20;
+
+  /// Alto mínimo de la fila: el de un control de una línea (los 44 px de área
+  /// táctil del switch) más su relleno. Sin él, una fila que solo lleva título
+  /// —la de la papelera— se queda más baja que todas sus vecinas.
+  static const double _minHeight = 44 + AppSpacing.lg * 2;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    final header = Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    icon,
+                    size: _iconSize,
+                    color: enabled ? colors.body : colors.muted,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: AppTypography.bodyMdStrong.copyWith(
+                        color: enabled ? colors.ink : colors.muted,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (description != null) ...[
+                const SizedBox(height: AppSpacing.xxs),
+                Text(
+                  description!,
+                  style: AppTypography.bodySm.copyWith(color: colors.body),
+                ),
+              ],
+            ],
+          ),
+        ),
+        if (trailing != null) ...[
+          const SizedBox(width: AppSpacing.md),
+          trailing!,
+        ],
+      ],
+    );
+
+    return Material(
+      color: colors.canvas,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.joinedGroup(isFirst: isFirst, isLast: isLast),
+        side: BorderSide(color: colors.cardBorder, width: AppStroke.hairline),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: _minHeight),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.xl,
+            vertical: AppSpacing.lg,
+          ),
+          child: child == null
+              ? header
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    header,
+                    const SizedBox(height: AppSpacing.lg),
+                    child!,
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+}

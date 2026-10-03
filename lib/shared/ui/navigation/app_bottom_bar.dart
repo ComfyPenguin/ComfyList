@@ -3,7 +3,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_shadow.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_stroke.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/app_typography.dart';
 
@@ -41,7 +43,10 @@ class AppBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    // `padding.bottom` se reduce mientras el teclado está visible. Usar
+    // `viewPadding` conserva el safe area real del dispositivo y evita que el
+    // dock cambie de altura/posición al abrir o cerrar el teclado.
+    final bottomPadding = MediaQuery.viewPaddingOf(context).bottom;
     // Altura: píldora (72) + margen inferior (16) + safe area
     final totalHeight = 72.0 + AppSpacing.lg + bottomPadding;
 
@@ -100,7 +105,7 @@ class _BarContent extends StatelessWidget {
 
   /// En modo oscuro, la píldora debe usar una superficie ligeramente
   /// elevada para distinguirse del fondo negro puro.
-  bool get _isDark => colors.canvas.computeLuminance() < 0.05;
+  bool get _isDark => colors.isDarkCanvas;
 
   @override
   Widget build(BuildContext context) {
@@ -123,10 +128,8 @@ class _BarContent extends StatelessWidget {
                     color: colors.canvas.withValues(alpha: 0.7),
                     borderRadius: AppRadius.brPill,
                     border: Border.all(
-                      color: _isDark
-                          ? colors.ink.withValues(alpha: 0.18)
-                          : colors.ink.withValues(alpha: 0.12),
-                      width: 1.2,
+                      color: colors.cardBorder,
+                      width: AppStroke.hairline,
                     ),
                   ),
                   child: Row(
@@ -248,28 +251,7 @@ class _NeuFab extends StatelessWidget {
             decoration: BoxDecoration(
               color: colors.primary,
               shape: BoxShape.circle,
-              boxShadow: isDark
-                  ? [
-                      // Modo oscuro: glow luminoso doble alrededor del FAB blanco
-                      BoxShadow(
-                        color: colors.primary.withValues(alpha: 0.35),
-                        blurRadius: 20,
-                        offset: Offset.zero,
-                      ),
-                      BoxShadow(
-                        color: colors.shadowDark,
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
-                  : [
-                      // Modo claro: sombra oscura pronunciada
-                      BoxShadow(
-                        color: colors.shadowDark,
-                        blurRadius: 16,
-                        offset: const Offset(4, 8),
-                      ),
-                    ],
+              boxShadow: AppShadow.fabGlow(colors),
             ),
             child: Center(
               child: Icon(

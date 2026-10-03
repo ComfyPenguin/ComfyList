@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 
 import '../../../../shared/core/failures/failure.dart';
 import '../../../../shared/core/result/result.dart';
+import '../../../../shared/core/time/clock.dart';
 import '../../domain/entities/todo.dart';
 import '../../domain/repositories/todos_repository.dart';
 import '../datasources/firestore_rest_remote.dart';
@@ -16,11 +17,13 @@ import '../datasources/firestore_rest_remote.dart';
 ///
 /// Cada (uid, listId) tiene su propio watcher independiente.
 class TodosRepositoryImpl implements TodosRepository {
-  TodosRepositoryImpl(this._remote);
+  TodosRepositoryImpl(this._remote, {this.pollInterval = defaultPollInterval});
 
   final FirestoreRestRemote _remote;
 
-  static const Duration _pollInterval = Duration(seconds: 15);
+  /// Cada cuánto vuelve a pedir la lista cada watcher activo. En la app lo fija
+  /// [pollIntervalProvider]; los tests lo acortan para no esperar al tick real.
+  final Duration pollInterval;
 
   // Un watcher por par (uid, listId). Permite tener varias listas abiertas
   // (p. ej. tras navegación rápida) sin que se pisen entre sí.
@@ -34,7 +37,7 @@ class TodosRepositoryImpl implements TodosRepository {
     final key = _WatcherKey(uid, listId);
     final w = _watchers.putIfAbsent(
       key,
-      () => _Watcher(uid, listId, _remote, _pollInterval),
+      () => _Watcher(uid, listId, _remote, pollInterval),
     );
     return w.stream;
   }
@@ -120,6 +123,39 @@ class TodosRepositoryImpl implements TodosRepository {
     }
   }
 
+  @override
+  Future<Result<Todo>> restoreTodo({
+    required String uid,
+    required String listId,
+    required Todo todo,
+  }) async {
+    try {
+      final restored = await _remote.restoreTodo(
+        uid: uid,
+        listId: listId,
+        todo: todo,
+      );
+      await _refresh(uid, listId);
+      return Ok(restored);
+    } on DioException catch (e) {
+      return Err(_mapDioError(e));
+    }
+  }
+
+  @override
+  void pauseAll() {
+    for (final w in _watchers.values) {
+      w.pause();
+    }
+  }
+
+  @override
+  void resumeAll() {
+    for (final w in _watchers.values) {
+      w.resume();
+    }
+  }
+
   void dispose() {
     for (final w in _watchers.values) {
       w.dispose();
@@ -190,6 +226,22 @@ class _Watcher {
     _timer?.cancel();
     _timer = null;
     _running = false;
+  }
+
+  // Pausa el polling en background: el OS mata los sockets y el primer tick
+  // tras resume lanzaría errores de red/auth contra token/conexión caducados.
+  void pause() {
+    _timer?.cancel();
+    _timer = null;
+  }
+
+  // Reanuda el polling al volver a foreground; refreshNow fuerza un fetch
+  // inmediato para no esperar al siguiente tick del Timer.periodic.
+  void resume() {
+    if (_running && _timer == null && _controller.hasListener) {
+      refreshNow();
+      _timer = Timer.periodic(_interval, (_) => refreshNow());
+    }
   }
 
   Future<void> refreshNow() async {
