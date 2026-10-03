@@ -37,4 +37,7 @@ class DriftSettingsLocal {
 
   Future<void> updateLongPressHintSeen(bool seen) =>
       _dao.updateLongPressHintSeen(seen);
+
+  Future<void> updateTrashRetentionDays(int days) =>
+      _dao.updateTrashRetentionDays(days);
 }

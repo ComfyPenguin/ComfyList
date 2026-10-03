@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../features/appointments/presentation/providers/appointments_provider.dart';
 import '../../../features/todos/presentation/providers/todos_provider.dart';
 import '../../../features/todo_lists/presentation/providers/todo_lists_provider.dart';
+import '../../../features/trash/presentation/providers/trash_provider.dart';
 import '../../data/notifications/notifications_provider.dart';
 
 /// Pausa y reanuda el polling de los repositorios de datos cuando la app
@@ -27,6 +28,7 @@ class AppLifecycleController {
         _ref.read(appointmentsRepositoryProvider).resumeAll();
         _ref.read(todosRepositoryProvider).resumeAll();
         _ref.read(todoListsRepositoryProvider).resumeAll();
+        _ref.read(trashRepositoryProvider).resumeAll();
         // Los permisos se cambian en los ajustes del sistema, así que pudieron
         // cambiar mientras la app estaba fuera: hay que volver a preguntarlos.
         _ref.invalidate(exactAlarmsGrantedProvider);
@@ -42,6 +44,7 @@ class AppLifecycleController {
           _ref.read(appointmentsRepositoryProvider).pauseAll();
           _ref.read(todosRepositoryProvider).pauseAll();
           _ref.read(todoListsRepositoryProvider).pauseAll();
+          _ref.read(trashRepositoryProvider).pauseAll();
         }
       case AppLifecycleState.detached:
         break;
@@ -60,6 +63,7 @@ final appLifecycleControllerProvider = Provider<AppLifecycleController>((ref) {
   ref.read(appointmentsRepositoryProvider);
   ref.read(todosRepositoryProvider);
   ref.read(todoListsRepositoryProvider);
+  ref.read(trashRepositoryProvider);
 
   final controller = AppLifecycleController(ref);
   ref.onDispose(controller.dispose);

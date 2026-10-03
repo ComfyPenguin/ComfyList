@@ -163,8 +163,13 @@ class _ListsState extends ConsumerState<_Lists> {
           onTap: () => context.push(Routes.todoList(list.id)),
           onLongPress: () => context.push(Routes.todoListEdit(list.id)),
           onDelete: () async {
-            await notifier.delete(list.id);
+            final deleted = await notifier.delete(list.id);
             if (!context.mounted) return;
+
+            if (!deleted) {
+              AppToast.show(context, AppToast.listDeleteFailed);
+              return;
+            }
             AppToast.showUndo(
               context,
               message: AppToast.listDeleted,

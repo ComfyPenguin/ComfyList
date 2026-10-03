@@ -29,6 +29,7 @@ void main() {
         use24HourFormat: true,
         appointmentReminderMinutes: '30',
         longPressHintSeen: false,
+        trashRetentionDays: 0,
         updatedAt: DateTime.utc(2026, 6, 30, 12),
       );
       when(() => dao.getOrCreate()).thenAnswer((_) async => row);

@@ -7,7 +7,9 @@ import 'package:comfy_list/features/todo_lists/domain/entities/todo_list.dart';
 import 'package:comfy_list/features/todo_lists/domain/repositories/todo_lists_repository.dart';
 import 'package:comfy_list/features/todo_lists/presentation/providers/todo_lists_provider.dart';
 import 'package:comfy_list/features/todo_lists/presentation/providers/todo_lists_state.dart';
+import 'package:comfy_list/features/todos/domain/entities/todo.dart';
 import 'package:comfy_list/features/todos/domain/repositories/todos_repository.dart';
+import 'package:comfy_list/features/trash/data/datasources/firestore_trash_remote.dart';
 import 'package:comfy_list/shared/core/failures/failure.dart';
 import 'package:comfy_list/shared/core/result/result.dart';
 import 'package:comfy_list/shared/core/time/clock.dart';
@@ -15,6 +17,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/fake_trash_remote.dart';
 import '../../../../helpers/provider_scope.dart';
 import '../../../../helpers/test_helpers.dart';
 
@@ -26,6 +29,13 @@ class _MockTodosRepo extends Mock implements TodosRepository {}
 
 void main() {
   late _MockRepo repo;
+  late FakeTrashRemote trash;
+
+  setUpAll(() {
+    // mocktail necesita un valor de relleno para los matchers de entidades.
+    registerFallbackValue(buildTodoList());
+    registerFallbackValue(buildTodo());
+  });
 
   test('el repo de la app toma la cadencia del polling del provider', () {
     final container = createTestContainer(
@@ -43,6 +53,7 @@ void main() {
 
   setUp(() {
     repo = _MockRepo();
+    trash = FakeTrashRemote();
   });
 
   ProviderContainer buildContainer() => createTestContainer(
@@ -159,17 +170,21 @@ void main() {
         .thenAnswer((_) async => const Ok(null));
 
     final list = buildTodoList(id: 'L1');
-    when(() => repo.restoreList(uid: 'u1', list: list))
+    when(() => repo.restoreList(uid: 'u1', list: any(named: 'list')))
         .thenAnswer((_) async => Ok(list));
 
     final todo = buildTodo(id: 't1');
     final todosRepo = _MockTodosRepo();
     when(() => todosRepo.fetchTodos(uid: 'u1', listId: 'L1'))
         .thenAnswer((_) async => Ok([todo]));
-    when(() => todosRepo.restoreTodo(uid: 'u1', listId: 'L1', todo: todo))
-        .thenAnswer((_) async => Ok(todo));
+    when(() => todosRepo.restoreTodo(
+          uid: 'u1',
+          listId: 'L1',
+          todo: any(named: 'todo'),
+        )).thenAnswer((_) async => Ok(todo));
 
     final container = createTestContainer(
+      remoteOverrides: {FirestoreTrashRemote: trash},
       authedUser: buildAuthUser(),
       repositoryOverrides: {
         TodoListsRepository: repo,
@@ -183,7 +198,7 @@ void main() {
     await pumpEventQueue();
 
     final notifier = container.read(todoListsProvider.notifier);
-    await notifier.delete('L1');
+    expect(await notifier.delete('L1'), isTrue);
 
     // Las tareas se leen antes de borrar: si no, se perderían en el deshacer.
     verifyInOrder([
@@ -192,9 +207,58 @@ void main() {
     ]);
 
     expect(await notifier.undoLastDelete(), isTrue);
-    verify(() => repo.restoreList(uid: 'u1', list: list)).called(1);
-    verify(() => todosRepo.restoreTodo(uid: 'u1', listId: 'L1', todo: todo))
-        .called(1);
+
+    // La lista vuelve con los datos de antes y sus tareas con ella.
+    final restoredList = verify(() => repo.restoreList(
+          uid: 'u1',
+          list: captureAny(named: 'list'),
+        )).captured.single as TodoList;
+    expect(restoredList.id, 'L1');
+    expect(restoredList.name, 'Compras');
+
+    final restoredTodo = verify(() => todosRepo.restoreTodo(
+          uid: 'u1',
+          listId: 'L1',
+          todo: captureAny(named: 'todo'),
+        )).captured.single as Todo;
+    expect(restoredTodo.id, 't1');
+    expect(restoredTodo.title, 'Comprar pan');
+
+    expect(trash.entries, isEmpty);
+  });
+
+  test('sin poder leer las tareas no borra la lista', () async {
+    final controller = StreamController<List<TodoList>>();
+    when(() => repo.watchLists('u1')).thenAnswer((_) => controller.stream);
+
+    final list = buildTodoList(id: 'L1');
+    final todosRepo = _MockTodosRepo();
+    when(() => todosRepo.fetchTodos(uid: 'u1', listId: 'L1'))
+        .thenAnswer((_) async => const Err<List<Todo>>(NetworkFailure()));
+
+    final container = createTestContainer(
+      remoteOverrides: {FirestoreTrashRemote: trash},
+      authedUser: buildAuthUser(),
+      repositoryOverrides: {
+        TodoListsRepository: repo,
+        TodosRepository: todosRepo,
+      },
+    );
+    addTearDown(controller.close);
+
+    expect(container.read(todoListsProvider), isA<TodoListsLoading>());
+    controller.add([list]);
+    await pumpEventQueue();
+
+    final notifier = container.read(todoListsProvider.notifier);
+
+    // Ni borra ni guarda una copia a medias: las tareas se irían en cascada sin
+    // poder volver.
+    expect(await notifier.delete('L1'), isFalse);
+    verifyNever(
+      () => repo.deleteList(uid: any(named: 'uid'), id: any(named: 'id')),
+    );
+    expect(trash.entries, isEmpty);
   });
 
   test('bootstrap returns Initial when auth is Unauthenticated', () async {

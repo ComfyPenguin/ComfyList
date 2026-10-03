@@ -3,7 +3,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Los datos de la app cuelgan siempre de users/{uid}/{todo_lists,appointments},
+    // Los datos de la app cuelgan siempre de users/{uid}/{todo_lists,appointments,trash},
     // así que exigir que el token sea el del propio uid cierra todo lo demás.
     // Es el único control de acceso real: la apiKey es pública y las llamadas
     // van por REST, sin SDK.

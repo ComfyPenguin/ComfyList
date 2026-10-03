@@ -29,6 +29,7 @@ void main() {
       expect(row.use24HourFormat, isTrue);
       expect(row.appointmentReminderMinutes, '30');
       expect(row.longPressHintSeen, isFalse);
+      expect(row.trashRetentionDays, 30);
     });
 
     test('devuelve la misma fila en llamadas sucesivas y deja una sola row',
@@ -66,6 +67,18 @@ void main() {
 
       final streamed = await dao.watch().first;
       expect(streamed.longPressHintSeen, isTrue);
+    });
+  });
+
+  group('SettingsDao.updateTrashRetentionDays', () {
+    test('persiste el plazo y watch emite el valor nuevo', () async {
+      final dao = db.settingsDao;
+      await dao.getOrCreate();
+
+      await dao.updateTrashRetentionDays(15);
+
+      final streamed = await dao.watch().first;
+      expect(streamed.trashRetentionDays, 15);
     });
   });
 

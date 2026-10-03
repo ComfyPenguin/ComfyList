@@ -165,6 +165,17 @@ class $SettingsTableTable extends SettingsTable
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _trashRetentionDaysMeta =
+      const VerificationMeta('trashRetentionDays');
+  @override
+  late final GeneratedColumn<int> trashRetentionDays = GeneratedColumn<int>(
+    'trash_retention_days',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(30),
+  );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
   );
@@ -189,6 +200,7 @@ class $SettingsTableTable extends SettingsTable
     use24HourFormat,
     appointmentReminderMinutes,
     longPressHintSeen,
+    trashRetentionDays,
     updatedAt,
   ];
   @override
@@ -293,6 +305,15 @@ class $SettingsTableTable extends SettingsTable
         ),
       );
     }
+    if (data.containsKey('trash_retention_days')) {
+      context.handle(
+        _trashRetentionDaysMeta,
+        trashRetentionDays.isAcceptableOrUnknown(
+          data['trash_retention_days']!,
+          _trashRetentionDaysMeta,
+        ),
+      );
+    }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
@@ -354,6 +375,10 @@ class $SettingsTableTable extends SettingsTable
         DriftSqlType.bool,
         data['${effectivePrefix}long_press_hint_seen'],
       )!,
+      trashRetentionDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}trash_retention_days'],
+      )!,
       updatedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
@@ -403,6 +428,10 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
   /// Si `true`, ya se mostró la pista de mantener pulsada una tarjeta para
   /// editarla y no vuelve a aparecer.
   final bool longPressHintSeen;
+
+  /// Días que aguanta un borrado en la papelera antes de que la app la vacíe
+  /// sola. `0` es «nunca»; de fábrica, un mes.
+  final int trashRetentionDays;
   final DateTime updatedAt;
   const SettingsRow({
     required this.id,
@@ -416,6 +445,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     required this.use24HourFormat,
     required this.appointmentReminderMinutes,
     required this.longPressHintSeen,
+    required this.trashRetentionDays,
     required this.updatedAt,
   });
   @override
@@ -438,6 +468,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       appointmentReminderMinutes,
     );
     map['long_press_hint_seen'] = Variable<bool>(longPressHintSeen);
+    map['trash_retention_days'] = Variable<int>(trashRetentionDays);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
   }
@@ -455,6 +486,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       use24HourFormat: Value(use24HourFormat),
       appointmentReminderMinutes: Value(appointmentReminderMinutes),
       longPressHintSeen: Value(longPressHintSeen),
+      trashRetentionDays: Value(trashRetentionDays),
       updatedAt: Value(updatedAt),
     );
   }
@@ -486,6 +518,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
         json['appointmentReminderMinutes'],
       ),
       longPressHintSeen: serializer.fromJson<bool>(json['longPressHintSeen']),
+      trashRetentionDays: serializer.fromJson<int>(json['trashRetentionDays']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
   }
@@ -510,6 +543,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
         appointmentReminderMinutes,
       ),
       'longPressHintSeen': serializer.toJson<bool>(longPressHintSeen),
+      'trashRetentionDays': serializer.toJson<int>(trashRetentionDays),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
   }
@@ -526,6 +560,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     bool? use24HourFormat,
     String? appointmentReminderMinutes,
     bool? longPressHintSeen,
+    int? trashRetentionDays,
     DateTime? updatedAt,
   }) => SettingsRow(
     id: id ?? this.id,
@@ -543,6 +578,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     appointmentReminderMinutes:
         appointmentReminderMinutes ?? this.appointmentReminderMinutes,
     longPressHintSeen: longPressHintSeen ?? this.longPressHintSeen,
+    trashRetentionDays: trashRetentionDays ?? this.trashRetentionDays,
     updatedAt: updatedAt ?? this.updatedAt,
   );
   SettingsRow copyWithCompanion(SettingsTableCompanion data) {
@@ -576,6 +612,9 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       longPressHintSeen: data.longPressHintSeen.present
           ? data.longPressHintSeen.value
           : this.longPressHintSeen,
+      trashRetentionDays: data.trashRetentionDays.present
+          ? data.trashRetentionDays.value
+          : this.trashRetentionDays,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
@@ -598,6 +637,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
           ..write('use24HourFormat: $use24HourFormat, ')
           ..write('appointmentReminderMinutes: $appointmentReminderMinutes, ')
           ..write('longPressHintSeen: $longPressHintSeen, ')
+          ..write('trashRetentionDays: $trashRetentionDays, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
@@ -616,6 +656,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     use24HourFormat,
     appointmentReminderMinutes,
     longPressHintSeen,
+    trashRetentionDays,
     updatedAt,
   );
   @override
@@ -635,6 +676,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
           other.use24HourFormat == this.use24HourFormat &&
           other.appointmentReminderMinutes == this.appointmentReminderMinutes &&
           other.longPressHintSeen == this.longPressHintSeen &&
+          other.trashRetentionDays == this.trashRetentionDays &&
           other.updatedAt == this.updatedAt);
 }
 
@@ -650,6 +692,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
   final Value<bool> use24HourFormat;
   final Value<String> appointmentReminderMinutes;
   final Value<bool> longPressHintSeen;
+  final Value<int> trashRetentionDays;
   final Value<DateTime> updatedAt;
   const SettingsTableCompanion({
     this.id = const Value.absent(),
@@ -663,6 +706,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     this.use24HourFormat = const Value.absent(),
     this.appointmentReminderMinutes = const Value.absent(),
     this.longPressHintSeen = const Value.absent(),
+    this.trashRetentionDays = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
   SettingsTableCompanion.insert({
@@ -677,6 +721,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     this.use24HourFormat = const Value.absent(),
     this.appointmentReminderMinutes = const Value.absent(),
     this.longPressHintSeen = const Value.absent(),
+    this.trashRetentionDays = const Value.absent(),
     required DateTime updatedAt,
   }) : updatedAt = Value(updatedAt);
   static Insertable<SettingsRow> custom({
@@ -691,6 +736,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     Expression<bool>? use24HourFormat,
     Expression<String>? appointmentReminderMinutes,
     Expression<bool>? longPressHintSeen,
+    Expression<int>? trashRetentionDays,
     Expression<DateTime>? updatedAt,
   }) {
     return RawValuesInsertable({
@@ -711,6 +757,8 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
       if (appointmentReminderMinutes != null)
         'appointment_reminder_minutes': appointmentReminderMinutes,
       if (longPressHintSeen != null) 'long_press_hint_seen': longPressHintSeen,
+      if (trashRetentionDays != null)
+        'trash_retention_days': trashRetentionDays,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
   }
@@ -727,6 +775,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     Value<bool>? use24HourFormat,
     Value<String>? appointmentReminderMinutes,
     Value<bool>? longPressHintSeen,
+    Value<int>? trashRetentionDays,
     Value<DateTime>? updatedAt,
   }) {
     return SettingsTableCompanion(
@@ -745,6 +794,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
       appointmentReminderMinutes:
           appointmentReminderMinutes ?? this.appointmentReminderMinutes,
       longPressHintSeen: longPressHintSeen ?? this.longPressHintSeen,
+      trashRetentionDays: trashRetentionDays ?? this.trashRetentionDays,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
@@ -793,6 +843,9 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     if (longPressHintSeen.present) {
       map['long_press_hint_seen'] = Variable<bool>(longPressHintSeen.value);
     }
+    if (trashRetentionDays.present) {
+      map['trash_retention_days'] = Variable<int>(trashRetentionDays.value);
+    }
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
@@ -817,6 +870,7 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
           ..write('use24HourFormat: $use24HourFormat, ')
           ..write('appointmentReminderMinutes: $appointmentReminderMinutes, ')
           ..write('longPressHintSeen: $longPressHintSeen, ')
+          ..write('trashRetentionDays: $trashRetentionDays, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
@@ -1140,14 +1194,283 @@ class AccountCacheTableCompanion extends UpdateCompanion<AccountCacheRow> {
   }
 }
 
+class $TrashPendingTableTable extends TrashPendingTable
+    with TableInfo<$TrashPendingTableTable, TrashPendingRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TrashPendingTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _uidMeta = const VerificationMeta('uid');
+  @override
+  late final GeneratedColumn<String> uid = GeneratedColumn<String>(
+    'uid',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _docIdMeta = const VerificationMeta('docId');
+  @override
+  late final GeneratedColumn<String> docId = GeneratedColumn<String>(
+    'doc_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [uid, docId, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'trash_pending_table';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TrashPendingRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('uid')) {
+      context.handle(
+        _uidMeta,
+        uid.isAcceptableOrUnknown(data['uid']!, _uidMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_uidMeta);
+    }
+    if (data.containsKey('doc_id')) {
+      context.handle(
+        _docIdMeta,
+        docId.isAcceptableOrUnknown(data['doc_id']!, _docIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_docIdMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {uid, docId};
+  @override
+  TrashPendingRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TrashPendingRow(
+      uid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}uid'],
+      )!,
+      docId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}doc_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $TrashPendingTableTable createAlias(String alias) {
+    return $TrashPendingTableTable(attachedDatabase, alias);
+  }
+}
+
+class TrashPendingRow extends DataClass implements Insertable<TrashPendingRow> {
+  final String uid;
+
+  /// Id del documento en `users/{uid}/trash`.
+  final String docId;
+  final DateTime createdAt;
+  const TrashPendingRow({
+    required this.uid,
+    required this.docId,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['uid'] = Variable<String>(uid);
+    map['doc_id'] = Variable<String>(docId);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  TrashPendingTableCompanion toCompanion(bool nullToAbsent) {
+    return TrashPendingTableCompanion(
+      uid: Value(uid),
+      docId: Value(docId),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory TrashPendingRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TrashPendingRow(
+      uid: serializer.fromJson<String>(json['uid']),
+      docId: serializer.fromJson<String>(json['docId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'uid': serializer.toJson<String>(uid),
+      'docId': serializer.toJson<String>(docId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  TrashPendingRow copyWith({String? uid, String? docId, DateTime? createdAt}) =>
+      TrashPendingRow(
+        uid: uid ?? this.uid,
+        docId: docId ?? this.docId,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  TrashPendingRow copyWithCompanion(TrashPendingTableCompanion data) {
+    return TrashPendingRow(
+      uid: data.uid.present ? data.uid.value : this.uid,
+      docId: data.docId.present ? data.docId.value : this.docId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrashPendingRow(')
+          ..write('uid: $uid, ')
+          ..write('docId: $docId, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(uid, docId, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TrashPendingRow &&
+          other.uid == this.uid &&
+          other.docId == this.docId &&
+          other.createdAt == this.createdAt);
+}
+
+class TrashPendingTableCompanion extends UpdateCompanion<TrashPendingRow> {
+  final Value<String> uid;
+  final Value<String> docId;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const TrashPendingTableCompanion({
+    this.uid = const Value.absent(),
+    this.docId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TrashPendingTableCompanion.insert({
+    required String uid,
+    required String docId,
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  }) : uid = Value(uid),
+       docId = Value(docId),
+       createdAt = Value(createdAt);
+  static Insertable<TrashPendingRow> custom({
+    Expression<String>? uid,
+    Expression<String>? docId,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (uid != null) 'uid': uid,
+      if (docId != null) 'doc_id': docId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TrashPendingTableCompanion copyWith({
+    Value<String>? uid,
+    Value<String>? docId,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return TrashPendingTableCompanion(
+      uid: uid ?? this.uid,
+      docId: docId ?? this.docId,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (uid.present) {
+      map['uid'] = Variable<String>(uid.value);
+    }
+    if (docId.present) {
+      map['doc_id'] = Variable<String>(docId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrashPendingTableCompanion(')
+          ..write('uid: $uid, ')
+          ..write('docId: $docId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $SettingsTableTable settingsTable = $SettingsTableTable(this);
   late final $AccountCacheTableTable accountCacheTable =
       $AccountCacheTableTable(this);
+  late final $TrashPendingTableTable trashPendingTable =
+      $TrashPendingTableTable(this);
   late final SettingsDao settingsDao = SettingsDao(this as AppDatabase);
   late final AccountCacheDao accountCacheDao = AccountCacheDao(
+    this as AppDatabase,
+  );
+  late final TrashPendingDao trashPendingDao = TrashPendingDao(
     this as AppDatabase,
   );
   @override
@@ -1157,6 +1480,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     settingsTable,
     accountCacheTable,
+    trashPendingTable,
   ];
 }
 
@@ -1173,6 +1497,7 @@ typedef $$SettingsTableTableCreateCompanionBuilder =
       Value<bool> use24HourFormat,
       Value<String> appointmentReminderMinutes,
       Value<bool> longPressHintSeen,
+      Value<int> trashRetentionDays,
       required DateTime updatedAt,
     });
 typedef $$SettingsTableTableUpdateCompanionBuilder =
@@ -1188,6 +1513,7 @@ typedef $$SettingsTableTableUpdateCompanionBuilder =
       Value<bool> use24HourFormat,
       Value<String> appointmentReminderMinutes,
       Value<bool> longPressHintSeen,
+      Value<int> trashRetentionDays,
       Value<DateTime> updatedAt,
     });
 
@@ -1252,6 +1578,11 @@ class $$SettingsTableTableFilterComposer
 
   ColumnFilters<bool> get longPressHintSeen => $composableBuilder(
     column: $table.longPressHintSeen,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get trashRetentionDays => $composableBuilder(
+    column: $table.trashRetentionDays,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1325,6 +1656,11 @@ class $$SettingsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get trashRetentionDays => $composableBuilder(
+    column: $table.trashRetentionDays,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
@@ -1391,6 +1727,11 @@ class $$SettingsTableTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get trashRetentionDays => $composableBuilder(
+    column: $table.trashRetentionDays,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
@@ -1439,6 +1780,7 @@ class $$SettingsTableTableTableManager
                 Value<bool> use24HourFormat = const Value.absent(),
                 Value<String> appointmentReminderMinutes = const Value.absent(),
                 Value<bool> longPressHintSeen = const Value.absent(),
+                Value<int> trashRetentionDays = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
               }) => SettingsTableCompanion(
                 id: id,
@@ -1452,6 +1794,7 @@ class $$SettingsTableTableTableManager
                 use24HourFormat: use24HourFormat,
                 appointmentReminderMinutes: appointmentReminderMinutes,
                 longPressHintSeen: longPressHintSeen,
+                trashRetentionDays: trashRetentionDays,
                 updatedAt: updatedAt,
               ),
           createCompanionCallback:
@@ -1469,6 +1812,7 @@ class $$SettingsTableTableTableManager
                 Value<bool> use24HourFormat = const Value.absent(),
                 Value<String> appointmentReminderMinutes = const Value.absent(),
                 Value<bool> longPressHintSeen = const Value.absent(),
+                Value<int> trashRetentionDays = const Value.absent(),
                 required DateTime updatedAt,
               }) => SettingsTableCompanion.insert(
                 id: id,
@@ -1482,6 +1826,7 @@ class $$SettingsTableTableTableManager
                 use24HourFormat: use24HourFormat,
                 appointmentReminderMinutes: appointmentReminderMinutes,
                 longPressHintSeen: longPressHintSeen,
+                trashRetentionDays: trashRetentionDays,
                 updatedAt: updatedAt,
               ),
           withReferenceMapper: (p0) => p0
@@ -1701,6 +2046,177 @@ typedef $$AccountCacheTableTableProcessedTableManager =
       AccountCacheRow,
       PrefetchHooks Function()
     >;
+typedef $$TrashPendingTableTableCreateCompanionBuilder =
+    TrashPendingTableCompanion Function({
+      required String uid,
+      required String docId,
+      required DateTime createdAt,
+      Value<int> rowid,
+    });
+typedef $$TrashPendingTableTableUpdateCompanionBuilder =
+    TrashPendingTableCompanion Function({
+      Value<String> uid,
+      Value<String> docId,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+class $$TrashPendingTableTableFilterComposer
+    extends Composer<_$AppDatabase, $TrashPendingTableTable> {
+  $$TrashPendingTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get uid => $composableBuilder(
+    column: $table.uid,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get docId => $composableBuilder(
+    column: $table.docId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$TrashPendingTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $TrashPendingTableTable> {
+  $$TrashPendingTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get uid => $composableBuilder(
+    column: $table.uid,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get docId => $composableBuilder(
+    column: $table.docId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$TrashPendingTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TrashPendingTableTable> {
+  $$TrashPendingTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get uid =>
+      $composableBuilder(column: $table.uid, builder: (column) => column);
+
+  GeneratedColumn<String> get docId =>
+      $composableBuilder(column: $table.docId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$TrashPendingTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TrashPendingTableTable,
+          TrashPendingRow,
+          $$TrashPendingTableTableFilterComposer,
+          $$TrashPendingTableTableOrderingComposer,
+          $$TrashPendingTableTableAnnotationComposer,
+          $$TrashPendingTableTableCreateCompanionBuilder,
+          $$TrashPendingTableTableUpdateCompanionBuilder,
+          (
+            TrashPendingRow,
+            BaseReferences<
+              _$AppDatabase,
+              $TrashPendingTableTable,
+              TrashPendingRow
+            >,
+          ),
+          TrashPendingRow,
+          PrefetchHooks Function()
+        > {
+  $$TrashPendingTableTableTableManager(
+    _$AppDatabase db,
+    $TrashPendingTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TrashPendingTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TrashPendingTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TrashPendingTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> uid = const Value.absent(),
+                Value<String> docId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TrashPendingTableCompanion(
+                uid: uid,
+                docId: docId,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String uid,
+                required String docId,
+                required DateTime createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => TrashPendingTableCompanion.insert(
+                uid: uid,
+                docId: docId,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$TrashPendingTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TrashPendingTableTable,
+      TrashPendingRow,
+      $$TrashPendingTableTableFilterComposer,
+      $$TrashPendingTableTableOrderingComposer,
+      $$TrashPendingTableTableAnnotationComposer,
+      $$TrashPendingTableTableCreateCompanionBuilder,
+      $$TrashPendingTableTableUpdateCompanionBuilder,
+      (
+        TrashPendingRow,
+        BaseReferences<_$AppDatabase, $TrashPendingTableTable, TrashPendingRow>,
+      ),
+      TrashPendingRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -1709,4 +2225,6 @@ class $AppDatabaseManager {
       $$SettingsTableTableTableManager(_db, _db.settingsTable);
   $$AccountCacheTableTableTableManager get accountCacheTable =>
       $$AccountCacheTableTableTableManager(_db, _db.accountCacheTable);
+  $$TrashPendingTableTableTableManager get trashPendingTable =>
+      $$TrashPendingTableTableTableManager(_db, _db.trashPendingTable);
 }

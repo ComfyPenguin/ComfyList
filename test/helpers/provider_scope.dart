@@ -14,9 +14,12 @@ import 'package:comfy_list/features/todo_lists/presentation/providers/todo_lists
 import 'package:comfy_list/features/todos/data/datasources/firestore_rest_remote.dart';
 import 'package:comfy_list/features/todos/domain/repositories/todos_repository.dart';
 import 'package:comfy_list/features/todos/presentation/providers/todos_provider.dart';
+import 'package:comfy_list/features/trash/data/datasources/firestore_trash_remote.dart';
+import 'package:comfy_list/features/trash/presentation/providers/trash_provider.dart';
 import 'package:comfy_list/shared/data/local/app_database.dart';
 import 'package:comfy_list/shared/data/local/database_provider.dart';
 import 'package:comfy_list/shared/data/secure/secure_session_store.dart';
+import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -50,6 +53,9 @@ class StaticAuthNotifier extends AuthNotifier {
 /// Por defecto:
 ///  - `appDatabaseProvider` lanza un error salvo que se pase
 ///    `withInMemoryDb: true` (el test debe ser explícito si necesita DB).
+///    Sobreescribir [FirestoreTrashRemote] implica el repo real de la
+///    papelera, que persiste los pendientes en la DB: en ese caso la DB
+///    en memoria se inyecta sola.
 ///  - `authProvider` arranca en [Unauthenticated] (via [StaticAuthNotifier]).
 ///    Pasar `authedUser: buildAuthUser()` lo arranca en [Authenticated]
 ///    con ese usuario, o `authState: ...` para una variante custom
@@ -73,11 +79,17 @@ ProviderContainer createTestContainer({
   Map<Type, Object> remoteOverrides = const {},
   List<Override> extra = const [],
 }) {
+  // Cada contenedor abre su propia DB en memoria (ejecutores distintos), así
+  // que la queja de drift por varias instancias de AppDatabase no aplica aquí.
+  driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+
   final overrides = <Override>[
     secureSessionStoreProvider.overrideWithValue(MockSecureSessionStore()),
   ];
 
-  if (withInMemoryDb) {
+  final needsInMemoryDb =
+      withInMemoryDb || remoteOverrides.containsKey(FirestoreTrashRemote);
+  if (needsInMemoryDb) {
     overrides.add(
       appDatabaseProvider.overrideWithValue(
         AppDatabase.forTesting(NativeDatabase.memory()),
@@ -156,6 +168,10 @@ Override _remoteOverrideFor(Type type, Object value) {
   if (type == FirestoreAppointmentsRemote) {
     return firestoreAppointmentsRemoteProvider
         .overrideWithValue(value as FirestoreAppointmentsRemote);
+  }
+  if (type == FirestoreTrashRemote) {
+    return firestoreTrashRemoteProvider
+        .overrideWithValue(value as FirestoreTrashRemote);
   }
   throw StateError(
     'createTestContainer: type $type no está registrado en remoteOverrides. '

@@ -104,6 +104,7 @@ class AppShell extends ConsumerWidget {
       _ when isTodoEdit => 'Editar tarea',
       _ when isAppointmentEdit => 'Editar cita',
       Routes.settings => 'Ajustes',
+      Routes.trash => 'Papelera',
       _ => null,
     };
 

@@ -93,6 +93,11 @@ class SettingsTile extends StatelessWidget {
 
   static const double _iconSize = 20;
 
+  /// Alto mínimo de la fila: el de un control de una línea (los 44 px de área
+  /// táctil del switch) más su relleno. Sin él, una fila que solo lleva título
+  /// —la de la papelera— se queda más baja que todas sus vecinas.
+  static const double _minHeight = 44 + AppSpacing.lg * 2;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -147,7 +152,8 @@ class SettingsTile extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        child: Padding(
+        child: Container(
+          constraints: const BoxConstraints(minHeight: _minHeight),
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.xl,
             vertical: AppSpacing.lg,

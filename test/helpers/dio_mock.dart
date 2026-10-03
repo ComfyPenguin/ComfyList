@@ -9,23 +9,37 @@ class MockDio extends Mock implements Dio {}
 /// Stubs `dio.get` para devolver un 200 con el body JSON dado. El path
 /// matcher es `any()`; para aserciones sobre la URL usar `verify` con
 /// `anyThat: (o) => o.path.contains('signIn')`.
+///
+/// Con `withQueryParameters` se declara además `queryParameters`: mocktail
+/// compara los argumentos con nombre exactos, así que las peticiones que lo
+/// mandan (las paginadas) necesitan su propio stub.
 void stubDioGet(
   MockDio dio, {
   String path = '',
   required Map<String, dynamic> body,
   int statusCode = 200,
+  bool withQueryParameters = false,
 }) {
+  Future<Response<Map<String, dynamic>>> answer(_) async =>
+      Response<Map<String, dynamic>>(
+        requestOptions: RequestOptions(path: path),
+        data: body,
+        statusCode: statusCode,
+      );
+
+  if (withQueryParameters) {
+    when(() => dio.get<Map<String, dynamic>>(
+          any(),
+          queryParameters: any(named: 'queryParameters'),
+        )).thenAnswer(answer);
+    return;
+  }
+
   when(() => dio.get<Map<String, dynamic>>(
         any(),
         options: any(named: 'options'),
         cancelToken: any(named: 'cancelToken'),
-      )).thenAnswer(
-    (_) async => Response<Map<String, dynamic>>(
-      requestOptions: RequestOptions(path: path),
-      data: body,
-      statusCode: statusCode,
-    ),
-  );
+      )).thenAnswer(answer);
 }
 
 void stubDioPost(

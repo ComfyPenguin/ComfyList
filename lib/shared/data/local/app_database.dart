@@ -3,14 +3,16 @@ import 'package:drift_flutter/drift_flutter.dart';
 
 import 'daos/account_cache_dao.dart';
 import 'daos/settings_dao.dart';
+import 'daos/trash_pending_dao.dart';
 import 'tables/account_cache_table.dart';
 import 'tables/settings_table.dart';
+import 'tables/trash_pending_table.dart';
 
 part 'app_database.g.dart';
 
 @DriftDatabase(
-  tables: [SettingsTable, AccountCacheTable],
-  daos: [SettingsDao, AccountCacheDao],
+  tables: [SettingsTable, AccountCacheTable, TrashPendingTable],
+  daos: [SettingsDao, AccountCacheDao, TrashPendingDao],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(driftDatabase(name: 'comfy_list'));
@@ -19,7 +21,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -83,7 +85,10 @@ class AppDatabase extends _$AppDatabase {
                   settingsTable.appointmentReminderMinutes:
                       settingsTable.appointmentReminderMinutes.cast<String>(),
                 },
-                newColumns: [settingsTable.longPressHintSeen],
+                newColumns: [
+                  settingsTable.longPressHintSeen,
+                  settingsTable.trashRetentionDays,
+                ],
               ),
             );
           }
@@ -94,6 +99,26 @@ class AppDatabase extends _$AppDatabase {
               settingsTable,
               settingsTable.longPressHintSeen,
             );
+          }
+          // Quien viene de la v8 o antes ya recibe la columna con la
+          // recreación de la tabla de arriba; solo la v9 y la v10 llegan aquí
+          // sin ella.
+          if (from >= 9 && from < 11) {
+            await migrator.addColumn(
+              settingsTable,
+              settingsTable.trashRetentionDays,
+            );
+          }
+          if (from < 12) {
+            // La v11 nació con «nunca» por defecto, antes de que la papelera
+            // arrancara con un mes de plazo: ese 0 no lo había elegido nadie.
+            await customStatement(
+              'UPDATE settings_table SET trash_retention_days = 30 '
+              'WHERE trash_retention_days = 0',
+            );
+          }
+          if (from < 13) {
+            await migrator.createTable(trashPendingTable);
           }
         },
       );

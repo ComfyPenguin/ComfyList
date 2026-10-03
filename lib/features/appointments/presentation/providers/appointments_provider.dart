@@ -6,6 +6,8 @@ import '../../../../shared/core/failures/failure.dart';
 import '../../../../shared/core/time/clock.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/providers/auth_state.dart';
+import '../../../trash/domain/entities/trash_entry.dart';
+import '../../../trash/presentation/providers/trash_provider.dart';
 import '../../data/datasources/firestore_appointments_remote.dart';
 import '../../data/repositories/appointments_repository_impl.dart';
 import '../../domain/entities/appointment.dart';
@@ -104,12 +106,22 @@ class AppointmentsNotifier extends Notifier<AppointmentsState> {
         );
   }
 
-  /// Última cita borrada. Solo se puede deshacer esa: el aviso que ofrece
-  /// deshacer es único y un borrado nuevo reemplaza al anterior.
-  Appointment? _lastDeleted;
-
   Future<void> delete(String id) async {
-    _lastDeleted = _findById(id);
+    final appointment = _findById(id);
+    if (appointment != null) {
+      await ref.read(trashRepositoryProvider).save(
+            uid: _uid,
+            items: [
+              TrashItem(
+                kind: TrashKind.appointment,
+                itemId: appointment.id,
+                label: appointment.title,
+                payload: appointment.toJson(),
+              ),
+            ],
+          );
+    }
+
     await ref.read(appointmentsRepositoryProvider).deleteAppointment(
           uid: _uid,
           id: id,
@@ -118,14 +130,30 @@ class AppointmentsNotifier extends Notifier<AppointmentsState> {
 
   /// Devuelve la última cita borrada. Devuelve si se pudo.
   Future<bool> undoLastDelete() async {
-    final appointment = _lastDeleted;
-    if (appointment == null) return false;
+    final trash = ref.read(trashRepositoryProvider);
+    final found = await trash.latestGroup(
+      uid: _uid,
+      kind: TrashKind.appointment,
+    );
+    final entries = found.fold(
+      onOk: (entries) => entries,
+      onErr: (_) => const <TrashEntry>[],
+    );
+    if (entries.isEmpty) return false;
 
-    final res = await ref.read(appointmentsRepositoryProvider)
-        .restoreAppointment(uid: _uid, appointment: appointment);
-    if (res.isErr) return false;
+    final repo = ref.read(appointmentsRepositoryProvider);
+    for (final entry in entries) {
+      final res = await repo.restoreAppointment(
+        uid: _uid,
+        appointment: Appointment.fromJson(entry.payload),
+      );
+      if (res.isErr) return false;
+    }
 
-    _lastDeleted = null;
+    await trash.remove(
+      uid: _uid,
+      ids: entries.map((entry) => entry.id).toList(growable: false),
+    );
     return true;
   }
 

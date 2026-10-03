@@ -102,8 +102,13 @@ class _TodoListEditScreenState extends ConsumerState<TodoListEditScreen> {
     if (!confirmed) return;
 
     final notifier = ref.read(todoListsProvider.notifier);
-    await notifier.delete(widget.id!);
+    final deleted = await notifier.delete(widget.id!);
     if (!mounted) return;
+
+    if (!deleted) {
+      AppToast.show(context, AppToast.listDeleteFailed);
+      return;
+    }
 
     AppToast.showUndo(
       context,

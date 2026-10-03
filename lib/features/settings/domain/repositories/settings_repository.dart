@@ -31,4 +31,8 @@ abstract class SettingsRepository {
   /// Marca que ya se mostró la pista de mantener pulsada una tarjeta para
   /// editarla, para que no vuelva a aparecer.
   Future<void> setLongPressHintSeen(bool seen);
+
+  /// Días que aguanta un borrado en la papelera antes de vaciarla sola; `0` es
+  /// «nunca».
+  Future<void> setTrashRetentionDays(int days);
 }

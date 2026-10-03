@@ -12,6 +12,10 @@ String formatLongDate(DateTime date) {
   return '$dayName, ${date.day} $monthName ${date.year}';
 }
 
+/// Fecha corta en español, sin día de la semana: «30 Septiembre 2026».
+String formatShortDate(DateTime date) =>
+    '${date.day} ${capitalize(DateFormat('MMMM', 'es_ES').format(date))} ${date.year}';
+
 /// Hora del día según el ajuste del usuario: «14:30» en 24 h y «02:30» en 12 h.
 String formatClockTime(DateTime time, {required bool use24HourFormat}) =>
     DateFormat(use24HourFormat ? 'HH:mm' : 'hh:mm', 'es_ES').format(time);

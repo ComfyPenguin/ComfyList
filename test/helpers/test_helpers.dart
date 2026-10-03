@@ -100,6 +100,7 @@ AppSettings buildAppSettings({
   bool? use24HourFormat,
   List<int>? appointmentReminderMinutes,
   bool? longPressHintSeen,
+  int? trashRetentionDays,
 }) {
   return AppSettings(
     themeMode: themeMode ?? AppSettings.defaults.themeMode,
@@ -123,6 +124,8 @@ AppSettings buildAppSettings({
         AppSettings.defaults.appointmentReminderMinutes,
     longPressHintSeen:
         longPressHintSeen ?? AppSettings.defaults.longPressHintSeen,
+    trashRetentionDays:
+        trashRetentionDays ?? AppSettings.defaults.trashRetentionDays,
   );
 }
 
@@ -140,6 +143,7 @@ SettingsRow buildSettingsRow({
   bool use24HourFormat = true,
   String appointmentReminderMinutes = '30',
   bool longPressHintSeen = false,
+  int trashRetentionDays = defaultTrashRetentionDays,
   DateTime? updatedAt,
 }) {
   return SettingsRow(
@@ -154,6 +158,7 @@ SettingsRow buildSettingsRow({
     use24HourFormat: use24HourFormat,
     appointmentReminderMinutes: appointmentReminderMinutes,
     longPressHintSeen: longPressHintSeen,
+    trashRetentionDays: trashRetentionDays,
     updatedAt: updatedAt ?? DateTime.now().toUtc(),
   );
 }

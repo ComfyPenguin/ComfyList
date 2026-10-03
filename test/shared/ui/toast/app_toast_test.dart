@@ -26,9 +26,9 @@ void main() {
     await tester.pump();
   }
 
-  /// Igual, pero para un aviso con acción: aguanta 5 s en pantalla.
+  /// Igual, pero para un aviso con acción: aguanta 8 s en pantalla.
   Future<void> settleToastAwayWithAction(WidgetTester tester) async {
-    await tester.pump(const Duration(seconds: 6));
+    await tester.pump(const Duration(seconds: 9));
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
   }
@@ -234,6 +234,39 @@ void main() {
 
     await settleToastAway(tester);
     expect(find.text(AppToast.undoFailed), findsNothing);
+  });
+
+  testWidgets('con acción, tocar fuera del botón la ejecuta igual', (
+    tester,
+  ) async {
+    final context = await pumpHost(tester);
+    var undone = false;
+
+    AppToast.showUndo(
+      context,
+      message: AppToast.todoDeleted,
+      onUndo: () async {
+        undone = true;
+        return true;
+      },
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+
+    // Toda la tarjeta es la zona táctil (y pasa del mínimo de 48): el botón es
+    // pequeño y un toque al lado no puede llevarse el aviso por delante.
+    final card = find
+        .ancestor(
+          of: find.text(AppToast.todoDeleted),
+          matching: find.byType(Material),
+        )
+        .first;
+    expect(tester.getSize(card).height, greaterThanOrEqualTo(48));
+
+    await tester.tap(find.text(AppToast.todoDeleted));
+    await tester.pump();
+
+    expect(undone, isTrue);
   });
 
   testWidgets('tocarlo lo descarta antes de tiempo', (tester) async {

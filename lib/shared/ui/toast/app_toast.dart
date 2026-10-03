@@ -24,6 +24,11 @@ class AppToast {
   static const String appointmentDeleted = 'Cita eliminada.';
   static const String undo = 'Deshacer';
   static const String undoFailed = 'No se pudo deshacer. Inténtalo de nuevo.';
+  static const String restoreFailed =
+      'No se ha podido restaurar. Inténtalo de nuevo.';
+  static const String listDeleteFailed =
+      'No se ha podido eliminar la lista. Inténtalo de nuevo.';
+  static const String trashEmptied = 'Papelera vaciada.';
   static const String longPressHint =
       'Mantén pulsada una tarjeta para editarla.';
   static const String notificationsStillBlocked =
@@ -45,6 +50,38 @@ class AppToast {
     final overlay = Overlay.maybeOf(context, rootOverlay: true);
     if (overlay == null) return;
 
+    _show(overlay, message, actionLabel: actionLabel, onAction: onAction);
+  }
+
+  /// Aviso de un borrado, con «Deshacer». [onUndo] devuelve si el elemento
+  /// volvió; si no, se avisa del fallo.
+  static void showUndo(
+    BuildContext context, {
+    required String message,
+    required Future<bool> Function() onUndo,
+  }) {
+    final overlay = Overlay.maybeOf(context, rootOverlay: true);
+    if (overlay == null) return;
+
+    _show(
+      overlay,
+      message,
+      actionLabel: undo,
+      onAction: () async {
+        if (await onUndo()) return;
+        _show(overlay, undoFailed);
+      },
+    );
+  }
+
+  /// El overlay se resuelve una sola vez: el aviso sigue en pie y con su
+  /// mensaje aunque la pantalla desde la que se borró ya no exista.
+  static void _show(
+    OverlayState overlay,
+    String message, {
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
     _removeCurrent();
 
     late final OverlayEntry entry;
@@ -64,25 +101,6 @@ class AppToast {
     overlay.insert(entry);
   }
 
-  /// Aviso de un borrado, con «Deshacer». [onUndo] devuelve si el elemento
-  /// volvió; si no, se avisa del fallo.
-  static void showUndo(
-    BuildContext context, {
-    required String message,
-    required Future<bool> Function() onUndo,
-  }) {
-    show(
-      context,
-      message,
-      actionLabel: undo,
-      onAction: () async {
-        if (await onUndo()) return;
-        if (!context.mounted) return;
-        show(context, undoFailed);
-      },
-    );
-  }
-
   static void _removeCurrent() {
     final current = _entry;
     _entry = null;
@@ -91,7 +109,8 @@ class AppToast {
 }
 
 /// Card del aviso: entra deslizándose desde arriba, se queda unos segundos y
-/// se va sola. Tocarla la descarta antes de tiempo.
+/// se va sola. Con acción se puede tocar en cualquier punto de la tarjeta para
+/// ejecutarla; sin acción, tocarla la descarta antes de tiempo.
 class _ToastCard extends StatefulWidget {
   const _ToastCard({
     required this.message,
@@ -113,7 +132,7 @@ class _ToastCardState extends State<_ToastCard>
     with SingleTickerProviderStateMixin {
   /// Con acción el aviso necesita más tiempo: hay que leerlo y decidir.
   static const Duration _visibleFor = Duration(seconds: 2);
-  static const Duration _visibleForAction = Duration(seconds: 5);
+  static const Duration _visibleForAction = Duration(seconds: 8);
   static const Duration _slide = Duration(milliseconds: 200);
 
   late final AnimationController _controller;
@@ -152,6 +171,17 @@ class _ToastCardState extends State<_ToastCard>
     _hide();
   }
 
+  /// Con acción el aviso entero la ejecuta: el botón es pequeño y un toque al
+  /// lado no debe llevarse por delante la única oportunidad de deshacer. Sin
+  /// acción, tocar el aviso lo descarta.
+  void _handleCardTap() {
+    if (widget.actionLabel != null) {
+      _runAction();
+    } else {
+      _hide();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -175,7 +205,10 @@ class _ToastCardState extends State<_ToastCard>
           child: Align(
             alignment: Alignment.topCenter,
             child: GestureDetector(
-              onTap: _hide,
+              onTap: _handleCardTap,
+              // Que el hueco entre el mensaje y el botón también cuente: sin
+              // esto, el toque en el relleno del aviso no llega a nada.
+              behavior: HitTestBehavior.opaque,
               // El overlay raíz cuelga por encima del Navigator: sin un Material
               // por medio, el texto hereda el estilo de error de Flutter y sale
               // subrayado en amarillo.

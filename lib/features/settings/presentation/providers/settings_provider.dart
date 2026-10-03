@@ -83,6 +83,9 @@ class SettingsNotifier extends Notifier<SettingsState> {
 
   Future<void> setLongPressHintSeen(bool seen) =>
       ref.read(settingsRepositoryProvider).setLongPressHintSeen(seen);
+
+  Future<void> setTrashRetentionDays(int days) =>
+      ref.read(settingsRepositoryProvider).setTrashRetentionDays(days);
 }
 
 final settingsProvider =
@@ -112,5 +115,15 @@ final appointmentReminderMinutesProvider = Provider<List<int>>((ref) {
   return switch (state) {
     SettingsData(:final settings) => settings.appointmentReminderMinutes,
     _ => AppSettings.defaults.appointmentReminderMinutes,
+  };
+});
+
+/// Días que aguanta un borrado en la papelera (0 = nunca) — el de por defecto
+/// mientras carga.
+final trashRetentionDaysProvider = Provider<int>((ref) {
+  final state = ref.watch(settingsProvider);
+  return switch (state) {
+    SettingsData(:final settings) => settings.trashRetentionDays,
+    _ => AppSettings.defaults.trashRetentionDays,
   };
 });

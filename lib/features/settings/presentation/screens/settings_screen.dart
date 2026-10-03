@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../routing/routes.dart';
 import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_stroke.dart';
@@ -19,15 +21,17 @@ import '../widgets/exact_alarms_tile.dart';
 import '../widgets/hour_format_selector.dart';
 import '../widgets/invert_swipe_actions_toggle.dart';
 import '../widgets/notifications_toggle.dart';
+import '../widgets/settings_tile.dart';
 import '../widgets/theme_mode_selector.dart';
 import '../widgets/today_on_top_toggle.dart';
+import '../widgets/trash_retention_selector.dart';
 
 /// Pantalla de ajustes. Vive dentro del [AppShell], que pone el título y la
 /// flecha atrás en su TopBar.
 ///
-/// Los ajustes generales van arriba sin cabecera; citas y tareas llevan tag de
-/// sección porque agrupan varias preferencias de su feature. Cada grupo usa la
-/// geometría de las listas: radios 32/6 y 2 px entre las tiles.
+/// Los ajustes generales van arriba sin cabecera; debajo, cada grupo lleva su
+/// tag de sección. Cada grupo usa la geometría de las listas: radios 32/6 y
+/// 2 px entre las tiles.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -116,6 +120,21 @@ class SettingsScreen extends ConsumerWidget {
               ],
             ),
           ),
+        const SizedBox(height: AppSpacing.xxxl),
+        _SectionHeader(label: 'DATOS', style: sectionStyle),
+        SettingsTile(
+          icon: Icons.restore_from_trash_outlined,
+          title: 'Papelera',
+          isFirst: true,
+          isLast: false,
+          trailing: Icon(
+            Icons.chevron_right_rounded,
+            color: context.colors.muted,
+          ),
+          onTap: () => context.push(Routes.trash),
+        ),
+        const SizedBox(height: AppSpacing.joined),
+        const TrashRetentionSelector(isFirst: false, isLast: true),
         const SizedBox(height: AppSpacing.xxxl),
         _SectionHeader(label: 'CITAS', style: sectionStyle),
         const HourFormatSelector(isFirst: true, isLast: false),
