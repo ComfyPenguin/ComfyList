@@ -33,7 +33,7 @@ dependencies:
   flutter_secure_storage: ^10.1.0
 
   # Firebase
-  firebase_core: ^3.13.0
+  firebase_core: ^4.15.0
 
   # Google Sign-In (solo Android en fase 1)
   google_sign_in: ^7.2.0
