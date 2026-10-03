@@ -19,6 +19,7 @@ Feature-first + Clean Architecture (3 capas por feature). Detalle en **`docs/arc
 - **Capas**: `data/` (datasources, models, repositorios), `domain/` (entidades, repositorios abstractos) y `presentation/` (providers, screens, widgets).
 - **State**: `Notifier<T>` + `sealed class` State (`Initial`/`Loading`/`Data`/`Error`), activados desde el router en `_AppStateListenable`.
 - **Routing**: `ShellRoute` con `AppShell`; las rutas de edición viven fuera del shell y las transiciones son instantáneas (`_instantPage()`).
+- **Datos**: Firestore por usuario (`users/{uid}/…`) como fuente de verdad; Drift solo para preferencias, caché y reintentos.
 
 ## Commands
 
