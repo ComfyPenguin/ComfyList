@@ -59,6 +59,28 @@ tool/          # herramientas de desarrollo (release.dart)
 - Las features se fusionan en `develop` con `git merge --no-ff` y la rama se borra después.
 - `main` solo recibe fusiones para publicar releases.
 
+### Publicar una release (develop → main)
+
+Con `develop` verde (analyze y tests), fusiona y empuja `main`; el [workflow de release](../.github/workflows/release.yml) calcula la versión, compila APK y AAB, y publica la GitHub Release:
+
+```sh
+git checkout main
+git pull
+git merge develop --no-ff
+git push origin main
+```
+
+El workflow añade a `main` un commit `chore(release): vX.Y.Z` con el tag `vX.Y.Z`. Cuando termine, cierra el ciclo sincronizando `develop` con ese commit:
+
+```sh
+git fetch origin
+git checkout develop
+git merge origin/main
+git push origin develop
+```
+
+Sin `feat`, `fix`, `perf` ni breaking desde el último tag, el workflow termina en verde sin publicar nada.
+
 ## Más documentación
 
 - [`architecture.md`](architecture.md) — capas, estado y routing.
