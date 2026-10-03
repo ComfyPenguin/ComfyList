@@ -30,7 +30,7 @@ dependencies:
   path: ^1.9.0
 
   # Secure storage (tokens)
-  flutter_secure_storage: ^10.1.0
+  flutter_secure_storage: ^11.2.0
 
   # Firebase
   firebase_core: ^3.13.0
