@@ -70,7 +70,7 @@ dev_dependencies:
   mocktail: ^1.0.4
 
   # Codegen (Drift)
-  build_runner: ^2.16.1
+  build_runner: 2.15.1
   drift_dev: ^2.20.3
 
   # App icon generation
