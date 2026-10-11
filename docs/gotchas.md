@@ -11,7 +11,9 @@ Trampas y decisiones no obvias del proyecto, por área. `AGENTS.md` solo enlaza 
 ## Config y build
 
 - **Config de Firebase fuera del repo**: `android/app/google-services.json` y `lib/firebase_options.dart` los genera `flutterfire configure` (config en `firebase.json`) y están ignorados por git. En un clon nuevo hay que generarlos o pedirlos: sin `google-services.json` el build de Android falla (lo exige el plugin `com.google.gms.google-services`).
+- **Recuperar `google-services.json` sin `flutterfire`**: con el CLI de Firebase logueado, `firebase apps:sdkconfig ANDROID <appId> --project comfy-list` (el `appId` sale de `firebase apps:list`) imprime el archivo entero; redirigirlo crea uno válido.
 - **Reglas de Firestore**: viven en `firestore.rules` y se despliegan con `firebase deploy --only firestore:rules`. Son el único control de acceso real (la app habla con Firestore REST y la apiKey es pública): exigen `request.auth.uid == uid` sobre todo `users/{uid}/**` y `request.auth.token.email_verified == true`.
+- **El Dart que manda es el de Flutter 3.44.4**: Dependabot resuelve el lockfile con el suyo (más nuevo) y cada PR suyo rompe la comprobación del lockfile hasta regenerarlo en local. Ese Flutter pincha `meta 1.18.0` a través de `flutter_test`, así que `build_runner` se queda en `^2.15.1`: a partir de 2.16.1 exige `analyzer ≥13.3`, que pide `meta ^1.18.3`. Un salto de `drift` que arrastre `drift_dev` cambia el código generado: `dart run build_runner build` va en el mismo commit.
 
 ## Auth
 
@@ -19,6 +21,7 @@ Trampas y decisiones no obvias del proyecto, por área. `AGENTS.md` solo enlaza 
 - **Cerrar sesión revoca los tokens en el servidor**: `accounts:update` con `validSince` y el idToken — el refreshToken no caduca solo. Es best-effort (sin red la sesión local se borra igual) y `validSince` sale del reloj del dispositivo: un reloj muy adelantado deja esa cuenta fuera hasta esa hora.
 - **Contraseñas**: la política vive en `PasswordPolicy` (8 caracteres, con una letra y un número). Firebase solo impone 6 y no es configurable sin Identity Platform, así que la comprobación es local, antes de llamar a la API; el registro la enseña en vivo con `PasswordRulesChecklist`.
 - **Google Sign-In**: solo Android, en `main()` con `Platform.isAndroid`.
+- **La huella del keystore de firma tiene que estar en Firebase**: Google solo reconoce la app si la SHA-1 del keystore con el que está firmada figura en el cliente Android del proyecto. Registradas están la del debug keystore (los `flutter run` entran) y la del `upload-keystore.jks` (`0D:D5:59:47…`, la que firma las releases de CI y en local); un keystore nuevo (Play App Signing, otro equipo) rompe el login con `DEVELOPER_ERROR` sin tocar nada más. Se mira con `keytool -list -v -keystore <jks>` y se añade en Configuración del proyecto → Tus apps → Añadir huella digital (o `POST /v1beta1/projects/{p}/androidApps/{app}/sha` con la Management API).
 
 ## Privacidad
 
@@ -65,8 +68,8 @@ Trampas y decisiones no obvias del proyecto, por área. `AGENTS.md` solo enlaza 
 
 ## Releases
 
-- **Versionado automático por conventional commits**: cada push a `main` dispara `.github/workflows/release.yml`. `tool/release.dart` calcula el bump desde el último tag `v*` (breaking → major, `feat` → minor, `fix`/`perf` → patch), el workflow lo escribe en `pubspec.yaml`, lo commitea (`chore(release): vX.Y.Z`) y crea la release con APK y AAB. Sin commits de esos tipos no publica nada. Si aún no hay tags, la primera release usa la versión que ya tenga pubspec.
-- **`versionCode` = número de commits de `main`** (`git rev-list --count HEAD`): crece solo entre releases; si se reescribe la historia de `main` hay que mantenerlo a mano o Play rechazará la subida.
+- **Versionado por fecha y commits**: cada push a `main` dispara `.github/workflows/release.yml`. `tool/release.dart` saca la versión de la fecha del commit que publica (en su propio huso) y de su número de commits — `2026.10.11+221` —, y el tag añade ese mismo número (`v2026.10.11.221`) para que dos releases del mismo día no choquen. Los conventional commits ya no dan la versión: solo deciden *si* hay algo que publicar, así que sin `feat`, `fix`, `perf` ni un breaking desde el último tag no se publica nada.
+- **`versionCode` = número de commits de `main`** (`git rev-list --count HEAD`): es el mismo número que cierra la versión, así que crece solo entre releases; si se reescribe la historia de `main` hay que mantenerlo a mano o Play rechazará la subida.
 - **Firma y Firebase llegan por secrets**: `ANDROID_KEYSTORE_B64`, `ANDROID_STORE_PASSWORD`, `ANDROID_KEY_PASSWORD`, `ANDROID_KEY_ALIAS` y `GOOGLE_SERVICES_JSON_B64`. En local firma igual `android/key.properties` con `android/app/upload-keystore.jks` (ambos ignorados por git); sin ellos el release cae a la debug key. Guarda copia del `.jks` y de las contraseñas: sin eso no hay actualizaciones publicables.
 - **Dry-run local**: `dart tool/release.dart plan` imprime la próxima versión sin tocar nada.
 

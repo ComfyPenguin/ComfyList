@@ -118,10 +118,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p dist
-          cp build/app/outputs/flutter-apk/app-release.apk "dist/comfylist-$VERSION.apk"
-          cp build/app/outputs/bundle/release/app-release.aab "dist/comfylist-$VERSION.aab"
+          # El número de commits va en el nombre para que dos releases del mismo
+          # día no compartan archivo.
+          cp build/app/outputs/flutter-apk/app-release.apk "dist/comfylist-$VERSION+$BUILD_NUMBER.apk"
+          cp build/app/outputs/bundle/release/app-release.aab "dist/comfylist-$VERSION+$BUILD_NUMBER.aab"
           gh release create "$TAG" \
-            --title "ComfyList $VERSION" \
+            --title "ComfyList $VERSION ($BUILD_NUMBER)" \
             --notes-file release-notes.md \
-            "dist/comfylist-$VERSION.apk" \
-            "dist/comfylist-$VERSION.aab"
+            "dist/comfylist-$VERSION+$BUILD_NUMBER.apk" \
+            "dist/comfylist-$VERSION+$BUILD_NUMBER.aab"

@@ -62,12 +62,12 @@ El detalle vive en **`docs/gotchas.md`**. Índice por áreas:
 
 - **Firebase y red**: REST con Dio (nada de SDK), dos clientes (`instance`/`authClient`) y apiKey limitada a tres APIs.
 - **Config y build**: `google-services.json` y `firebase_options.dart` fuera del repo; reglas en `firestore.rules`.
-- **Auth**: correo sin verificar bloqueado por el router, `validSince` al cerrar sesión y política de contraseñas local.
+- **Auth**: correo sin verificar bloqueado por el router, `validSince` al cerrar sesión, política de contraseñas local y la huella del keystore de firma registrada en Firebase (Google Sign-In).
 - **Privacidad**: sin backup en Android y sin logs con datos de cuenta (`debugLog`).
 - **Drift**: migraciones secuenciales, tablas y `appDatabaseProvider`.
 - **Papelera**: `users/{uid}/trash`, tope de 100 borrados, `groupId` y purga por plazo.
 - **Recordatorios**: hasta 5 márgenes, plan puro + scheduler y notificaciones best-effort.
 - **Entidades y estado**: `copyWith` con flags (`clearDescription`/`clearLocation`).
 - **Tests**: DB en memoria y `createTestContainer`.
-- **Releases**: versionado por conventional commits, GitHub Releases con APK/AAB y firma por secrets.
+- **Releases**: versionado por fecha y commits (`año.mes.dia+commits`), GitHub Releases con APK/AAB y firma por secrets.
 - **Ramas**: `merge --no-ff` en `develop` y borrado tras comprobar contención.

@@ -31,8 +31,3 @@ Android es la plataforma principal (fase 1). Web y escritorio están en camino; 
 ## ¿Quieres desarrollar?
 
 Empieza por [`docs/development.md`](docs/development.md): requisitos, configuración de Firebase, comandos y flujo de releases.
-
-## Documentación
-
-- [`docs/architecture.md`](docs/architecture.md) — capas, estado y routing.
-- [`docs/gotchas.md`](docs/gotchas.md) — trampas y decisiones no obvias.

@@ -56,11 +56,9 @@ void main() {
     });
   });
 
-  group('nextVersion', () {
-    test('sube el segmento correcto', () {
-      expect(nextVersion('1.2.3', 'major'), '2.0.0');
-      expect(nextVersion('1.2.3', 'minor'), '1.3.0');
-      expect(nextVersion('1.2.3', 'patch'), '1.2.4');
+  group('tagFor', () {
+    test('junta la fecha del commit y su número de commits', () {
+      expect(tagFor('2026.10.11', '221'), 'v2026.10.11.221');
     });
   });
 
@@ -69,11 +67,11 @@ void main() {
       const pubspec =
           'name: comfy_list\r\nversion: 1.0.0+1\r\ndescription: hola\r\n';
 
-      final updated = withVersion(pubspec, '1.2.0', '215');
+      final updated = withVersion(pubspec, '2026.10.11', '221');
 
-      expect(updated, contains('version: 1.2.0+215\r\n'));
+      expect(updated, contains('version: 2026.10.11+221\r\n'));
       expect(updated, contains('name: comfy_list\r\n'));
-      expect(pubspecVersion(updated!), '1.2.0');
+      expect(pubspecVersion(updated!), '2026.10.11');
     });
 
     test('devuelve null si no hay línea version', () {
