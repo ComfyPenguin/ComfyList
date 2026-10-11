@@ -52,6 +52,9 @@ dependencies:
   window_manager: ^0.5.1
   win32: ^6.2.0
 
+  # Versión instalada (pie de Ajustes)
+  package_info_plus: ^10.2.2
+
   # Fechas localizadas
   intl: ^0.20.2
 

@@ -10,6 +10,7 @@ import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/data/notifications/notifications_provider.dart';
 import '../../../../shared/ui/animations/unfold_down.dart';
+import '../providers/app_version_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/settings_state.dart';
 import '../widgets/appointment_reminder_selector.dart';
@@ -160,7 +161,30 @@ class SettingsScreen extends ConsumerWidget {
         const SizedBox(height: AppSpacing.xxxl),
         _SectionHeader(label: 'TAREAS', style: sectionStyle),
         const CompletedToBottomToggle(),
+        const _AppVersionFooter(),
       ],
+    );
+  }
+}
+
+/// Pie de la pantalla: la versión que está corriendo, para poder decirla al
+/// contar cualquier problema.
+class _AppVersionFooter extends ConsumerWidget {
+  const _AppVersionFooter();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final label = ref.watch(appVersionLabelProvider).value;
+    if (label == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.xxxl),
+      child: Center(
+        child: Text(
+          'Versión $label',
+          style: AppTypography.caption.copyWith(color: context.colors.muted),
+        ),
+      ),
     );
   }
 }

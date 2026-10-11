@@ -1,3 +1,4 @@
+import 'package:comfy_list/features/settings/presentation/providers/app_version_provider.dart';
 import 'package:comfy_list/features/settings/presentation/providers/settings_provider.dart';
 import 'package:comfy_list/features/settings/presentation/screens/settings_screen.dart';
 import 'package:comfy_list/features/settings/presentation/widgets/settings_tile.dart';
@@ -72,6 +73,8 @@ void main() {
           notificationsServiceProvider.overrideWithValue(
             notifications ?? FakeNotificationsService(),
           ),
+          // El paquete instalado no existe en un test: la versión se fija aquí.
+          appVersionLabelProvider.overrideWith((ref) async => '2026.10.11 (221)'),
         ],
         child: MaterialApp(
           theme: AppTheme.light(),
@@ -86,6 +89,14 @@ void main() {
     await tester.pump();
     await tester.pump();
   }
+
+  testWidgets('el pie de la pantalla dice la versión que corre', (tester) async {
+    final repo = FakeSettingsRepository();
+    await pumpSettings(tester, repo);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Versión 2026.10.11 (221)'), findsOneWidget);
+  });
 
   testWidgets('el reintento recupera los ajustes sin salir de la pantalla', (
     tester,
