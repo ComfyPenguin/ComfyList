@@ -69,5 +69,5 @@ El detalle vive en **`docs/gotchas.md`**. Índice por áreas:
 - **Recordatorios**: hasta 5 márgenes, plan puro + scheduler y notificaciones best-effort.
 - **Entidades y estado**: `copyWith` con flags (`clearDescription`/`clearLocation`).
 - **Tests**: DB en memoria y `createTestContainer`.
-- **Releases**: versionado por conventional commits, GitHub Releases con APK/AAB y firma por secrets.
+- **Releases**: versionado por fecha y commits (`año.mes.dia+commits`), GitHub Releases con APK/AAB y firma por secrets.
 - **Ramas**: `merge --no-ff` en `develop` y borrado tras comprobar contención.

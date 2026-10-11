@@ -51,7 +51,8 @@ tool/          # herramientas de desarrollo (release.dart)
 ## Releases y CI
 
 - Las PRs hacia `develop` pasan `flutter analyze`, `flutter test` y comprobación del lockfile (`.github/workflows/ci.yml`).
-- Al empujar a `main`, el workflow calcula la versión desde los conventional commits, compila APK y AAB firmados y publica la GitHub Release.
+- Al empujar a `main`, el workflow calcula la versión, compila APK y AAB firmados y publica la GitHub Release.
+- La versión es `año.mes.dia+commits` (por ejemplo `2026.10.11+221`): la fecha del commit que se publica y su número de commits. El tag lleva ese mismo número (`v2026.10.11.221`) para que dos releases del mismo día no choquen, y los conventional commits solo deciden si hay algo que publicar: sin `feat`, `fix`, `perf` ni breaking desde el último tag no se publica nada.
 - Dependabot propone actualizaciones de actions y dependencias cada semana.
 
 ## Ramas

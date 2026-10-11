@@ -67,8 +67,8 @@ Trampas y decisiones no obvias del proyecto, por área. `AGENTS.md` solo enlaza 
 
 ## Releases
 
-- **Versionado automático por conventional commits**: cada push a `main` dispara `.github/workflows/release.yml`. `tool/release.dart` calcula el bump desde el último tag `v*` (breaking → major, `feat` → minor, `fix`/`perf` → patch), el workflow lo escribe en `pubspec.yaml`, lo commitea (`chore(release): vX.Y.Z`) y crea la release con APK y AAB. Sin commits de esos tipos no publica nada. Si aún no hay tags, la primera release usa la versión que ya tenga pubspec.
-- **`versionCode` = número de commits de `main`** (`git rev-list --count HEAD`): crece solo entre releases; si se reescribe la historia de `main` hay que mantenerlo a mano o Play rechazará la subida.
+- **Versionado por fecha y commits**: cada push a `main` dispara `.github/workflows/release.yml`. `tool/release.dart` saca la versión de la fecha del commit que publica (en su propio huso) y de su número de commits — `2026.10.11+221` —, y el tag añade ese mismo número (`v2026.10.11.221`) para que dos releases del mismo día no choquen. Los conventional commits ya no dan la versión: solo deciden *si* hay algo que publicar, así que sin `feat`, `fix`, `perf` ni un breaking desde el último tag no se publica nada.
+- **`versionCode` = número de commits de `main`** (`git rev-list --count HEAD`): es el mismo número que cierra la versión, así que crece solo entre releases; si se reescribe la historia de `main` hay que mantenerlo a mano o Play rechazará la subida.
 - **Firma y Firebase llegan por secrets**: `ANDROID_KEYSTORE_B64`, `ANDROID_STORE_PASSWORD`, `ANDROID_KEY_PASSWORD`, `ANDROID_KEY_ALIAS` y `GOOGLE_SERVICES_JSON_B64`. En local firma igual `android/key.properties` con `android/app/upload-keystore.jks` (ambos ignorados por git); sin ellos el release cae a la debug key. Guarda copia del `.jks` y de las contraseñas: sin eso no hay actualizaciones publicables.
 - **Dry-run local**: `dart tool/release.dart plan` imprime la próxima versión sin tocar nada.
 

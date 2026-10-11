@@ -1,5 +1,6 @@
-// Herramienta de release: calcula la próxima versión a partir de los
-// conventional commits, la aplica a pubspec.yaml y genera las notas.
+// Herramienta de release: calcula la versión (fecha del commit + número de
+// commits), la aplica a pubspec.yaml y genera las notas. Los conventional
+// commits solo deciden si hay algo que publicar.
 // La usa .github/workflows/release.yml.
 import 'dart:io';
 
@@ -28,27 +29,36 @@ void _usage() {
   exit(64);
 }
 
-/// Plan calculado desde el último tag y los commits de `HEAD`.
+/// Plan calculado desde `HEAD`, sin publicar nada: la versión es la fecha de
+/// ese commit y el build, su número de commits.
 void _plan() {
-  final current = pubspecVersion(File('pubspec.yaml').readAsStringSync());
-  if (current == null) {
-    stderr.writeln('No se pudo leer la versión actual de pubspec.yaml');
-    exit(65);
-  }
-
   final previousTag = _lastTag();
   final bump = previousTag == null
       ? 'initial'
       : bumpForCommits(_commitsSince(previousTag));
-  final version = bump == 'none' ? current : nextVersion(current, bump);
+  final version = _headDate();
+  final build = _git(['rev-list', '--count', 'HEAD']);
 
   stdout
     ..writeln('bump=$bump')
     ..writeln('version=$version')
-    ..writeln('build=${_git(['rev-list', '--count', 'HEAD'])}')
-    ..writeln('tag=v$version')
+    ..writeln('build=$build')
+    ..writeln('tag=${tagFor(version, build)}')
     ..writeln('previous_tag=${previousTag ?? ''}');
 }
+
+/// La fecha del commit en su propio huso como `año.mes.dia`.
+String _headDate() => _git([
+  'show',
+  '-s',
+  '--format=%cd',
+  '--date=format:%Y.%m.%d',
+  'HEAD',
+]);
+
+/// El tag lleva la fecha y el número de commits para que dos releases del
+/// mismo día no choquen.
+String tagFor(String version, String build) => 'v$version.$build';
 
 /// Escribe `<versión>+<build>` en la línea `version:` de pubspec.yaml.
 void _apply(List<String> args) {
@@ -128,16 +138,6 @@ String bumpForCommits(List<Commit> commits) {
     return 'patch';
   }
   return 'none';
-}
-
-String nextVersion(String current, String bump) {
-  final parts = current.split('.').map(int.parse).toList();
-  return switch (bump) {
-    'major' => '${parts[0] + 1}.0.0',
-    'minor' => '${parts[0]}.${parts[1] + 1}.0',
-    'patch' => '${parts[0]}.${parts[1]}.${parts[2] + 1}',
-    _ => current,
-  };
 }
 
 final _versionLine = RegExp(
