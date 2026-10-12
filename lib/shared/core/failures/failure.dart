@@ -85,6 +85,14 @@ class CacheFailure extends Failure {
   const CacheFailure([super.message = 'No se ha podido leer el almacén local.']);
 }
 
+/// Lo descargado no es lo publicado: se descarta antes de instalarlo.
+class IntegrityFailure extends Failure {
+  const IntegrityFailure([
+    super.message =
+        'La descarga no coincide con el archivo publicado. Vuelve a intentarlo.',
+  ]);
+}
+
 class UnknownFailure extends Failure {
   const UnknownFailure([super.message = 'Ha ocurrido un error inesperado.']);
 }

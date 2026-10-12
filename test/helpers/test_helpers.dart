@@ -97,6 +97,7 @@ AppRelease buildAppRelease({
   String notes = '',
   String? downloadUrl,
   String? assetName,
+  String? sha256,
   DateTime? publishedAt,
 }) {
   final name = assetName ?? 'comfylist-$version+$build.apk';
@@ -106,6 +107,7 @@ AppRelease buildAppRelease({
     notes: notes,
     downloadUrl: downloadUrl ?? 'https://example.test/$name',
     assetName: name,
+    sha256: sha256,
     publishedAt: publishedAt,
   );
 }
