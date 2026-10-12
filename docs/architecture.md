@@ -41,7 +41,7 @@ Las reglas de `firestore.rules` exigen `request.auth.uid == uid` y correo verifi
 
 | Tabla | Contenido |
 | --- | --- |
-| `settings_table` (singleton `id=1`) | Preferencias locales: tema, notificaciones, ordenación, gestos, formato horario, márgenes de aviso y retención de la papelera |
+| `settings_table` (singleton `id=1`) | Preferencias locales: tema, notificaciones, ordenación, gestos, formato horario, márgenes de aviso, retención de la papelera y el estado del comprobador de actualizaciones (última comprobación y versión descartada) |
 | `account_cache_table` | Perfil para pintar algo sin red (`uid`, `email`, `displayName?`, `cachedAt`); la fuente real es Identity Toolkit |
 | `trash_pending_table` | Restauraciones que no pudieron quitarse de Firestore; se reintentan antes de cada lectura de la papelera |
 

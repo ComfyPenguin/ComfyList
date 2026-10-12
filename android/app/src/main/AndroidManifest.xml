@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Permisos requeridos -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Actualizaciones: el instalador del sistema solo acepta paquetes ajenos
+         a la tienda si quien los manda tiene este permiso. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <!-- Recordatorios de citas: el plugin reprograma los avisos tras un
          reinicio, y con la alarma exacta concedida el aviso no se retrasa.
@@ -17,6 +20,17 @@
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules">
+        <!-- El APK descargado va al instalador como content:// de este
+             FileProvider (ver `installApk` en MainActivity). -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
         <activity
             android:name=".MainActivity"
             android:exported="true"

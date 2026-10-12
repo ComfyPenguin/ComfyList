@@ -40,4 +40,10 @@ class DriftSettingsLocal {
 
   Future<void> updateTrashRetentionDays(int days) =>
       _dao.updateTrashRetentionDays(days);
+
+  Future<void> updateSkippedUpdateBuild(int build) =>
+      _dao.updateSkippedUpdateBuild(build);
+
+  Future<void> updateLastUpdateCheckAt(DateTime at) =>
+      _dao.updateLastUpdateCheckAt(at);
 }

@@ -86,6 +86,12 @@ class SettingsNotifier extends Notifier<SettingsState> {
 
   Future<void> setTrashRetentionDays(int days) =>
       ref.read(settingsRepositoryProvider).setTrashRetentionDays(days);
+
+  Future<void> setSkippedUpdateBuild(int build) =>
+      ref.read(settingsRepositoryProvider).setSkippedUpdateBuild(build);
+
+  Future<void> setLastUpdateCheckAt(DateTime at) =>
+      ref.read(settingsRepositoryProvider).setLastUpdateCheckAt(at);
 }
 
 final settingsProvider =

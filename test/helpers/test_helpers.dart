@@ -5,6 +5,7 @@ import 'package:comfy_list/features/auth/domain/entities/auth_user.dart';
 import 'package:comfy_list/features/settings/domain/entities/app_settings.dart';
 import 'package:comfy_list/features/todo_lists/domain/entities/todo_list.dart';
 import 'package:comfy_list/features/todos/domain/entities/todo.dart';
+import 'package:comfy_list/features/updates/domain/entities/app_release.dart';
 import 'package:comfy_list/shared/core/failures/failure.dart';
 import 'package:comfy_list/shared/data/local/app_database.dart';
 import 'package:comfy_list/shared/data/remote/firestore_value_codec.dart';
@@ -89,6 +90,28 @@ Appointment buildAppointment({
   );
 }
 
+/// Release publicada, tal como la deja `tool/release.dart` en GitHub.
+AppRelease buildAppRelease({
+  String version = '2026.10.11',
+  int build = 231,
+  String notes = '',
+  String? downloadUrl,
+  String? assetName,
+  String? sha256,
+  DateTime? publishedAt,
+}) {
+  final name = assetName ?? 'comfylist-$version+$build.apk';
+  return AppRelease(
+    version: version,
+    build: build,
+    notes: notes,
+    downloadUrl: downloadUrl ?? 'https://example.test/$name',
+    assetName: name,
+    sha256: sha256,
+    publishedAt: publishedAt,
+  );
+}
+
 AppSettings buildAppSettings({
   ThemeMode? themeMode,
   bool? notificationsEnabled,
@@ -101,6 +124,8 @@ AppSettings buildAppSettings({
   List<int>? appointmentReminderMinutes,
   bool? longPressHintSeen,
   int? trashRetentionDays,
+  int? skippedUpdateBuild,
+  DateTime? lastUpdateCheckAt,
 }) {
   return AppSettings(
     themeMode: themeMode ?? AppSettings.defaults.themeMode,
@@ -126,6 +151,9 @@ AppSettings buildAppSettings({
         longPressHintSeen ?? AppSettings.defaults.longPressHintSeen,
     trashRetentionDays:
         trashRetentionDays ?? AppSettings.defaults.trashRetentionDays,
+    skippedUpdateBuild:
+        skippedUpdateBuild ?? AppSettings.defaults.skippedUpdateBuild,
+    lastUpdateCheckAt: lastUpdateCheckAt,
   );
 }
 
@@ -144,6 +172,8 @@ SettingsRow buildSettingsRow({
   String appointmentReminderMinutes = '30',
   bool longPressHintSeen = false,
   int trashRetentionDays = defaultTrashRetentionDays,
+  int skippedUpdateBuild = noSkippedUpdateBuild,
+  DateTime? lastUpdateCheckAt,
   DateTime? updatedAt,
 }) {
   return SettingsRow(
@@ -159,6 +189,8 @@ SettingsRow buildSettingsRow({
     appointmentReminderMinutes: appointmentReminderMinutes,
     longPressHintSeen: longPressHintSeen,
     trashRetentionDays: trashRetentionDays,
+    skippedUpdateBuild: skippedUpdateBuild,
+    lastUpdateCheckAt: lastUpdateCheckAt,
     updatedAt: updatedAt ?? DateTime.now().toUtc(),
   );
 }

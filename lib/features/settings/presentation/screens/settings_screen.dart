@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../routing/routes.dart';
+import '../../../updates/presentation/providers/app_updates_provider.dart';
 import '../../../../shared/core/theme/app_radius.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_stroke.dart';
@@ -26,6 +27,7 @@ import '../widgets/settings_tile.dart';
 import '../widgets/theme_mode_selector.dart';
 import '../widgets/today_on_top_toggle.dart';
 import '../widgets/trash_retention_selector.dart';
+import '../widgets/update_check_tile.dart';
 
 /// Pantalla de ajustes. Vive dentro del [AppShell], que pone el título y la
 /// flecha atrás en su TopBar.
@@ -161,6 +163,11 @@ class SettingsScreen extends ConsumerWidget {
         const SizedBox(height: AppSpacing.xxxl),
         _SectionHeader(label: 'TAREAS', style: sectionStyle),
         const CompletedToBottomToggle(),
+        if (ref.watch(updateCheckSupportedProvider)) ...[
+          const SizedBox(height: AppSpacing.xxxl),
+          _SectionHeader(label: 'APLICACIÓN', style: sectionStyle),
+          const UpdateCheckTile(),
+        ],
         const _AppVersionFooter(),
       ],
     );

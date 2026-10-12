@@ -28,6 +28,8 @@ class SettingsRepositoryImpl implements SettingsRepository {
       trashRetentionDays: AppSettings.parseTrashRetentionDays(
         row.trashRetentionDays,
       ),
+      skippedUpdateBuild: row.skippedUpdateBuild,
+      lastUpdateCheckAt: row.lastUpdateCheckAt,
     );
   }
 
@@ -50,6 +52,8 @@ class SettingsRepositoryImpl implements SettingsRepository {
             trashRetentionDays: AppSettings.parseTrashRetentionDays(
               row.trashRetentionDays,
             ),
+            skippedUpdateBuild: row.skippedUpdateBuild,
+            lastUpdateCheckAt: row.lastUpdateCheckAt,
           ),
         );
   }
@@ -109,5 +113,15 @@ class SettingsRepositoryImpl implements SettingsRepository {
   @override
   Future<void> setTrashRetentionDays(int days) {
     return _local.updateTrashRetentionDays(days);
+  }
+
+  @override
+  Future<void> setSkippedUpdateBuild(int build) {
+    return _local.updateSkippedUpdateBuild(build);
+  }
+
+  @override
+  Future<void> setLastUpdateCheckAt(DateTime at) {
+    return _local.updateLastUpdateCheckAt(at);
   }
 }

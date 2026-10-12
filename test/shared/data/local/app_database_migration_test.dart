@@ -64,6 +64,27 @@ CREATE TABLE settings_table (
 );
 ''';
 
+/// `settings_table` tal y como quedó en la v13, la última antes de que la app
+/// supiera actualizarse sola.
+const _v13SettingsTable = '''
+CREATE TABLE settings_table (
+  id INTEGER NOT NULL DEFAULT 1,
+  theme_mode TEXT NOT NULL DEFAULT 'system',
+  notifications_enabled INTEGER NOT NULL DEFAULT 0,
+  appointments_completion_enabled INTEGER NOT NULL DEFAULT 0,
+  completed_to_bottom INTEGER NOT NULL DEFAULT 1,
+  appointments_completed_to_bottom INTEGER NOT NULL DEFAULT 1,
+  appointments_today_on_top INTEGER NOT NULL DEFAULT 1,
+  invert_swipe_actions INTEGER NOT NULL DEFAULT 0,
+  use24_hour_format INTEGER NOT NULL DEFAULT 1,
+  appointment_reminder_minutes TEXT NOT NULL DEFAULT '30',
+  long_press_hint_seen INTEGER NOT NULL DEFAULT 0,
+  trash_retention_days INTEGER NOT NULL DEFAULT 30,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (id)
+);
+''';
+
 void main() {
   late AppDatabase db;
 
@@ -129,6 +150,29 @@ void main() {
     return columns.firstWhere(
       (row) => row.read<String>('name') == 'appointment_reminder_minutes',
     );
+  }
+
+  /// Deja la base como una instalación de la v13: la tabla de ajustes sin las
+  /// columnas del comprobador de actualizaciones y la fila del usuario.
+  ///
+  /// La tabla de la v11 y la de la v12 son la misma que esta (entre la v11 y la
+  /// v13 no cambió ninguna columna), así que también sirve para sus migraciones.
+  Future<void> seedV13() async {
+    await db.settingsDao.getOrCreate();
+    await db.customStatement('DROP TABLE settings_table');
+    await db.customStatement(_v13SettingsTable);
+    await db.customStatement(
+      'INSERT INTO settings_table (id, theme_mode, updated_at) '
+      "VALUES (1, 'dark', 0);",
+    );
+  }
+
+  /// Nombres de las columnas que SQLite dice que tiene `settings_table`.
+  Future<List<String>> settingsColumns() async {
+    final columns = await db
+        .customSelect('PRAGMA table_info(settings_table);')
+        .get();
+    return [for (final column in columns) column.read<String>('name')];
   }
 
   group('migración de la v8 a la v9', () {
@@ -269,7 +313,7 @@ void main() {
   group('migración de la v11 a la v12', () {
     /// Deja la fila como la dejaba la v11: con «nunca» de fábrica.
     Future<void> seedV11() async {
-      await db.settingsDao.getOrCreate();
+      await seedV13();
       await db.customStatement(
         'UPDATE settings_table SET trash_retention_days = 0 WHERE id = 1',
       );
@@ -286,7 +330,11 @@ void main() {
 
     test('un plazo ya elegido se respeta', () async {
       await seedV11();
-      await db.settingsDao.updateTrashRetentionDays(7);
+      // A mano y no con el DAO: la tabla de la v11 todavía no tiene las
+      // columnas que el DAO espera leer.
+      await db.customStatement(
+        'UPDATE settings_table SET trash_retention_days = 7 WHERE id = 1',
+      );
 
       await db.migration.onUpgrade(Migrator(db), 11, 12);
 
@@ -298,7 +346,7 @@ void main() {
   group('migración de la v12 a la v13', () {
     /// Deja la base como una instalación de la v12, sin la tabla de pendientes.
     Future<void> seedV12() async {
-      await db.settingsDao.getOrCreate();
+      await seedV13();
       await db.customStatement('DROP TABLE trash_pending_table');
     }
 
@@ -335,12 +383,59 @@ void main() {
 
     test('conserva los ajustes guardados', () async {
       await seedV12();
-      await db.settingsDao.updateTrashRetentionDays(7);
+      // A mano y no con el DAO: la tabla de la v12 todavía no tiene las
+      // columnas que el DAO espera leer.
+      await db.customStatement(
+        'UPDATE settings_table SET trash_retention_days = 7 WHERE id = 1',
+      );
 
       await db.migration.onUpgrade(Migrator(db), 12, 13);
 
       final row = await db.settingsDao.getOrCreate();
       expect(row.trashRetentionDays, 7);
+    });
+  });
+
+  group('migración de la v13 a la v14', () {
+    test('añade las columnas del comprobador de actualizaciones', () async {
+      await seedV13();
+
+      await db.migration.onUpgrade(Migrator(db), 13, 14);
+
+      expect(
+        await settingsColumns(),
+        containsAll(['skipped_update_build', 'last_update_check_at']),
+      );
+    });
+
+    test('una instalación recién migrada no tiene nada descartado', () async {
+      await seedV13();
+
+      await db.migration.onUpgrade(Migrator(db), 13, 14);
+
+      final row = await db.settingsDao.getOrCreate();
+      expect(row.skippedUpdateBuild, noSkippedUpdateBuild);
+      expect(row.lastUpdateCheckAt, equals(null));
+      expect(row.themeMode, 'dark');
+    });
+
+    test('quien venía de la v8 llega a la v14 sin columnas de más', () async {
+      await seedV8(reminderMinutes: 30);
+
+      await db.migration.onUpgrade(Migrator(db), 8, 14);
+
+      expect(
+        await settingsColumns(),
+        containsAll([
+          'skipped_update_build',
+          'last_update_check_at',
+          'long_press_hint_seen',
+          'trash_retention_days',
+        ]),
+      );
+      final row = await db.settingsDao.getOrCreate();
+      expect(row.skippedUpdateBuild, noSkippedUpdateBuild);
+      expect(row.appointmentReminderMinutes, '30');
     });
   });
 }

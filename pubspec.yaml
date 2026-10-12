@@ -5,6 +5,9 @@ version: 2026.10.11+231
 
 environment:
   sdk: ^3.11.5
+  # Versión exacta del SDK: Dependabot la usa para resolver el lockfile y el CI
+  # la lee (flutter-version-file), así que solo hay un pin.
+  flutter: 3.44.4
 
 dependencies:
   flutter:
@@ -54,6 +57,9 @@ dependencies:
 
   # Versión instalada (pie de Ajustes)
   package_info_plus: ^10.2.2
+
+  # SHA-256 del APK descargado antes de instalarlo
+  crypto: ^3.0.7
 
   # Fechas localizadas
   intl: ^0.20.2

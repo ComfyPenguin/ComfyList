@@ -142,4 +142,25 @@ class SettingsDao extends DatabaseAccessor<AppDatabase> with _$SettingsDaoMixin 
       ),
     );
   }
+
+  /// [build] es 0 cuando no se ha descartado ninguna versión.
+  Future<void> updateSkippedUpdateBuild(int build) async {
+    await getOrCreate();
+    await (update(settingsTable)..where((t) => t.id.equals(1))).write(
+      SettingsTableCompanion(
+        skippedUpdateBuild: Value(build),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+  }
+
+  Future<void> updateLastUpdateCheckAt(DateTime at) async {
+    await getOrCreate();
+    await (update(settingsTable)..where((t) => t.id.equals(1))).write(
+      SettingsTableCompanion(
+        lastUpdateCheckAt: Value(at.toUtc()),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+  }
 }

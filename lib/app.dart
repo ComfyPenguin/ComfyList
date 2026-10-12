@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'features/appointments/presentation/providers/appointment_reminders_provider.dart';
 import 'features/settings/presentation/providers/settings_provider.dart';
 import 'features/trash/presentation/providers/trash_provider.dart';
+import 'features/updates/presentation/providers/app_updates_provider.dart';
 import 'routing/app_router.dart';
 import 'shared/core/lifecycle/app_lifecycle_controller.dart';
 import 'shared/core/theme/app_theme.dart';
@@ -19,6 +20,7 @@ class ComfyListApp extends ConsumerWidget {
     ref.watch(appLifecycleControllerProvider);
     ref.watch(appointmentRemindersProvider);
     ref.watch(trashPurgeProvider);
+    ref.watch(appUpdatesProvider);
 
     return MaterialApp.router(
       title: 'Comfy List',

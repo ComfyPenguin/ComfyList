@@ -31,6 +31,8 @@ void main() {
     String appointmentReminderMinutes = '30',
     bool longPressHintSeen = false,
     int trashRetentionDays = defaultTrashRetentionDays,
+    int skippedUpdateBuild = noSkippedUpdateBuild,
+    DateTime? lastUpdateCheckAt,
   }) {
     return SettingsRow(
       id: 1,
@@ -45,6 +47,8 @@ void main() {
       appointmentReminderMinutes: appointmentReminderMinutes,
       longPressHintSeen: longPressHintSeen,
       trashRetentionDays: trashRetentionDays,
+      skippedUpdateBuild: skippedUpdateBuild,
+      lastUpdateCheckAt: lastUpdateCheckAt,
       updatedAt: DateTime.utc(2026, 6, 30, 12),
     );
   }
@@ -66,6 +70,20 @@ void main() {
       expect(result.appointmentReminderMinutes, [30]);
       expect(result.longPressHintSeen, isFalse);
       expect(result.trashRetentionDays, 30);
+      expect(result.skippedUpdateBuild, noSkippedUpdateBuild);
+      expect(result.lastUpdateCheckAt, isNull);
+    });
+
+    test('copia la versión descartada y la última comprobación', () async {
+      final checkedAt = DateTime.utc(2026, 10, 12, 9);
+      when(() => local.getOrCreate()).thenAnswer(
+        (_) async => buildRow(skippedUpdateBuild: 231, lastUpdateCheckAt: checkedAt),
+      );
+
+      final result = await repo.load();
+
+      expect(result.skippedUpdateBuild, 231);
+      expect(result.lastUpdateCheckAt, checkedAt);
     });
 
     test('lee los días que aguanta la papelera', () async {
