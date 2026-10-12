@@ -4,7 +4,7 @@ Guía para montar el entorno y trabajar en ComfyList. Para saber qué hace la ap
 
 ## Requisitos
 
-- Flutter 3.44.4 (canal stable)
+- Flutter: la versión exacta de `environment.flutter` en `pubspec.yaml` (hoy 3.44.4, canal stable) — el CI la lee de ahí
 - Android SDK configurado (para compilar y lanzar en Android)
 
 ## Empezar

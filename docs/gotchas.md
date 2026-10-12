@@ -13,7 +13,7 @@ Trampas y decisiones no obvias del proyecto, por área. `AGENTS.md` solo enlaza 
 - **Config de Firebase fuera del repo**: `android/app/google-services.json` y `lib/firebase_options.dart` los genera `flutterfire configure` (config en `firebase.json`) y están ignorados por git. En un clon nuevo hay que generarlos o pedirlos: sin `google-services.json` el build de Android falla (lo exige el plugin `com.google.gms.google-services`).
 - **Recuperar `google-services.json` sin `flutterfire`**: con el CLI de Firebase logueado, `firebase apps:sdkconfig ANDROID <appId> --project comfy-list` (el `appId` sale de `firebase apps:list`) imprime el archivo entero; redirigirlo crea uno válido.
 - **Reglas de Firestore**: viven en `firestore.rules` y se despliegan con `firebase deploy --only firestore:rules`. Son el único control de acceso real (la app habla con Firestore REST y la apiKey es pública): exigen `request.auth.uid == uid` sobre todo `users/{uid}/**` y `request.auth.token.email_verified == true`.
-- **El Dart que manda es el de Flutter 3.44.4**: Dependabot resuelve el lockfile con el suyo (más nuevo) y cada PR suyo rompe la comprobación del lockfile hasta regenerarlo en local. Ese Flutter pincha `meta 1.18.0` a través de `flutter_test`, así que `build_runner` se queda en `^2.15.1`: a partir de 2.16.1 exige `analyzer ≥13.3`, que pide `meta ^1.18.3`. Un salto de `drift` que arrastre `drift_dev` cambia el código generado: `dart run build_runner build` va en el mismo commit.
+- **`environment.flutter` es el único pin del SDK**: Dependabot infiere el release de Flutter que cumple `environment.sdk` y `environment.flutter` y resuelve el lockfile con ese Flutter (y su Dart), así que el CI lo lee de ahí mismo (`flutter-version-file: pubspec.yaml`) y no hay dos sitios que desincronizar. Sin ese campo cogía el último stable (3.47.7, Dart 3.13.5) y cada PR suyo rompía `flutter pub get --enforce-lockfile`, porque su `flutter_test` permite `meta 1.19.0`; el de 3.44.4 lo pincha a `1.18.0`. Ese `meta` fija también `build_runner` en `^2.15.1`: a partir de 2.16.1 exige `analyzer ≥13.3`, que pide `meta ^1.18.3`. Un salto de `drift` que arrastre `drift_dev` cambia el código generado: `dart run build_runner build` va en el mismo commit.
 
 ## Auth
 
@@ -64,7 +64,7 @@ Trampas y decisiones no obvias del proyecto, por área. `AGENTS.md` solo enlaza 
 - **DB en memoria**: `AppDatabase.forTesting(NativeDatabase.memory())`, inyectada con `ProviderScope` + `overrideWithValue`.
 - **`createTestContainer`** la inyecta sola al sobreescribir `FirestoreTrashRemote`, porque el repo real de la papelera usa la DB para los pendientes.
 - **`sqlite3` 3.x trae su binario por native assets** (hook cacheado en `.dart_tool/hooks_runner`): ni en local ni en CI hace falta instalar la librería de SQLite del sistema.
-- **El CI exige el lockfile al día**: `flutter pub get --enforce-lockfile` falla si un cambio en `pubspec.yaml` no va acompañado de su `pubspec.lock` actualizado.
+- **El CI exige el lockfile al día**: `flutter pub get --enforce-lockfile` falla si un cambio en `pubspec.yaml` no va acompañado de su `pubspec.lock` actualizado, y también si el lockfile se resolvió con otro Flutter (una versión de un paquete que el SDK fijado no admite).
 
 ## Releases
 
