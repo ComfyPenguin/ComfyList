@@ -21,7 +21,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -88,6 +88,8 @@ class AppDatabase extends _$AppDatabase {
                 newColumns: [
                   settingsTable.longPressHintSeen,
                   settingsTable.trashRetentionDays,
+                  settingsTable.skippedUpdateBuild,
+                  settingsTable.lastUpdateCheckAt,
                 ],
               ),
             );
@@ -119,6 +121,19 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 13) {
             await migrator.createTable(trashPendingTable);
+          }
+          // Quien viene de la v8 o antes ya recibe las columnas con la
+          // recreación de la tabla de la v9; solo de la v9 en adelante llegan
+          // sin ellas.
+          if (from >= 9 && from < 14) {
+            await migrator.addColumn(
+              settingsTable,
+              settingsTable.skippedUpdateBuild,
+            );
+            await migrator.addColumn(
+              settingsTable,
+              settingsTable.lastUpdateCheckAt,
+            );
           }
         },
       );

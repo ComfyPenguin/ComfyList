@@ -35,4 +35,10 @@ abstract class SettingsRepository {
   /// Días que aguanta un borrado en la papelera antes de vaciarla sola; `0` es
   /// «nunca».
   Future<void> setTrashRetentionDays(int days);
+
+  /// Nº de build descartado con «Ahora no» ([noSkippedUpdateBuild] si ninguno).
+  Future<void> setSkippedUpdateBuild(int build);
+
+  /// Marca cuándo se comprobó por última vez si hay versión nueva.
+  Future<void> setLastUpdateCheckAt(DateTime at);
 }

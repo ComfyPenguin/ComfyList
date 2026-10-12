@@ -1,4 +1,5 @@
 import 'package:comfy_list/features/settings/data/datasources/drift_settings_local.dart';
+import 'package:comfy_list/features/settings/domain/entities/app_settings.dart';
 import 'package:comfy_list/shared/data/local/app_database.dart';
 import 'package:comfy_list/shared/data/local/daos/settings_dao.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,6 +31,8 @@ void main() {
         appointmentReminderMinutes: '30',
         longPressHintSeen: false,
         trashRetentionDays: 0,
+        skippedUpdateBuild: noSkippedUpdateBuild,
+        lastUpdateCheckAt: null,
         updatedAt: DateTime.utc(2026, 6, 30, 12),
       );
       when(() => dao.getOrCreate()).thenAnswer((_) async => row);

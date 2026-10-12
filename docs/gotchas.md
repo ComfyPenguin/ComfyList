@@ -73,6 +73,18 @@ Trampas y decisiones no obvias del proyecto, por área. `AGENTS.md` solo enlaza 
 - **Firma y Firebase llegan por secrets**: `ANDROID_KEYSTORE_B64`, `ANDROID_STORE_PASSWORD`, `ANDROID_KEY_PASSWORD`, `ANDROID_KEY_ALIAS` y `GOOGLE_SERVICES_JSON_B64`. En local firma igual `android/key.properties` con `android/app/upload-keystore.jks` (ambos ignorados por git); sin ellos el release cae a la debug key. Guarda copia del `.jks` y de las contraseñas: sin eso no hay actualizaciones publicables.
 - **Dry-run local**: `dart tool/release.dart plan` imprime la próxima versión sin tocar nada.
 
+## Actualizaciones
+
+- **El comprobador necesita el repo público**: la app lee `api.github.com/repos/ComfyPenguin/ComfyList/releases/latest` sin token y baja el APK del asset. Con el repo privado no hay forma de ver ni descargar nada (404), y meter un token de GitHub en el APK repartido sería regalar acceso al repo. Sin releases publicadas tampoco: el feed es lo que publica `.github/workflows/release.yml`, que no necesita ningún cambio.
+- **La versión que se compara es el número de commits**: el último segmento del tag (`v2026.10.11.231` → 231), que es el mismo número que Android guarda como `versionCode`, contra el `buildNumber` del paquete instalado. Si el tag no sigue ese formato, se saca del nombre del APK (`comfylist-2026.10.11+231.apk`); el tag antiguo `v1.0.0` no se puede comparar y se ignora. Un build local por delante de la última release queda «al día»: nunca se ofrece bajar.
+- **Se instala el `.apk`, jamás el `.aab`** (el AAB es para Play), y con el `browser_download_url` que devuelve la API: el `+` del nombre viaja codificado como `%2B` y construir la URL a mano lo rompe.
+- **Android no instala en silencio**: hace falta `REQUEST_INSTALL_PACKAGES`, un `FileProvider` propio (`file_paths.xml`, sobre el `content://`) y el diálogo del sistema, que confirma quien usa la app. El puente es el canal `comfy_list/updates` de `MainActivity`. Si la app instalada lleva otra firma (un `flutter run` con la debug key frente al APK de release), el instalador rechaza el paquete: no hay nada que arreglar desde la app.
+- **Dos columnas nuevas en `settings_table`** (v14 de Drift): `last_update_check_at` (la comprobación automática va una vez al día) y `skipped_update_build` (el «Ahora no» por build). Quien venga de la v8 o antes las recibe con la recreación de la tabla de la v9, así que van en su `newColumns` y su `addColumn` se limita a `from >= 9`.
+- **El arranque automático va con `ref.listen`, no con `watch`**: el provider del comprobador no se vuelve a leer solo, así que un `watch` a secas dejaría la comprobación sin disparar hasta que alguien lo leyera otra vez.
+- **El aviso se marca al leerse** (`UpdatePromptNotifier`): el diálogo sale una sola vez por build y sesión, y en Ajustes la fila sigue anunciando la versión nueva aunque se haya descartado el aviso.
+- **Ajustes solo enseña el comprobador donde hay APK que instalar** (`updateCheckSupportedProvider`, Android): en escritorio, web e iOS la sección no se monta.
+- **Override de depuración**: `--dart-define=APP_UPDATES_FAKE_INSTALLED_BUILD=230` hace que la app se crea una build anterior y dispara el flujo entero (modal, descarga e instalador) sin publicar nada. Solo para `flutter run` en un móvil: con ese define puesto, el test del build instalado falla a propósito.
+
 ## Ramas
 
 - **Fusión en `develop` con `git merge --no-ff`** (para dejar el commit de merge como en el resto del historial) y borrado después, en local (`git branch -d`) y en remoto (`git push origin --delete <rama>`).

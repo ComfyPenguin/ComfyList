@@ -21,4 +21,19 @@ void main() {
       '2026.10.11.221',
     );
   });
+
+  test('el build instalado es el número de commits del paquete', () async {
+    PackageInfo.setMockInitialValues(
+      appName: 'ComfyList',
+      packageName: 'andypr.comfylist',
+      version: '2026.10.11',
+      buildNumber: '221',
+      buildSignature: '',
+    );
+
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    expect(await container.read(installedBuildProvider.future), 221);
+  });
 }

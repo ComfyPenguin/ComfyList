@@ -176,6 +176,29 @@ class $SettingsTableTable extends SettingsTable
     requiredDuringInsert: false,
     defaultValue: const Constant(30),
   );
+  static const VerificationMeta _skippedUpdateBuildMeta =
+      const VerificationMeta('skippedUpdateBuild');
+  @override
+  late final GeneratedColumn<int> skippedUpdateBuild = GeneratedColumn<int>(
+    'skipped_update_build',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _lastUpdateCheckAtMeta = const VerificationMeta(
+    'lastUpdateCheckAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastUpdateCheckAt =
+      GeneratedColumn<DateTime>(
+        'last_update_check_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
   );
@@ -201,6 +224,8 @@ class $SettingsTableTable extends SettingsTable
     appointmentReminderMinutes,
     longPressHintSeen,
     trashRetentionDays,
+    skippedUpdateBuild,
+    lastUpdateCheckAt,
     updatedAt,
   ];
   @override
@@ -314,6 +339,24 @@ class $SettingsTableTable extends SettingsTable
         ),
       );
     }
+    if (data.containsKey('skipped_update_build')) {
+      context.handle(
+        _skippedUpdateBuildMeta,
+        skippedUpdateBuild.isAcceptableOrUnknown(
+          data['skipped_update_build']!,
+          _skippedUpdateBuildMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_update_check_at')) {
+      context.handle(
+        _lastUpdateCheckAtMeta,
+        lastUpdateCheckAt.isAcceptableOrUnknown(
+          data['last_update_check_at']!,
+          _lastUpdateCheckAtMeta,
+        ),
+      );
+    }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
@@ -379,6 +422,14 @@ class $SettingsTableTable extends SettingsTable
         DriftSqlType.int,
         data['${effectivePrefix}trash_retention_days'],
       )!,
+      skippedUpdateBuild: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}skipped_update_build'],
+      )!,
+      lastUpdateCheckAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_update_check_at'],
+      ),
       updatedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
@@ -432,6 +483,14 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
   /// Días que aguanta un borrado en la papelera antes de que la app la vacíe
   /// sola. `0` es «nunca»; de fábrica, un mes.
   final int trashRetentionDays;
+
+  /// Nº de build que se descartó con «Ahora no»: sin recordarlo, el aviso de
+  /// versión nueva volvería en cada arranque. `0` es «ninguna».
+  final int skippedUpdateBuild;
+
+  /// Última comprobación de versiones, para no preguntar a GitHub en cada
+  /// arranque.
+  final DateTime? lastUpdateCheckAt;
   final DateTime updatedAt;
   const SettingsRow({
     required this.id,
@@ -446,6 +505,8 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     required this.appointmentReminderMinutes,
     required this.longPressHintSeen,
     required this.trashRetentionDays,
+    required this.skippedUpdateBuild,
+    this.lastUpdateCheckAt,
     required this.updatedAt,
   });
   @override
@@ -469,6 +530,10 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     );
     map['long_press_hint_seen'] = Variable<bool>(longPressHintSeen);
     map['trash_retention_days'] = Variable<int>(trashRetentionDays);
+    map['skipped_update_build'] = Variable<int>(skippedUpdateBuild);
+    if (!nullToAbsent || lastUpdateCheckAt != null) {
+      map['last_update_check_at'] = Variable<DateTime>(lastUpdateCheckAt);
+    }
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
   }
@@ -487,6 +552,10 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       appointmentReminderMinutes: Value(appointmentReminderMinutes),
       longPressHintSeen: Value(longPressHintSeen),
       trashRetentionDays: Value(trashRetentionDays),
+      skippedUpdateBuild: Value(skippedUpdateBuild),
+      lastUpdateCheckAt: lastUpdateCheckAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastUpdateCheckAt),
       updatedAt: Value(updatedAt),
     );
   }
@@ -519,6 +588,10 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       ),
       longPressHintSeen: serializer.fromJson<bool>(json['longPressHintSeen']),
       trashRetentionDays: serializer.fromJson<int>(json['trashRetentionDays']),
+      skippedUpdateBuild: serializer.fromJson<int>(json['skippedUpdateBuild']),
+      lastUpdateCheckAt: serializer.fromJson<DateTime?>(
+        json['lastUpdateCheckAt'],
+      ),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
   }
@@ -544,6 +617,8 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       ),
       'longPressHintSeen': serializer.toJson<bool>(longPressHintSeen),
       'trashRetentionDays': serializer.toJson<int>(trashRetentionDays),
+      'skippedUpdateBuild': serializer.toJson<int>(skippedUpdateBuild),
+      'lastUpdateCheckAt': serializer.toJson<DateTime?>(lastUpdateCheckAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
   }
@@ -561,6 +636,8 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     String? appointmentReminderMinutes,
     bool? longPressHintSeen,
     int? trashRetentionDays,
+    int? skippedUpdateBuild,
+    Value<DateTime?> lastUpdateCheckAt = const Value.absent(),
     DateTime? updatedAt,
   }) => SettingsRow(
     id: id ?? this.id,
@@ -579,6 +656,10 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
         appointmentReminderMinutes ?? this.appointmentReminderMinutes,
     longPressHintSeen: longPressHintSeen ?? this.longPressHintSeen,
     trashRetentionDays: trashRetentionDays ?? this.trashRetentionDays,
+    skippedUpdateBuild: skippedUpdateBuild ?? this.skippedUpdateBuild,
+    lastUpdateCheckAt: lastUpdateCheckAt.present
+        ? lastUpdateCheckAt.value
+        : this.lastUpdateCheckAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
   SettingsRow copyWithCompanion(SettingsTableCompanion data) {
@@ -615,6 +696,12 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       trashRetentionDays: data.trashRetentionDays.present
           ? data.trashRetentionDays.value
           : this.trashRetentionDays,
+      skippedUpdateBuild: data.skippedUpdateBuild.present
+          ? data.skippedUpdateBuild.value
+          : this.skippedUpdateBuild,
+      lastUpdateCheckAt: data.lastUpdateCheckAt.present
+          ? data.lastUpdateCheckAt.value
+          : this.lastUpdateCheckAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
@@ -638,6 +725,8 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
           ..write('appointmentReminderMinutes: $appointmentReminderMinutes, ')
           ..write('longPressHintSeen: $longPressHintSeen, ')
           ..write('trashRetentionDays: $trashRetentionDays, ')
+          ..write('skippedUpdateBuild: $skippedUpdateBuild, ')
+          ..write('lastUpdateCheckAt: $lastUpdateCheckAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
@@ -657,6 +746,8 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     appointmentReminderMinutes,
     longPressHintSeen,
     trashRetentionDays,
+    skippedUpdateBuild,
+    lastUpdateCheckAt,
     updatedAt,
   );
   @override
@@ -677,6 +768,8 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
           other.appointmentReminderMinutes == this.appointmentReminderMinutes &&
           other.longPressHintSeen == this.longPressHintSeen &&
           other.trashRetentionDays == this.trashRetentionDays &&
+          other.skippedUpdateBuild == this.skippedUpdateBuild &&
+          other.lastUpdateCheckAt == this.lastUpdateCheckAt &&
           other.updatedAt == this.updatedAt);
 }
 
@@ -693,6 +786,8 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
   final Value<String> appointmentReminderMinutes;
   final Value<bool> longPressHintSeen;
   final Value<int> trashRetentionDays;
+  final Value<int> skippedUpdateBuild;
+  final Value<DateTime?> lastUpdateCheckAt;
   final Value<DateTime> updatedAt;
   const SettingsTableCompanion({
     this.id = const Value.absent(),
@@ -707,6 +802,8 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     this.appointmentReminderMinutes = const Value.absent(),
     this.longPressHintSeen = const Value.absent(),
     this.trashRetentionDays = const Value.absent(),
+    this.skippedUpdateBuild = const Value.absent(),
+    this.lastUpdateCheckAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
   SettingsTableCompanion.insert({
@@ -722,6 +819,8 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     this.appointmentReminderMinutes = const Value.absent(),
     this.longPressHintSeen = const Value.absent(),
     this.trashRetentionDays = const Value.absent(),
+    this.skippedUpdateBuild = const Value.absent(),
+    this.lastUpdateCheckAt = const Value.absent(),
     required DateTime updatedAt,
   }) : updatedAt = Value(updatedAt);
   static Insertable<SettingsRow> custom({
@@ -737,6 +836,8 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     Expression<String>? appointmentReminderMinutes,
     Expression<bool>? longPressHintSeen,
     Expression<int>? trashRetentionDays,
+    Expression<int>? skippedUpdateBuild,
+    Expression<DateTime>? lastUpdateCheckAt,
     Expression<DateTime>? updatedAt,
   }) {
     return RawValuesInsertable({
@@ -759,6 +860,9 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
       if (longPressHintSeen != null) 'long_press_hint_seen': longPressHintSeen,
       if (trashRetentionDays != null)
         'trash_retention_days': trashRetentionDays,
+      if (skippedUpdateBuild != null)
+        'skipped_update_build': skippedUpdateBuild,
+      if (lastUpdateCheckAt != null) 'last_update_check_at': lastUpdateCheckAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
   }
@@ -776,6 +880,8 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     Value<String>? appointmentReminderMinutes,
     Value<bool>? longPressHintSeen,
     Value<int>? trashRetentionDays,
+    Value<int>? skippedUpdateBuild,
+    Value<DateTime?>? lastUpdateCheckAt,
     Value<DateTime>? updatedAt,
   }) {
     return SettingsTableCompanion(
@@ -795,6 +901,8 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
           appointmentReminderMinutes ?? this.appointmentReminderMinutes,
       longPressHintSeen: longPressHintSeen ?? this.longPressHintSeen,
       trashRetentionDays: trashRetentionDays ?? this.trashRetentionDays,
+      skippedUpdateBuild: skippedUpdateBuild ?? this.skippedUpdateBuild,
+      lastUpdateCheckAt: lastUpdateCheckAt ?? this.lastUpdateCheckAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
@@ -846,6 +954,12 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     if (trashRetentionDays.present) {
       map['trash_retention_days'] = Variable<int>(trashRetentionDays.value);
     }
+    if (skippedUpdateBuild.present) {
+      map['skipped_update_build'] = Variable<int>(skippedUpdateBuild.value);
+    }
+    if (lastUpdateCheckAt.present) {
+      map['last_update_check_at'] = Variable<DateTime>(lastUpdateCheckAt.value);
+    }
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
@@ -871,6 +985,8 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
           ..write('appointmentReminderMinutes: $appointmentReminderMinutes, ')
           ..write('longPressHintSeen: $longPressHintSeen, ')
           ..write('trashRetentionDays: $trashRetentionDays, ')
+          ..write('skippedUpdateBuild: $skippedUpdateBuild, ')
+          ..write('lastUpdateCheckAt: $lastUpdateCheckAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
@@ -1498,6 +1614,8 @@ typedef $$SettingsTableTableCreateCompanionBuilder =
       Value<String> appointmentReminderMinutes,
       Value<bool> longPressHintSeen,
       Value<int> trashRetentionDays,
+      Value<int> skippedUpdateBuild,
+      Value<DateTime?> lastUpdateCheckAt,
       required DateTime updatedAt,
     });
 typedef $$SettingsTableTableUpdateCompanionBuilder =
@@ -1514,6 +1632,8 @@ typedef $$SettingsTableTableUpdateCompanionBuilder =
       Value<String> appointmentReminderMinutes,
       Value<bool> longPressHintSeen,
       Value<int> trashRetentionDays,
+      Value<int> skippedUpdateBuild,
+      Value<DateTime?> lastUpdateCheckAt,
       Value<DateTime> updatedAt,
     });
 
@@ -1583,6 +1703,16 @@ class $$SettingsTableTableFilterComposer
 
   ColumnFilters<int> get trashRetentionDays => $composableBuilder(
     column: $table.trashRetentionDays,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get skippedUpdateBuild => $composableBuilder(
+    column: $table.skippedUpdateBuild,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastUpdateCheckAt => $composableBuilder(
+    column: $table.lastUpdateCheckAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1661,6 +1791,16 @@ class $$SettingsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get skippedUpdateBuild => $composableBuilder(
+    column: $table.skippedUpdateBuild,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastUpdateCheckAt => $composableBuilder(
+    column: $table.lastUpdateCheckAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
@@ -1732,6 +1872,16 @@ class $$SettingsTableTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get skippedUpdateBuild => $composableBuilder(
+    column: $table.skippedUpdateBuild,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lastUpdateCheckAt => $composableBuilder(
+    column: $table.lastUpdateCheckAt,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
@@ -1781,6 +1931,8 @@ class $$SettingsTableTableTableManager
                 Value<String> appointmentReminderMinutes = const Value.absent(),
                 Value<bool> longPressHintSeen = const Value.absent(),
                 Value<int> trashRetentionDays = const Value.absent(),
+                Value<int> skippedUpdateBuild = const Value.absent(),
+                Value<DateTime?> lastUpdateCheckAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
               }) => SettingsTableCompanion(
                 id: id,
@@ -1795,6 +1947,8 @@ class $$SettingsTableTableTableManager
                 appointmentReminderMinutes: appointmentReminderMinutes,
                 longPressHintSeen: longPressHintSeen,
                 trashRetentionDays: trashRetentionDays,
+                skippedUpdateBuild: skippedUpdateBuild,
+                lastUpdateCheckAt: lastUpdateCheckAt,
                 updatedAt: updatedAt,
               ),
           createCompanionCallback:
@@ -1813,6 +1967,8 @@ class $$SettingsTableTableTableManager
                 Value<String> appointmentReminderMinutes = const Value.absent(),
                 Value<bool> longPressHintSeen = const Value.absent(),
                 Value<int> trashRetentionDays = const Value.absent(),
+                Value<int> skippedUpdateBuild = const Value.absent(),
+                Value<DateTime?> lastUpdateCheckAt = const Value.absent(),
                 required DateTime updatedAt,
               }) => SettingsTableCompanion.insert(
                 id: id,
@@ -1827,6 +1983,8 @@ class $$SettingsTableTableTableManager
                 appointmentReminderMinutes: appointmentReminderMinutes,
                 longPressHintSeen: longPressHintSeen,
                 trashRetentionDays: trashRetentionDays,
+                skippedUpdateBuild: skippedUpdateBuild,
+                lastUpdateCheckAt: lastUpdateCheckAt,
                 updatedAt: updatedAt,
               ),
           withReferenceMapper: (p0) => p0

@@ -81,4 +81,12 @@ class FakeSettingsRepository implements SettingsRepository {
   @override
   Future<void> setTrashRetentionDays(int days) async =>
       _save(_settings.copyWith(trashRetentionDays: days));
+
+  @override
+  Future<void> setSkippedUpdateBuild(int build) async =>
+      _save(_settings.copyWith(skippedUpdateBuild: build));
+
+  @override
+  Future<void> setLastUpdateCheckAt(DateTime at) async =>
+      _save(_settings.copyWith(lastUpdateCheckAt: at));
 }
