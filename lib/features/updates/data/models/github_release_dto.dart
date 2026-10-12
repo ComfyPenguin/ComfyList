@@ -1,3 +1,4 @@
+import '../../../../shared/core/files/file_checksum.dart';
 import '../../domain/entities/app_release.dart';
 
 /// Respuesta de `/repos/{repo}/releases/latest`.
@@ -72,19 +73,10 @@ class GithubReleaseAssetDto {
         name: json['name'] as String? ?? '',
         // Ya viene con el `+` del nombre codificado: no se construye a mano.
         downloadUrl: json['browser_download_url'] as String? ?? '',
-        sha256: _sha256FromDigest(json['digest'] as String?),
+        sha256: sha256FromDigest(json['digest'] as String?),
       );
 
   final String name;
   final String downloadUrl;
   final String? sha256;
-
-  /// El `digest` llega como `sha256:2151b604…`; cualquier otro algoritmo se
-  /// ignora, porque solo se sabe comprobar ese.
-  static String? _sha256FromDigest(String? digest) {
-    const prefix = 'sha256:';
-    if (digest == null || !digest.startsWith(prefix)) return null;
-    final hex = digest.substring(prefix.length).trim().toLowerCase();
-    return hex.isEmpty ? null : hex;
-  }
 }
