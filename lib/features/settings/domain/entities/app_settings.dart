@@ -9,6 +9,10 @@ const List<int> trashRetentionDayOptions = [0, 7, 15, 30];
 /// vaciarse sola.
 const int defaultTrashRetentionDays = 30;
 
+/// Valor de [AppSettings.skippedUpdateBuild] cuando no se ha descartado ninguna
+/// versión.
+const int noSkippedUpdateBuild = 0;
+
 /// Configuración local de la app (tema y preferencias de usuario).
 @immutable
 class AppSettings {
@@ -24,6 +28,8 @@ class AppSettings {
     required this.appointmentReminderMinutes,
     required this.longPressHintSeen,
     required this.trashRetentionDays,
+    required this.skippedUpdateBuild,
+    required this.lastUpdateCheckAt,
   });
 
   final ThemeMode themeMode;
@@ -67,6 +73,14 @@ class AppSettings {
   /// [defaultTrashRetentionDays].
   final int trashRetentionDays;
 
+  /// Nº de build que se descartó con «Ahora no» ([noSkippedUpdateBuild] si
+  /// ninguna): esa versión ya no vuelve a preguntar.
+  final int skippedUpdateBuild;
+
+  /// Cuándo se consultó por última vez si hay versión nueva. `null` es «nunca»:
+  /// el comprobador arranca con el primer ajuste leído.
+  final DateTime? lastUpdateCheckAt;
+
   /// Si la papelera se vacía sola ([trashRetentionDays] distinto de «nunca»).
   bool get emptiesTrashItself => trashRetentionDays > 0;
 
@@ -82,6 +96,8 @@ class AppSettings {
     appointmentReminderMinutes: [30],
     longPressHintSeen: false,
     trashRetentionDays: defaultTrashRetentionDays,
+    skippedUpdateBuild: noSkippedUpdateBuild,
+    lastUpdateCheckAt: null,
   );
 
   AppSettings copyWith({
@@ -96,6 +112,8 @@ class AppSettings {
     List<int>? appointmentReminderMinutes,
     bool? longPressHintSeen,
     int? trashRetentionDays,
+    int? skippedUpdateBuild,
+    DateTime? lastUpdateCheckAt,
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -113,6 +131,8 @@ class AppSettings {
           appointmentReminderMinutes ?? this.appointmentReminderMinutes,
       longPressHintSeen: longPressHintSeen ?? this.longPressHintSeen,
       trashRetentionDays: trashRetentionDays ?? this.trashRetentionDays,
+      skippedUpdateBuild: skippedUpdateBuild ?? this.skippedUpdateBuild,
+      lastUpdateCheckAt: lastUpdateCheckAt ?? this.lastUpdateCheckAt,
     );
   }
 

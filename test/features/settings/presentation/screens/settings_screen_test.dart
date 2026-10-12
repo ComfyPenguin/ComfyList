@@ -2,6 +2,9 @@ import 'package:comfy_list/features/settings/presentation/providers/app_version_
 import 'package:comfy_list/features/settings/presentation/providers/settings_provider.dart';
 import 'package:comfy_list/features/settings/presentation/screens/settings_screen.dart';
 import 'package:comfy_list/features/settings/presentation/widgets/settings_tile.dart';
+import 'package:comfy_list/features/updates/domain/repositories/app_updates_repository.dart';
+import 'package:comfy_list/features/updates/presentation/providers/app_updates_provider.dart';
+import 'package:comfy_list/shared/core/result/result.dart';
 import 'package:comfy_list/shared/core/theme/app_theme.dart';
 import 'package:comfy_list/shared/data/notifications/notifications_provider.dart';
 import 'package:comfy_list/shared/ui/animations/unfold_down.dart';
@@ -11,11 +14,21 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:mocktail/mocktail.dart';
+
 import '../../../../helpers/fake_notifications_service.dart';
 import '../../../../helpers/fake_settings_repository.dart';
 import '../../../../helpers/test_helpers.dart';
 
+class _MockAppUpdatesRepository extends Mock implements AppUpdatesRepository {}
+
 void main() {
+  late _MockAppUpdatesRepository updates;
+
+  setUp(() {
+    updates = _MockAppUpdatesRepository();
+  });
+
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     final loader = FontLoader('PlusJakartaSans')
@@ -60,6 +73,7 @@ void main() {
     WidgetTester tester,
     FakeSettingsRepository repo, {
     FakeNotificationsService? notifications,
+    bool withUpdateCheck = false,
   }) async {
     tester.view.physicalSize = const Size(1170, 4200);
     tester.view.devicePixelRatio = 3;
@@ -75,6 +89,11 @@ void main() {
           ),
           // El paquete instalado no existe en un test: la versión se fija aquí.
           appVersionLabelProvider.overrideWith((ref) async => '2026.10.11.221'),
+          if (withUpdateCheck) ...[
+            updateCheckSupportedProvider.overrideWithValue(true),
+            installedBuildProvider.overrideWith((ref) async => 230),
+            appUpdatesRepositoryProvider.overrideWithValue(updates),
+          ],
         ],
         child: MaterialApp(
           theme: AppTheme.light(),
@@ -327,5 +346,31 @@ void main() {
     expect(notifications.requestExactAlarmsCalls, 1);
     expect(find.text('Alarmas exactas'), findsNothing);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('donde la app sabe actualizarse sale la sección de la aplicación', (
+    tester,
+  ) async {
+    when(
+      () => updates.latestRelease(),
+    ).thenAnswer((_) async => Ok(buildAppRelease(build: 231)));
+    final repo = FakeSettingsRepository();
+
+    await pumpSettings(tester, repo, withUpdateCheck: true);
+    await tester.pumpAndSettle();
+
+    expect(find.text('APLICACIÓN'), findsOneWidget);
+    expect(find.text('Buscar actualizaciones'), findsOneWidget);
+    expect(find.textContaining('2026.10.11.231'), findsOneWidget);
+  });
+
+  testWidgets('donde no, la sección no se monta', (tester) async {
+    final repo = FakeSettingsRepository();
+
+    await pumpSettings(tester, repo);
+    await tester.pumpAndSettle();
+
+    expect(find.text('APLICACIÓN'), findsNothing);
+    expect(find.text('Buscar actualizaciones'), findsNothing);
   });
 }

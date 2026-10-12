@@ -55,6 +55,15 @@ class SettingsTable extends Table {
   IntColumn get trashRetentionDays =>
       integer().withDefault(const Constant(30))();
 
+  /// Nº de build que se descartó con «Ahora no»: sin recordarlo, el aviso de
+  /// versión nueva volvería en cada arranque. `0` es «ninguna».
+  IntColumn get skippedUpdateBuild =>
+      integer().withDefault(const Constant(0))();
+
+  /// Última comprobación de versiones, para no preguntar a GitHub en cada
+  /// arranque.
+  DateTimeColumn get lastUpdateCheckAt => dateTime().nullable()();
+
   DateTimeColumn get updatedAt => dateTime()();
 
   @override

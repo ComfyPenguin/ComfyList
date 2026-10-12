@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Rutas que el instalador del sistema puede leer: el APK de la release se
+     descarga en la caché de la app. -->
+<paths>
+    <cache-path name="cache" path="." />
+    <files-path name="files" path="." />
+    <external-cache-path name="external-cache" path="." />
+</paths>

@@ -7,6 +7,7 @@ import 'package:marquee/marquee.dart';
 
 import '../../../features/auth/presentation/providers/auth_provider.dart';
 import '../../../features/todo_lists/domain/entities/todo_list.dart';
+import '../../../features/updates/presentation/widgets/update_available_watcher.dart';
 import '../../../features/todo_lists/presentation/providers/todo_lists_provider.dart';
 import '../../../features/todo_lists/presentation/providers/todo_lists_state.dart';
 import '../../../routing/routes.dart';
@@ -351,6 +352,8 @@ class AppShell extends ConsumerWidget {
                 visible: !hideBottomBar,
               ),
             ),
+          // No pinta nada: solo abre el aviso de versión nueva.
+          const UpdateAvailableWatcher(),
         ],
       ),
     );
