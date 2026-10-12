@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../../../../shared/core/failures/failure.dart';
+import '../../../../shared/core/files/file_checksum.dart';
 import '../../../../shared/core/result/result.dart';
 import '../../domain/entities/app_release.dart';
 import '../../domain/repositories/app_updates_repository.dart';
@@ -50,11 +51,39 @@ class AppUpdatesRepositoryImpl implements AppUpdatesRepository {
         path: path,
         onProgress: onProgress,
       );
+
+      final file = File(path);
+      final expected = release.sha256;
+      if (expected != null && !await _matchesPublishedHash(file, expected)) {
+        _discard(file);
+        return const Err(IntegrityFailure());
+      }
       return Ok(path);
     } on DioException catch (e) {
       return Err(_failureFor(e));
     } on FileSystemException {
       return const Err(CacheFailure('No se ha podido guardar la descarga.'));
+    }
+  }
+
+  /// Comprueba el archivo bajado contra el hash que publica la release. Un
+  /// APK que no se puede releer cuenta como no coincidente: el reintento vuelve
+  /// a bajarlo con un archivo limpio.
+  static Future<bool> _matchesPublishedHash(File file, String expected) async {
+    try {
+      final actual = await sha256OfFile(file);
+      return actual.toLowerCase() == expected.toLowerCase();
+    } on FileSystemException {
+      return false;
+    }
+  }
+
+  static void _discard(File file) {
+    try {
+      if (file.existsSync()) file.deleteSync();
+    } on FileSystemException {
+      // El fallo de integridad es el que importa; el archivo se queda sin
+      // usar y lo pisa la próxima descarga.
     }
   }
 

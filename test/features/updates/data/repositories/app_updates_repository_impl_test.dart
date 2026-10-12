@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:comfy_list/features/updates/data/datasources/github_releases_remote.dart';
+import 'package:comfy_list/features/updates/data/models/github_release_dto.dart';
 import 'package:comfy_list/features/updates/data/repositories/app_updates_repository_impl.dart';
 import 'package:comfy_list/features/updates/domain/entities/app_release.dart';
 import 'package:comfy_list/shared/core/failures/failure.dart';
@@ -43,14 +44,19 @@ void main() {
           ),
   );
 
-  void stubDownload() {
+  /// Finge la descarga escribiendo [content] donde el repositorio pidió el
+  /// archivo, como haría `Dio.download`.
+  void stubDownload({String content = ''}) {
     when(
       () => remote.downloadApk(
         url: any(named: 'url'),
         path: any(named: 'path'),
         onProgress: any(named: 'onProgress'),
       ),
-    ).thenAnswer((_) async {});
+    ).thenAnswer((invocation) async {
+      final path = invocation.namedArguments[#path] as String;
+      File(path).writeAsStringSync(content);
+    });
   }
 
   group('latestRelease', () {
@@ -137,6 +143,74 @@ void main() {
       final result = await buildRepo().downloadApk(release: buildAppRelease());
 
       expect((result as Err<String>).failure, isA<TimeoutFailure>());
+    });
+  });
+
+  group('comprobación del hash publicado', () {
+    // Lo que escribe el stub, con el sha256 que da `sha256sum` de ese contenido.
+    const content = 'APK de prueba de ComfyList';
+    const contentHash =
+        'a8f872c6dbaae56fb57f94dc74502da8a14eb2257e3731ebb7ab6aff256edd8b';
+
+    test('con el hash de GitHub el APK queda listo para instalar', () async {
+      stubDownload(content: content);
+
+      final result = await buildRepo().downloadApk(
+        release: buildAppRelease(sha256: contentHash),
+      );
+
+      expect(result, isA<Ok<String>>());
+      expect(File((result as Ok<String>).value).existsSync(), isTrue);
+    });
+
+    test('si no cuadra, no se deja nada que instalar', () async {
+      stubDownload(content: content);
+
+      final result = await buildRepo().downloadApk(
+        release: buildAppRelease(sha256: 'f' * 64),
+      );
+
+      expect((result as Err<String>).failure, isA<IntegrityFailure>());
+      expect(cache.listSync(), isEmpty);
+    });
+
+    test('un hash de otra descarga tampoco cuela', () async {
+      stubDownload(content: 'otro APK distinto');
+
+      final result = await buildRepo().downloadApk(
+        release: buildAppRelease(sha256: contentHash),
+      );
+
+      expect((result as Err<String>).failure, isA<IntegrityFailure>());
+    });
+
+    test('sin hash publicado la descarga se acepta como antes', () async {
+      stubDownload(content: content);
+
+      final result = await buildRepo().downloadApk(release: buildAppRelease());
+
+      expect(result, isA<Ok<String>>());
+    });
+
+    test('de la respuesta de la API al APK verificado', () async {
+      // Sin nada simulado por medio: el JSON que devuelve `/releases/latest`,
+      // con el `digest` del asset, tiene que acabar en un APK que cuadra.
+      final release = GithubReleaseDto.fromJson({
+        'tag_name': 'v2026.10.11.231',
+        'body': '### Novedades\n',
+        'assets': [
+          {
+            'name': 'comfylist-2026.10.11+231.apk',
+            'browser_download_url': 'https://example.test/apk',
+            'digest': 'sha256:$contentHash',
+          },
+        ],
+      }).toRelease();
+      stubDownload(content: content);
+
+      final result = await buildRepo().downloadApk(release: release!);
+
+      expect(result, isA<Ok<String>>());
     });
   });
 }

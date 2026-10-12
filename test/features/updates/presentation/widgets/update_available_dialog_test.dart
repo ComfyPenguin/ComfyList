@@ -145,6 +145,28 @@ void main() {
     ).called(2);
   });
 
+  testWidgets('si el APK no cuadra con el publicado, no se ofrece instalar', (
+    tester,
+  ) async {
+    when(
+      () => repository.downloadApk(
+        release: any(named: 'release'),
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer((_) async => const Err(IntegrityFailure()));
+    await pumpDialog(tester);
+
+    await tester.tap(find.text('ACTUALIZAR'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('no coincide con el archivo publicado'),
+      findsOneWidget,
+    );
+    expect(find.text('INSTALAR'), findsNothing);
+    expect(find.text('REINTENTAR'), findsOneWidget);
+  });
+
   testWidgets('«Ahora no» cierra el aviso y no vuelve a preguntar', (
     tester,
   ) async {
