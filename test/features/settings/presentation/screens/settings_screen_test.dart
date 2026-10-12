@@ -74,7 +74,7 @@ void main() {
             notifications ?? FakeNotificationsService(),
           ),
           // El paquete instalado no existe en un test: la versión se fija aquí.
-          appVersionLabelProvider.overrideWith((ref) async => '2026.10.11 (221)'),
+          appVersionLabelProvider.overrideWith((ref) async => '2026.10.11.221'),
         ],
         child: MaterialApp(
           theme: AppTheme.light(),
@@ -95,7 +95,7 @@ void main() {
     await pumpSettings(tester, repo);
     await tester.pumpAndSettle();
 
-    expect(find.text('Versión 2026.10.11 (221)'), findsOneWidget);
+    expect(find.text('Versión 2026.10.11.221'), findsOneWidget);
   });
 
   testWidgets('el reintento recupera los ajustes sin salir de la pantalla', (

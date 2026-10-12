@@ -123,7 +123,7 @@ jobs:
           cp build/app/outputs/flutter-apk/app-release.apk "dist/comfylist-$VERSION+$BUILD_NUMBER.apk"
           cp build/app/outputs/bundle/release/app-release.aab "dist/comfylist-$VERSION+$BUILD_NUMBER.aab"
           gh release create "$TAG" \
-            --title "ComfyList $VERSION ($BUILD_NUMBER)" \
+            --title "ComfyList $VERSION.$BUILD_NUMBER" \
             --notes-file release-notes.md \
             "dist/comfylist-$VERSION+$BUILD_NUMBER.apk" \
             "dist/comfylist-$VERSION+$BUILD_NUMBER.aab"
