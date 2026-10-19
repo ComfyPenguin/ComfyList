@@ -14,6 +14,10 @@
 
 App de TODOs y citas multiplataforma con sincronización vía Firebase. Tus listas, tareas y citas con recordatorios viven en tu cuenta y se cachean en el dispositivo para funcionar sin conexión, con una papelera en la nube que protege lo que borras.
 
+<p align="center">
+  <img src="docs/screenshots/overview.gif" alt="ComfyList: listas de tareas, gestos de deslizar en citas y detalle de una cita" width="720">
+</p>
+
 ## Características
 
 - **Listas y tareas** con descripción y ubicación opcionales.
