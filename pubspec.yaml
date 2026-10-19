@@ -42,7 +42,7 @@ dependencies:
   google_sign_in: ^7.2.0
 
   # Notificaciones locales
-  flutter_local_notifications: ^21.0.0
+  flutter_local_notifications: ^22.3.2
   # Zonas horarias: `zonedSchedule` recibe la hora como TZDateTime
   timezone: ^0.11.1
 
