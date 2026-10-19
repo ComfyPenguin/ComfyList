@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "comfy-list-android",
+      "runtimeExecutable": "flutter",
+      "runtimeArgs": ["run", "-d", "38091FDJH00PMC"],
+      "port": 8080
+    }
+  ]
+}
