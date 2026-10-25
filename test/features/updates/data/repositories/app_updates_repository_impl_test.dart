@@ -33,9 +33,14 @@ void main() {
   AppUpdatesRepositoryImpl buildRepo() =>
       AppUpdatesRepositoryImpl(remote, cacheDirectory: () async => cache);
 
-  DioException dioError(DioExceptionType type, {int? statusCode}) => DioException(
+  DioException dioError(
+    DioExceptionType type, {
+    int? statusCode,
+    Object? error,
+  }) => DioException(
     requestOptions: RequestOptions(path: ''),
     type: type,
+    error: error,
     response: statusCode == null
         ? null
         : Response<dynamic>(
@@ -143,6 +148,25 @@ void main() {
       final result = await buildRepo().downloadApk(release: buildAppRelease());
 
       expect((result as Err<String>).failure, isA<TimeoutFailure>());
+    });
+
+    test('una conexión cortada a mitad se traduce a NetworkFailure', () async {
+      when(
+        () => remote.downloadApk(
+          url: any(named: 'url'),
+          path: any(named: 'path'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).thenThrow(
+        dioError(
+          DioExceptionType.unknown,
+          error: const HttpException('Connection closed while receiving data'),
+        ),
+      );
+
+      final result = await buildRepo().downloadApk(release: buildAppRelease());
+
+      expect((result as Err<String>).failure, isA<NetworkFailure>());
     });
   });
 

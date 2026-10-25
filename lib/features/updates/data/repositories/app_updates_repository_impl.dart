@@ -93,7 +93,10 @@ class AppUpdatesRepositoryImpl implements AppUpdatesRepository {
         e.type == DioExceptionType.sendTimeout) {
       return const TimeoutFailure();
     }
-    if (e.type == DioExceptionType.connectionError) {
+    // Una conexión que se corta a mitad de descarga llega como `unknown`.
+    if (e.type == DioExceptionType.connectionError ||
+        e.error is SocketException ||
+        e.error is HttpException) {
       return const NetworkFailure();
     }
     if (e.response?.statusCode == 403) {
