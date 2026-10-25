@@ -1,7 +1,7 @@
 name: comfy_list
 description: "App de TODOs y citas multiplataforma con sincronización vía Firebase"
 publish_to: 'none'
-version: 2026.10.12+248
+version: 2026.10.26+264
 
 environment:
   sdk: ^3.11.5
