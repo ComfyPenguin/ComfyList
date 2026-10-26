@@ -50,7 +50,7 @@ void main() {
           ),
         ],
       };
-      stubDioGet(dio, body: body);
+      stubDioGet(dio, body: body, withQueryParameters: true);
 
       final todos = await remote.listTodos(uid: 'u1', listId: 'L1');
 
@@ -60,8 +60,7 @@ void main() {
       expect(todos.first.isDone, isFalse);
       verify(() => dio.get<Map<String, dynamic>>(
             any(),
-            options: any(named: 'options'),
-            cancelToken: any(named: 'cancelToken'),
+            queryParameters: any(named: 'queryParameters'),
           )).called(1);
     });
 

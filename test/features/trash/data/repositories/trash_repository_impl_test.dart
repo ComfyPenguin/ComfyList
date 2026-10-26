@@ -16,16 +16,19 @@ class _OfflineRemote implements FirestoreTrashRemote {
   Future<List<TrashEntry>> listEntries(String uid) async => throw _offline();
 
   @override
-  Future<TrashEntry> createEntry({
+  Future<void> createEntries({
     required String uid,
     required String groupId,
-    required TrashItem item,
+    required List<TrashItem> items,
     required DateTime deletedAt,
   }) async =>
       throw _offline();
 
   @override
-  Future<void> deleteEntry({required String uid, required String id}) async =>
+  Future<void> deleteEntries({
+    required String uid,
+    required List<String> ids,
+  }) async =>
       throw _offline();
 }
 
@@ -45,21 +48,24 @@ class _NoTrimRemote implements FirestoreTrashRemote {
   Future<List<TrashEntry>> listEntries(String uid) => _inner.listEntries(uid);
 
   @override
-  Future<TrashEntry> createEntry({
+  Future<void> createEntries({
     required String uid,
     required String groupId,
-    required TrashItem item,
+    required List<TrashItem> items,
     required DateTime deletedAt,
   }) =>
-      _inner.createEntry(
+      _inner.createEntries(
         uid: uid,
         groupId: groupId,
-        item: item,
+        items: items,
         deletedAt: deletedAt,
       );
 
   @override
-  Future<void> deleteEntry({required String uid, required String id}) async =>
+  Future<void> deleteEntries({
+    required String uid,
+    required List<String> ids,
+  }) async =>
       throw _offline();
 }
 
@@ -75,22 +81,25 @@ class _FlakyDeleteRemote implements FirestoreTrashRemote {
   Future<List<TrashEntry>> listEntries(String uid) => _inner.listEntries(uid);
 
   @override
-  Future<TrashEntry> createEntry({
+  Future<void> createEntries({
     required String uid,
     required String groupId,
-    required TrashItem item,
+    required List<TrashItem> items,
     required DateTime deletedAt,
   }) =>
-      _inner.createEntry(
+      _inner.createEntries(
         uid: uid,
         groupId: groupId,
-        item: item,
+        items: items,
         deletedAt: deletedAt,
       );
 
   @override
-  Future<void> deleteEntry({required String uid, required String id}) async {
-    if (_failed) return _inner.deleteEntry(uid: uid, id: id);
+  Future<void> deleteEntries({
+    required String uid,
+    required List<String> ids,
+  }) async {
+    if (_failed) return _inner.deleteEntries(uid: uid, ids: ids);
 
     _failed = true;
     throw _offline();
@@ -112,25 +121,28 @@ class _RecordingRemote implements FirestoreTrashRemote {
   }
 
   @override
-  Future<TrashEntry> createEntry({
+  Future<void> createEntries({
     required String uid,
     required String groupId,
-    required TrashItem item,
+    required List<TrashItem> items,
     required DateTime deletedAt,
   }) {
-    calls.add('create:${item.itemId}');
-    return _inner.createEntry(
+    calls.add('create:${items.map((item) => item.itemId).join(',')}');
+    return _inner.createEntries(
       uid: uid,
       groupId: groupId,
-      item: item,
+      items: items,
       deletedAt: deletedAt,
     );
   }
 
   @override
-  Future<void> deleteEntry({required String uid, required String id}) {
-    calls.add('delete:$id');
-    return _inner.deleteEntry(uid: uid, id: id);
+  Future<void> deleteEntries({
+    required String uid,
+    required List<String> ids,
+  }) {
+    calls.add('delete:${ids.join(',')}');
+    return _inner.deleteEntries(uid: uid, ids: ids);
   }
 }
 
@@ -250,15 +262,33 @@ void main() {
     );
     addTearDown(flaky.dispose);
 
-    // La red se cae en el primer borrado: esa fila se queda y no aborta las
-    // demás.
+    // La red se cae al tirar: el borrado es uno solo, así que se quedan todas
+    // las filas, apuntadas para reintentarlas.
     expect((await flaky.remove(uid: 'u1', ids: ids)).isErr, isTrue);
-    expect(remote.entries, hasLength(1));
+    expect(remote.entries, hasLength(2));
+    expect(await pending.idsOf('u1'), unorderedEquals(ids));
 
     // Al leerla, se reintenta: la fila fantasma desaparece sola.
     final shown = await flaky.watch('u1').first;
 
     expect(shown, isEmpty);
+    expect(remote.entries, isEmpty);
+  });
+
+  test('remove tira todos los ids en una sola petición', () async {
+    await repo.save(uid: 'u1', items: [item(id: 't1'), item(id: 't2')]);
+    final ids = remote.entries.map((entry) => entry.id).toList();
+    final recorder = _RecordingRemote(remote);
+    final recorded = TrashRepositoryImpl(
+      recorder,
+      pending: FakeTrashPendingStore(),
+    );
+    addTearDown(recorded.dispose);
+
+    await recorded.remove(uid: 'u1', ids: ids);
+
+    expect(recorder.calls.where((call) => call.startsWith('delete:')),
+        ['delete:${ids.join(',')}']);
     expect(remote.entries, isEmpty);
   });
 
@@ -317,10 +347,11 @@ void main() {
 
   /// Un borrado de hace [days] días, como si lo hubiera dejado ahí una versión
   /// anterior de la app.
-  Future<void> seedEntry(String id, {required int days}) => remote.createEntry(
+  Future<void> seedEntry(String id, {required int days}) =>
+      remote.createEntries(
         uid: 'u1',
         groupId: 'g$id',
-        item: item(id: id),
+        items: [item(id: id)],
         deletedAt: DateTime.now().toUtc().subtract(Duration(days: days)),
       );
 
@@ -414,10 +445,10 @@ void main() {
   /// estado que deja un recorte que no llegó a salir.
   Future<void> seedOverCap(FakeTrashRemote target) async {
     for (var i = 0; i < TrashRepository.maxGroupsPerUid + 2; i++) {
-      await target.createEntry(
+      await target.createEntries(
         uid: 'u1',
         groupId: 'g$i',
-        item: item(id: 't$i'),
+        items: [item(id: 't$i')],
         deletedAt: DateTime.now().toUtc().subtract(Duration(minutes: 200 - i)),
       );
     }

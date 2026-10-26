@@ -1,4 +1,5 @@
 import '../../../../shared/core/result/result.dart';
+import '../../../todos/domain/entities/todo.dart';
 import '../entities/todo_list.dart';
 
 abstract class TodoListsRepository {
@@ -21,19 +22,20 @@ abstract class TodoListsRepository {
     String? iconKey,
   });
 
-  /// Borra la lista. La implementación se encarga de borrar en cascada
-  /// los todos de la subcolección — Firestore no lo hace automáticamente.
+  /// Borra la lista junto con las tareas [todoIds] de su subcolección, que
+  /// Firestore no borra por sí solo.
   Future<Result<void>> deleteList({
     required String uid,
     required String id,
+    required List<String> todoIds,
   });
 
-  /// Devuelve [list] a Firestore con su mismo id, para deshacer el borrado.
-  /// Sus tareas las restaura quien orquesta el deshacer: viven en la
-  /// subcolección que gestiona el feature `todos`.
-  Future<Result<TodoList>> restoreList({
+  /// Devuelve [list] y sus [todos] a Firestore con sus mismos ids, para
+  /// deshacer el borrado.
+  Future<Result<void>> restoreList({
     required String uid,
     required TodoList list,
+    required List<Todo> todos,
   });
 
   /// Pausa el polling de watchers activos. Llamado al pasar la app a

@@ -42,6 +42,10 @@ class TodosRepositoryImpl implements TodosRepository {
     return w.stream;
   }
 
+  @override
+  Future<void> refresh({required String uid, required String listId}) =>
+      _refresh(uid, listId);
+
   Future<void> _refresh(String uid, String listId) async {
     final w = _watchers[_WatcherKey(uid, listId)];
     if (w != null) await w.refreshNow();

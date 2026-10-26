@@ -14,25 +14,29 @@ class FakeTrashRemote implements FirestoreTrashRemote {
   Future<List<TrashEntry>> listEntries(String uid) async => entries;
 
   @override
-  Future<TrashEntry> createEntry({
+  Future<void> createEntries({
     required String uid,
     required String groupId,
-    required TrashItem item,
+    required List<TrashItem> items,
     required DateTime deletedAt,
   }) async {
-    final entry = TrashEntry(
-      id: 'doc${_nextId++}',
-      uid: uid,
-      groupId: groupId,
-      item: item,
-      deletedAt: deletedAt,
-    );
-    _entries[entry.id] = entry;
-    return entry;
+    for (final item in items) {
+      final entry = TrashEntry(
+        id: 'doc${_nextId++}',
+        uid: uid,
+        groupId: groupId,
+        item: item,
+        deletedAt: deletedAt,
+      );
+      _entries[entry.id] = entry;
+    }
   }
 
   @override
-  Future<void> deleteEntry({required String uid, required String id}) async {
-    _entries.remove(id);
+  Future<void> deleteEntries({
+    required String uid,
+    required List<String> ids,
+  }) async {
+    ids.forEach(_entries.remove);
   }
 }

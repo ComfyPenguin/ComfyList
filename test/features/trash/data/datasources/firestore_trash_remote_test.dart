@@ -128,28 +128,34 @@ void main() {
       expect(entries.single.payload, isEmpty);
     });
 
-    test('createEntry envía el payload como texto y omite el padre nulo',
-        () async {
-      stubDioPost(dio, body: buildDocBody(id: 'd2'));
+    const root = 'projects/comfy-list/databases/(default)/documents';
+    const item = TrashItem(
+      kind: TrashKind.todo,
+      itemId: 't1',
+      label: 'Comprar pan',
+      payload: {'id': 't1', 'title': 'Comprar pan'},
+    );
 
-      final created = await remote.createEntry(
+    test('createEntries manda todos los elementos en un commit con id propio',
+        () async {
+      stubDioCommit(dio);
+
+      await remote.createEntries(
         uid: 'u1',
         groupId: 'g1',
-        item: const TrashItem(
-          kind: TrashKind.todo,
-          itemId: 't1',
-          label: 'Comprar pan',
-          payload: {'id': 't1', 'title': 'Comprar pan'},
-        ),
+        items: const [item, item],
         deletedAt: DateTime.utc(2026, 6, 1, 9),
       );
 
-      expect(created.id, 'd2');
-      final sent = verify(() => dio.post<Map<String, dynamic>>(
-            collection('u1'),
-            data: captureAny(named: 'data'),
-          )).captured.single as Map<String, dynamic>;
-      final fields = sent['fields'] as Map<String, dynamic>;
+      final writes = (sentCommits(dio).single['writes'] as List)
+          .map((w) => (w as Map)['update'] as Map<String, dynamic>)
+          .toList();
+      expect(writes, hasLength(2));
+      final names = writes.map((w) => w['name'] as String).toList();
+      expect(names.first, startsWith('$root/users/u1/trash/'));
+      expect(names.first.split('/').last, hasLength(20));
+      expect(names.toSet(), hasLength(2));
+      final fields = writes.first['fields'] as Map<String, dynamic>;
       expect(
         (fields['payload'] as Map<String, dynamic>)['stringValue'],
         jsonEncode({'id': 't1', 'title': 'Comprar pan'}),
@@ -161,12 +167,23 @@ void main() {
       );
     });
 
-    test('deleteEntry llama a la URL del documento', () async {
-      stubDioDelete(dio);
+    test('deleteEntries borra todos los documentos en un commit', () async {
+      stubDioCommit(dio);
 
-      await remote.deleteEntry(uid: 'u1', id: 'd1');
+      await remote.deleteEntries(uid: 'u1', ids: const ['d1', 'd2']);
 
-      verify(() => dio.delete<void>('${collection('u1')}/d1')).called(1);
+      expect(sentCommits(dio).single['writes'], [
+        {'delete': '$root/users/u1/trash/d1'},
+        {'delete': '$root/users/u1/trash/d2'},
+      ]);
+    });
+
+    test('deleteEntries sin ids no hace ninguna petición', () async {
+      stubDioCommit(dio);
+
+      await remote.deleteEntries(uid: 'u1', ids: const []);
+
+      verifyNever(() => dio.post<void>(any(), data: any(named: 'data')));
     });
   });
 }

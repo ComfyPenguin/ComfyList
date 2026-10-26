@@ -35,6 +35,7 @@ void main() {
     // mocktail necesita un valor de relleno para los matchers de entidades.
     registerFallbackValue(buildTodoList());
     registerFallbackValue(buildTodo());
+    registerFallbackValue(<Todo>[]);
   });
 
   test('el repo de la app toma la cadencia del polling del provider', () {
@@ -166,22 +167,27 @@ void main() {
       () async {
     final controller = StreamController<List<TodoList>>();
     when(() => repo.watchLists('u1')).thenAnswer((_) => controller.stream);
-    when(() => repo.deleteList(uid: 'u1', id: 'L1'))
-        .thenAnswer((_) async => const Ok(null));
+    when(() => repo.deleteList(
+          uid: 'u1',
+          id: 'L1',
+          todoIds: any(named: 'todoIds'),
+        )).thenAnswer((_) async => const Ok(null));
 
     final list = buildTodoList(id: 'L1');
-    when(() => repo.restoreList(uid: 'u1', list: any(named: 'list')))
-        .thenAnswer((_) async => Ok(list));
+    when(() => repo.restoreList(
+          uid: 'u1',
+          list: any(named: 'list'),
+          todos: any(named: 'todos'),
+        )).thenAnswer((_) async => const Ok(null));
 
     final todo = buildTodo(id: 't1');
     final todosRepo = _MockTodosRepo();
+    when(() => todosRepo.refresh(
+          uid: any(named: 'uid'),
+          listId: any(named: 'listId'),
+        )).thenAnswer((_) async {});
     when(() => todosRepo.fetchTodos(uid: 'u1', listId: 'L1'))
         .thenAnswer((_) async => Ok([todo]));
-    when(() => todosRepo.restoreTodo(
-          uid: 'u1',
-          listId: 'L1',
-          todo: any(named: 'todo'),
-        )).thenAnswer((_) async => Ok(todo));
 
     final container = createTestContainer(
       remoteOverrides: {FirestoreTrashRemote: trash},
@@ -203,26 +209,28 @@ void main() {
     // Las tareas se leen antes de borrar: si no, se perderían en el deshacer.
     verifyInOrder([
       () => todosRepo.fetchTodos(uid: 'u1', listId: 'L1'),
-      () => repo.deleteList(uid: 'u1', id: 'L1'),
+      () => repo.deleteList(uid: 'u1', id: 'L1', todoIds: ['t1']),
     ]);
 
     expect(await notifier.undoLastDelete(), isTrue);
 
-    // La lista vuelve con los datos de antes y sus tareas con ella.
-    final restoredList = verify(() => repo.restoreList(
+    // La lista vuelve con los datos de antes y sus tareas, en una sola llamada.
+    final restored = verify(() => repo.restoreList(
           uid: 'u1',
           list: captureAny(named: 'list'),
-        )).captured.single as TodoList;
+          todos: captureAny(named: 'todos'),
+        )).captured;
+    final restoredList = restored.first as TodoList;
     expect(restoredList.id, 'L1');
     expect(restoredList.name, 'Compras');
-
-    final restoredTodo = verify(() => todosRepo.restoreTodo(
-          uid: 'u1',
-          listId: 'L1',
-          todo: captureAny(named: 'todo'),
-        )).captured.single as Todo;
-    expect(restoredTodo.id, 't1');
-    expect(restoredTodo.title, 'Comprar pan');
+    final restoredTodos = restored.last as List<Todo>;
+    expect(restoredTodos.map((t) => t.id), ['t1']);
+    expect(restoredTodos.single.title, 'Comprar pan');
+    verifyNever(() => todosRepo.restoreTodo(
+          uid: any(named: 'uid'),
+          listId: any(named: 'listId'),
+          todo: any(named: 'todo'),
+        ));
 
     expect(trash.entries, isEmpty);
   });
@@ -233,6 +241,10 @@ void main() {
 
     final list = buildTodoList(id: 'L1');
     final todosRepo = _MockTodosRepo();
+    when(() => todosRepo.refresh(
+          uid: any(named: 'uid'),
+          listId: any(named: 'listId'),
+        )).thenAnswer((_) async {});
     when(() => todosRepo.fetchTodos(uid: 'u1', listId: 'L1'))
         .thenAnswer((_) async => const Err<List<Todo>>(NetworkFailure()));
 
@@ -256,9 +268,138 @@ void main() {
     // poder volver.
     expect(await notifier.delete('L1'), isFalse);
     verifyNever(
-      () => repo.deleteList(uid: any(named: 'uid'), id: any(named: 'id')),
+      () => repo.deleteList(
+        uid: any(named: 'uid'),
+        id: any(named: 'id'),
+        todoIds: any(named: 'todoIds'),
+      ),
     );
     expect(trash.entries, isEmpty);
+  });
+
+  group('borrado optimista', () {
+    late StreamController<List<TodoList>> controller;
+    late _MockTodosRepo todosRepo;
+    late ProviderContainer container;
+
+    setUp(() {
+      controller = StreamController<List<TodoList>>();
+      todosRepo = _MockTodosRepo();
+      when(() => todosRepo.refresh(
+            uid: any(named: 'uid'),
+            listId: any(named: 'listId'),
+          )).thenAnswer((_) async {});
+      when(() => repo.watchLists('u1')).thenAnswer((_) => controller.stream);
+      when(() => todosRepo.fetchTodos(uid: 'u1', listId: 'L1'))
+          .thenAnswer((_) async => Ok([buildTodo(id: 't1')]));
+      container = createTestContainer(
+        remoteOverrides: {FirestoreTrashRemote: trash},
+        authedUser: buildAuthUser(),
+        repositoryOverrides: {
+          TodoListsRepository: repo,
+          TodosRepository: todosRepo,
+        },
+      );
+      addTearDown(controller.close);
+    });
+
+    List<String> shownIds() => (container.read(todoListsProvider)
+            as TodoListsData)
+        .items
+        .map((l) => l.id)
+        .toList();
+
+    Future<void> seed() async {
+      expect(container.read(todoListsProvider), isA<TodoListsLoading>());
+      controller.add([buildTodoList(id: 'L1'), buildTodoList(id: 'L2')]);
+      await pumpEventQueue();
+    }
+
+    test('la lista desaparece antes de que el repositorio responda', () async {
+      final deleting = Completer<Result<void>>();
+      when(() => repo.deleteList(
+            uid: 'u1',
+            id: 'L1',
+            todoIds: any(named: 'todoIds'),
+          )).thenAnswer((_) => deleting.future);
+      await seed();
+
+      final result = container.read(todoListsProvider.notifier).delete('L1');
+
+      // Antes de cualquier await: ya no está.
+      expect(shownIds(), ['L2']);
+
+      // Un poll a mitad de borrado no la devuelve a la pantalla.
+      await pumpEventQueue();
+      controller.add([buildTodoList(id: 'L1'), buildTodoList(id: 'L2')]);
+      await pumpEventQueue();
+      expect(shownIds(), ['L2']);
+
+      deleting.complete(const Ok(null));
+      expect(await result, isTrue);
+
+      // El servidor ya no la devuelve y sigue fuera.
+      controller.add([buildTodoList(id: 'L2')]);
+      await pumpEventQueue();
+      expect(shownIds(), ['L2']);
+    });
+
+    test('deshacer la enseña aunque el refresco tras borrar fallara', () async {
+      when(() => repo.deleteList(
+            uid: 'u1',
+            id: 'L1',
+            todoIds: any(named: 'todoIds'),
+          )).thenAnswer((_) async => const Ok(null));
+      when(() => repo.restoreList(
+            uid: 'u1',
+            list: any(named: 'list'),
+            todos: any(named: 'todos'),
+          )).thenAnswer((_) async => const Ok(null));
+      await seed();
+      final notifier = container.read(todoListsProvider.notifier);
+
+      expect(await notifier.delete('L1'), isTrue);
+      // Sin emisión sin L1: el refresco posterior al borrado no llegó.
+      expect(await notifier.undoLastDelete(), isTrue);
+      controller.add([buildTodoList(id: 'L1'), buildTodoList(id: 'L2')]);
+      await pumpEventQueue();
+
+      expect(shownIds(), containsAll(['L1', 'L2']));
+      // Sus tareas se piden ya: un poll durante el borrado las dejó vacías.
+      verify(() => todosRepo.refresh(uid: 'u1', listId: 'L1')).called(1);
+    });
+
+    test('si el borrado falla la lista vuelve y delete dice que no', () async {
+      final deleting = Completer<Result<void>>();
+      when(() => repo.deleteList(
+            uid: 'u1',
+            id: 'L1',
+            todoIds: any(named: 'todoIds'),
+          )).thenAnswer((_) => deleting.future);
+      await seed();
+
+      final result = container.read(todoListsProvider.notifier).delete('L1');
+      await pumpEventQueue();
+      expect(shownIds(), ['L2']);
+
+      deleting.complete(const Err<void>(ServerFailure('Error 500')));
+
+      expect(await result, isFalse);
+      expect(shownIds(), ['L1', 'L2']);
+    });
+
+    test('si no se pueden leer las tareas la lista vuelve', () async {
+      when(() => todosRepo.fetchTodos(uid: 'u1', listId: 'L1')).thenAnswer(
+        (_) async => const Err<List<Todo>>(NetworkFailure()),
+      );
+      await seed();
+
+      final result = container.read(todoListsProvider.notifier).delete('L1');
+      expect(shownIds(), ['L2']);
+
+      expect(await result, isFalse);
+      expect(shownIds(), ['L1', 'L2']);
+    });
   });
 
   test('bootstrap returns Initial when auth is Unauthenticated', () async {

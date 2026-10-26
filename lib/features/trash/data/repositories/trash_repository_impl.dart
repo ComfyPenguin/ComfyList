@@ -62,14 +62,12 @@ class TrashRepositoryImpl implements TrashRepository {
     try {
       final deletedAt = _nextDeletedAt();
       final groupId = deletedAt.microsecondsSinceEpoch.toString();
-      for (final item in items) {
-        await _remote.createEntry(
-          uid: uid,
-          groupId: groupId,
-          item: item,
-          deletedAt: deletedAt,
-        );
-      }
+      await _remote.createEntries(
+        uid: uid,
+        groupId: groupId,
+        items: items,
+        deletedAt: deletedAt,
+      );
       final entries = await _remote.listEntries(uid);
       await _trim(_remote, uid, entries);
       await _refresh(uid);
@@ -126,35 +124,31 @@ class TrashRepositoryImpl implements TrashRepository {
     if (ids.isEmpty) return const Ok(null);
 
     DioException? failure;
-    for (final id in ids) {
-      final error = await _deleteEntry(uid, id);
-      failure ??= error;
+    try {
+      await _remote.deleteEntries(uid: uid, ids: ids);
+      for (final id in ids) {
+        await _pending.remove(uid: uid, docId: id);
+      }
+    } on DioException catch (e) {
+      // Se apuntan para reintentarlos en la siguiente lectura de la papelera.
+      debugLog('La papelera no pudo tirar un borrado: ${e.type}');
+      for (final id in ids) {
+        await _pending.add(uid: uid, docId: id);
+      }
+      failure = e;
     }
     await _refresh(uid);
     return failure == null ? const Ok(null) : Err(_mapDioError(failure));
-  }
-
-  /// Tira [id] y, si no puede, lo deja apuntado para reintentarlo en la
-  /// siguiente lectura de la papelera. Devuelve el fallo, o `null` si se fue.
-  Future<DioException?> _deleteEntry(String uid, String id) async {
-    try {
-      await _remote.deleteEntry(uid: uid, id: id);
-      await _pending.remove(uid: uid, docId: id);
-      return null;
-    } on DioException catch (e) {
-      debugLog('La papelera no pudo tirar un borrado: ${e.type}');
-      await _pending.add(uid: uid, docId: id);
-      return e;
-    }
   }
 
   @override
   Future<Result<void>> empty(String uid) async {
     try {
       final entries = await _remote.listEntries(uid);
-      for (final entry in entries) {
-        await _remote.deleteEntry(uid: uid, id: entry.id);
-      }
+      await _remote.deleteEntries(
+        uid: uid,
+        ids: [for (final entry in entries) entry.id],
+      );
       await _refresh(uid);
       return const Ok(null);
     } on DioException catch (e) {
@@ -170,14 +164,13 @@ class TrashRepositoryImpl implements TrashRepository {
     if (days <= 0) return const Ok(null);
     try {
       final cutoff = DateTime.now().toUtc().subtract(Duration(days: days));
-      var removed = false;
-      for (final entry in await _remote.listEntries(uid)) {
-        if (entry.deletedAt.isBefore(cutoff)) {
-          await _remote.deleteEntry(uid: uid, id: entry.id);
-          removed = true;
-        }
-      }
-      if (removed) await _refresh(uid);
+      final expired = [
+        for (final entry in await _remote.listEntries(uid))
+          if (entry.deletedAt.isBefore(cutoff)) entry.id,
+      ];
+      if (expired.isEmpty) return const Ok(null);
+      await _remote.deleteEntries(uid: uid, ids: expired);
+      await _refresh(uid);
       return const Ok(null);
     } on DioException catch (e) {
       return Err(_mapDioError(e));
@@ -320,13 +313,15 @@ class _Watcher {
 
   /// Vuelve a tirar lo que quedó pendiente de quitar tras restaurarlo.
   Future<void> _retryPending() async {
-    for (final id in await _pending.idsOf(uid)) {
-      try {
-        await _remote.deleteEntry(uid: uid, id: id);
+    final ids = await _pending.idsOf(uid);
+    if (ids.isEmpty) return;
+    try {
+      await _remote.deleteEntries(uid: uid, ids: ids);
+      for (final id in ids) {
         await _pending.remove(uid: uid, docId: id);
-      } on DioException catch (e) {
-        debugLog('La papelera no pudo quitar lo pendiente: ${e.type}');
       }
+    } on DioException catch (e) {
+      debugLog('La papelera no pudo quitar lo pendiente: ${e.type}');
     }
   }
 
@@ -360,17 +355,19 @@ Future<List<TrashEntry>> _trim(
 
   final dropped = ids.skip(TrashRepository.maxGroupsPerUid).toSet();
   final shown = <TrashEntry>[];
+  final droppedEntries = <TrashEntry>[];
   for (final entry in sorted) {
-    if (!dropped.contains(entry.groupId)) {
-      shown.add(entry);
-      continue;
-    }
-    try {
-      await remote.deleteEntry(uid: uid, id: entry.id);
-    } on DioException catch (e) {
-      debugLog('El recorte de la papelera falló: ${e.type}');
-      shown.add(entry);
-    }
+    (dropped.contains(entry.groupId) ? droppedEntries : shown).add(entry);
+  }
+  try {
+    await remote.deleteEntries(
+      uid: uid,
+      ids: [for (final entry in droppedEntries) entry.id],
+    );
+  } on DioException catch (e) {
+    debugLog('El recorte de la papelera falló: ${e.type}');
+    // Los descartados son los más antiguos, así que al final sigue el orden.
+    shown.addAll(droppedEntries);
   }
   return shown;
 }

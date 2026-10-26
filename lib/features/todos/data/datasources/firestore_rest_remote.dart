@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../../shared/core/env/firebase_endpoints.dart';
+import '../../../../shared/data/remote/firestore_pages.dart';
 import '../../domain/entities/todo.dart';
 import '../models/todo_dto.dart';
 
@@ -22,12 +23,8 @@ class FirestoreRestRemote {
     required String uid,
     required String listId,
   }) async {
-    final res = await _dio.get<Map<String, dynamic>>(
-      _collectionPath(uid, listId),
-    );
-    final docs = (res.data?['documents'] as List?) ?? const [];
+    final docs = await _dio.getAllDocuments(_collectionPath(uid, listId));
     return docs
-        .cast<Map<String, dynamic>>()
         .map(TodoDto.fromDocument)
         .toList(growable: false);
   }

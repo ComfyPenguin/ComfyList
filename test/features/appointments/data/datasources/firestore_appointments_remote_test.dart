@@ -53,7 +53,7 @@ void main() {
           ),
         ],
       };
-      stubDioGet(dio, body: body);
+      stubDioGet(dio, body: body, withQueryParameters: true);
 
       final appointments = await remote.listAppointments(uid: 'u1');
 
@@ -63,8 +63,7 @@ void main() {
       expect(appointments.first.location, 'Calle Mayor 1');
       verify(() => dio.get<Map<String, dynamic>>(
             any(),
-            options: any(named: 'options'),
-            cancelToken: any(named: 'cancelToken'),
+            queryParameters: any(named: 'queryParameters'),
           )).called(1);
     });
 
