@@ -33,6 +33,13 @@ final todoListsRepositoryProvider = Provider<TodoListsRepository>((ref) {
 class TodoListsNotifier extends Notifier<TodoListsState> {
   StreamSubscription<dynamic>? _sub;
 
+  /// Listas que se están borrando: se ocultan al instante sin esperar a que el
+  /// servidor deje de devolverlas.
+  final Set<String> _hidden = {};
+
+  /// Lo último que llegó del stream, sin filtrar.
+  List<TodoList> _lastItems = const [];
+
   @override
   TodoListsState build() {
     final auth = ref.watch(authProvider);
@@ -41,9 +48,16 @@ class TodoListsNotifier extends Notifier<TodoListsState> {
     final uid = auth.user.uid;
     final repo = ref.read(todoListsRepositoryProvider);
 
+    _hidden.clear();
+    _lastItems = const [];
     _sub?.cancel();
     _sub = repo.watchLists(uid).listen(
-      (items) => state = TodoListsData(items),
+      (items) {
+        _lastItems = items;
+        // Lo que el servidor ya no devuelve deja de hacer falta ocultarlo.
+        _hidden.removeWhere((id) => !items.any((list) => list.id == id));
+        state = TodoListsData(_visible());
+      },
       onError: (Object e, StackTrace st) {
         if (state is! TodoListsData) {
           state = TodoListsError(e is Failure ? e : const UnknownFailure());
@@ -81,13 +95,30 @@ class TodoListsNotifier extends Notifier<TodoListsState> {
         );
   }
 
+  List<TodoList> _visible() => [
+        for (final list in _lastItems)
+          if (!_hidden.contains(list.id)) list,
+      ];
+
+  void _unhide(String id) {
+    _hidden.remove(id);
+    if (state is TodoListsData) state = TodoListsData(_visible());
+  }
+
   /// Borra [id] con sus tareas. Devuelve si pudo: sin leerlas no hay copia que
-  /// valga en la papelera, y el borrado se las lleva en cascada.
+  /// valga en la papelera, y el borrado se las lleva en cascada. La lista
+  /// desaparece de la pantalla de inmediato y vuelve si el borrado falla.
   Future<bool> delete(String id) async {
     final list = _findById(id);
+    _hidden.add(id);
+    if (state is TodoListsData) state = TodoListsData(_visible());
+
     // Las tareas hay que leerlas antes: el borrado se las lleva en cascada.
     final todos = await _todosOf(id);
-    if (todos == null) return false;
+    if (todos == null) {
+      _unhide(id);
+      return false;
+    }
 
     if (list != null) {
       await ref.read(trashRepositoryProvider).save(
@@ -111,7 +142,15 @@ class TodoListsNotifier extends Notifier<TodoListsState> {
           );
     }
 
-    await ref.read(todoListsRepositoryProvider).deleteList(uid: _uid, id: id);
+    final res = await ref.read(todoListsRepositoryProvider).deleteList(
+          uid: _uid,
+          id: id,
+          todoIds: [for (final todo in todos) todo.id],
+        );
+    if (res.isErr) {
+      _unhide(id);
+      return false;
+    }
     return true;
   }
 
@@ -125,29 +164,30 @@ class TodoListsNotifier extends Notifier<TodoListsState> {
     );
     if (entries.isEmpty) return false;
 
-    // La lista primero: las tareas cuelgan de ella.
     final listEntry = entries.firstWhere(
       (entry) => entry.kind == TrashKind.list,
     );
-    final listRes = await ref.read(todoListsRepositoryProvider).restoreList(
+    final todoEntries = [
+      for (final entry in entries)
+        if (entry.kind == TrashKind.todo &&
+            (entry.parentId ?? listEntry.itemId) == listEntry.itemId)
+          entry,
+    ];
+    final res = await ref.read(todoListsRepositoryProvider).restoreList(
           uid: _uid,
           list: TodoList.fromJson(listEntry.payload),
+          todos: [for (final entry in todoEntries) Todo.fromJson(entry.payload)],
         );
-    if (listRes.isErr) return false;
+    if (res.isErr) return false;
 
-    final todosRepo = ref.read(todosRepositoryProvider);
-    for (final entry in entries.where((e) => e.kind == TrashKind.todo)) {
-      final restored = await todosRepo.restoreTodo(
-        uid: _uid,
-        listId: entry.parentId ?? listEntry.itemId,
-        todo: Todo.fromJson(entry.payload),
-      );
-      if (restored.isErr) return false;
-    }
-
+    // Si el refresco tras borrarla falló, la lista seguiría oculta.
+    _unhide(listEntry.itemId);
+    await ref
+        .read(todosRepositoryProvider)
+        .refresh(uid: _uid, listId: listEntry.itemId);
     await trash.remove(
       uid: _uid,
-      ids: entries.map((entry) => entry.id).toList(growable: false),
+      ids: [listEntry.id, for (final entry in todoEntries) entry.id],
     );
     return true;
   }

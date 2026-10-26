@@ -31,12 +31,17 @@ void main() {
     // mocktail necesita un valor de relleno para los matchers de entidades.
     registerFallbackValue(buildTodoList());
     registerFallbackValue(buildTodo());
+    registerFallbackValue(<Todo>[]);
     registerFallbackValue(buildAppointment());
   });
 
   setUp(() {
     listsRepo = _MockListsRepo();
     todosRepo = _MockTodosRepo();
+    when(() => todosRepo.refresh(
+          uid: any(named: 'uid'),
+          listId: any(named: 'listId'),
+        )).thenAnswer((_) async {});
     appointmentsRepo = _MockAppointmentsRepo();
   });
 
@@ -73,8 +78,12 @@ void main() {
 
   test('una lista vuelve por el repositorio de listas', () async {
     final list = buildTodoList(id: 'L1', name: 'Compras');
-    when(() => listsRepo.restoreList(uid: 'u1', list: any(named: 'list')))
-        .thenAnswer((_) async => Ok(list));
+    when(() => listsRepo.restoreList(
+          uid: 'u1',
+          list: any(named: 'list'),
+          todos: any(named: 'todos'),
+        ))
+        .thenAnswer((_) async => const Ok(null));
 
     final restored = await container().read(trashRestorerProvider).restore(
           entry(kind: TrashKind.list, id: 'L1', payload: list.toJson()),
@@ -84,6 +93,7 @@ void main() {
     final sent = verify(() => listsRepo.restoreList(
           uid: 'u1',
           list: captureAny(named: 'list'),
+          todos: any(named: 'todos'),
         )).captured.single as TodoList;
     expect(sent.id, 'L1');
     expect(sent.name, 'Compras');
@@ -174,26 +184,17 @@ void main() {
     expect(restored, isFalse);
   });
 
-  test('el grupo de una lista devuelve la lista antes que sus tareas',
+  test('el grupo de una lista la devuelve con sus tareas de una vez',
       () async {
-    // El grupo los pone en orden: la lista primero, que es de quien cuelgan.
     final list = buildTodoList(id: 'L1');
     final todo = buildTodo(id: 't1');
-    final order = <String>[];
 
-    when(() => listsRepo.restoreList(uid: 'u1', list: any(named: 'list')))
-        .thenAnswer((_) async {
-      order.add('list');
-      return Ok(list);
-    });
-    when(() => todosRepo.restoreTodo(
+    when(() => listsRepo.restoreList(
           uid: 'u1',
-          listId: 'L1',
-          todo: any(named: 'todo'),
-        )).thenAnswer((_) async {
-      order.add('todo');
-      return Ok(todo);
-    });
+          list: any(named: 'list'),
+          todos: any(named: 'todos'),
+        ))
+        .thenAnswer((_) async => const Ok(null));
 
     final restored = await container().read(trashRestorerProvider).restoreGroup(
           TrashGroup.partition([
@@ -208,6 +209,22 @@ void main() {
         );
 
     expect(restored, isTrue);
-    expect(order, ['list', 'todo']);
+    final todos = verify(
+      () => listsRepo.restoreList(
+        uid: 'u1',
+        list: any(named: 'list'),
+        todos: captureAny(named: 'todos'),
+      ),
+    ).captured.single as List<Todo>;
+    expect(todos.map((t) => t.id), ['t1']);
+    // Quien esté viendo esa lista recibe las tareas sin esperar al poll.
+    verify(() => todosRepo.refresh(uid: 'u1', listId: 'L1')).called(1);
+    verifyNever(
+      () => todosRepo.restoreTodo(
+        uid: any(named: 'uid'),
+        listId: any(named: 'listId'),
+        todo: any(named: 'todo'),
+      ),
+    );
   });
 }

@@ -44,6 +44,10 @@ abstract class TodosRepository {
     required Todo todo,
   });
 
+  /// Vuelve a pedir las tareas de [listId] si alguien las está viendo: lo que
+  /// escribe otro repositorio (restaurar una lista) no lo avisa solo.
+  Future<void> refresh({required String uid, required String listId});
+
   /// Pausa el polling de watchers activos. Llamado al pasar la app a
   /// background para ahorrar batería y evitar errores de socket.
   void pauseAll();

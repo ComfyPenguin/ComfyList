@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 /// Hand-declared — sin `build_runner`, sin codegen. Usar solo en tests de
@@ -60,6 +61,31 @@ void stubDioPost(
       statusCode: statusCode,
     ),
   );
+}
+
+/// Stub del `commit` por lotes de Firestore, que no devuelve cuerpo útil.
+void stubDioCommit(MockDio dio) {
+  when(() => dio.post<void>(any(), data: any(named: 'data'))).thenAnswer(
+    (_) async => Response<void>(
+      requestOptions: RequestOptions(path: ''),
+      statusCode: 200,
+    ),
+  );
+}
+
+/// Los `data` de cada `commit` enviado, en orden. Comprueba de paso que
+/// todos van a `documents:commit`.
+List<Map<String, dynamic>> sentCommits(MockDio dio) {
+  final captured = verify(
+    () => dio.post<void>(captureAny(), data: captureAny(named: 'data')),
+  ).captured;
+  return [
+    for (var i = 0; i < captured.length; i += 2)
+      () {
+        expect(captured[i], endsWith('/documents:commit'));
+        return captured[i + 1] as Map<String, dynamic>;
+      }(),
+  ];
 }
 
 void stubDioPatch(

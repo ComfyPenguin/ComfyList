@@ -18,15 +18,15 @@ void main() {
     trash = FakeTrashRemote();
   });
 
-  Future<void> seedOldEntry({required int days}) => trash.createEntry(
+  Future<void> seedOldEntry({required int days}) => trash.createEntries(
         uid: 'u1',
         groupId: 'g1',
-        item: const TrashItem(
+        items: const [TrashItem(
           kind: TrashKind.todo,
           itemId: 't1',
           label: 'Comprar pan',
           payload: {},
-        ),
+        )],
         deletedAt: DateTime.now().toUtc().subtract(Duration(days: days)),
       );
 
