@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      aab:
+        description: 'Compilar también el AAB para Play'
+        type: boolean
+        default: false
 
 concurrency:
   group: release-main
@@ -95,10 +100,14 @@ jobs:
       - name: flutter test
         run: flutter test
 
-      - name: Compilar APK y AAB
-        run: |
-          flutter build appbundle --release
-          flutter build apk --release
+      # Solo arm64: cada arquitectura de más es otra compilación AOT entera y
+      # otra copia de la app dentro del APK.
+      - name: Compilar APK
+        run: flutter build apk --release --target-platform android-arm64
+
+      - name: Compilar AAB
+        if: inputs.aab
+        run: flutter build appbundle --release
 
       - name: Generar notas de la release
         run: dart tool/release.dart notes "$PREVIOUS_TAG" "$TAG" > release-notes.md
@@ -123,12 +132,13 @@ jobs:
           # El número de commits va en el nombre para que dos releases del mismo
           # día no compartan archivo.
           cp build/app/outputs/flutter-apk/app-release.apk "dist/comfylist-$VERSION+$BUILD_NUMBER.apk"
-          cp build/app/outputs/bundle/release/app-release.aab "dist/comfylist-$VERSION+$BUILD_NUMBER.aab"
+          if [ -f build/app/outputs/bundle/release/app-release.aab ]; then
+            cp build/app/outputs/bundle/release/app-release.aab "dist/comfylist-$VERSION+$BUILD_NUMBER.aab"
+          fi
           gh release create "$TAG" \
             --title "ComfyList $VERSION.$BUILD_NUMBER" \
             --notes-file release-notes.md \
-            "dist/comfylist-$VERSION+$BUILD_NUMBER.apk" \
-            "dist/comfylist-$VERSION+$BUILD_NUMBER.aab"
+            dist/*
 
       # Va después de subir porque el `digest` solo existe una vez publicado, y
       # es el que la app compara antes de instalar: si no cuadra, esa release no
