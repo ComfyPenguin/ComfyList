@@ -2,9 +2,12 @@ import 'package:comfy_list/features/updates/data/models/github_release_dto.dart'
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  Map<String, dynamic> asset(String name, {String? digest}) => {
+  const downloads =
+      'https://github.com/ComfyPenguin/ComfyList/releases/download/v2026.10.11.231';
+
+  Map<String, dynamic> asset(String name, {String? digest, String? url}) => {
     'name': name,
-    'browser_download_url': 'https://example.test/download/$name',
+    'browser_download_url': url ?? '$downloads/$name',
     'digest': ?digest,
   };
 
@@ -76,6 +79,28 @@ void main() {
     final parsed = GithubReleaseDto.fromJson(release()).toRelease();
 
     expect(parsed?.sha256, isNull);
+  });
+
+  test('un APK que no se baja de las releases del repo descarta la release', () {
+    const apk = 'comfylist-2026.10.11+231.apk';
+    final rejected = [
+      'http://github.com/ComfyPenguin/ComfyList/releases/download/v1/$apk',
+      'https://evil.test/ComfyPenguin/ComfyList/releases/download/v1/$apk',
+      'https://github.com.evil.test/ComfyPenguin/ComfyList/releases/download/v1/$apk',
+      'https://github.com@evil.test/ComfyPenguin/ComfyList/releases/download/v1/$apk',
+      'https://github.com:8443/ComfyPenguin/ComfyList/releases/download/v1/$apk',
+      'https://github.com/otro/ComfyList/releases/download/v1/$apk',
+      'https://github.com/ComfyPenguin/ComfyList/releases/download/../../../otro/x/releases/download/v1/$apk',
+      '',
+    ];
+
+    for (final url in rejected) {
+      final parsed = GithubReleaseDto.fromJson(
+        release(assets: [asset(apk, url: url)]),
+      ).toRelease();
+
+      expect(parsed, isNull, reason: url);
+    }
   });
 
   test('sin APK no hay nada que instalar', () {

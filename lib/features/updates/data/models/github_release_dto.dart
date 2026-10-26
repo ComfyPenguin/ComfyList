@@ -1,3 +1,4 @@
+import '../../../../shared/core/env/update_endpoints.dart';
 import '../../../../shared/core/files/file_checksum.dart';
 import '../../domain/entities/app_release.dart';
 
@@ -29,8 +30,8 @@ class GithubReleaseDto {
   final DateTime? publishedAt;
 
   /// Traduce la release a algo comparable e instalable. `null` si no hay APK
-  /// (el AAB es para Play y no se instala a mano) o si el tag no dice qué
-  /// versión es.
+  /// (el AAB es para Play y no se instala a mano), si el APK no se baja de las
+  /// releases de este repo o si el tag no dice qué versión es.
   AppRelease? toRelease() {
     GithubReleaseAssetDto? apk;
     for (final asset in assets) {
@@ -39,7 +40,7 @@ class GithubReleaseDto {
         break;
       }
     }
-    if (apk == null) return null;
+    if (apk == null || !_isOwnReleaseAsset(apk.downloadUrl)) return null;
 
     final version =
         AppRelease.versionFromTag(tagName) ??
@@ -58,6 +59,19 @@ class GithubReleaseDto {
       sha256: apk.sha256,
       publishedAt: publishedAt?.toUtc(),
     );
+  }
+
+  /// `Uri.parse` ya resuelve los `..` del path antes de comparar.
+  static bool _isOwnReleaseAsset(String url) {
+    final uri = Uri.tryParse(url);
+    return uri != null &&
+        uri.isScheme('https') &&
+        uri.host == 'github.com' &&
+        !uri.hasPort &&
+        uri.userInfo.isEmpty &&
+        uri.path.startsWith(
+          '/${UpdateEndpoints.repository}/releases/download/',
+        );
   }
 }
 

@@ -28,8 +28,7 @@ class AppRelease {
   final String assetName;
 
   /// SHA-256 que GitHub publica del APK (el `digest` del asset), en hexadecimal.
-  /// `null` si la release no lo trae: sin hash no hay nada que comparar tras
-  /// descargar.
+  /// `null` si la release no lo trae: sin hash no se descarga.
   final String? sha256;
 
   final DateTime? publishedAt;

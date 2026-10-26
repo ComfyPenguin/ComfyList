@@ -290,12 +290,23 @@ void main() {
       expect((result as Err<String>).failure, isA<IntegrityFailure>());
     });
 
-    test('sin hash publicado la descarga se acepta como antes', () async {
+    test('sin hash publicado no se llega a descargar', () async {
       stubCompletedDownload(content: content);
 
-      final result = await buildRepo().downloadApk(release: buildAppRelease());
+      final result = await buildRepo().downloadApk(
+        release: buildAppRelease(sha256: null),
+      );
 
-      expect(result, isA<Ok<String>>());
+      final failure = (result as Err<String>).failure;
+      expect(failure, isA<IntegrityFailure>());
+      expect(failure.message, contains('auténtica'));
+      verifyNever(
+        () => downloads.enqueue(
+          url: any(named: 'url'),
+          fileName: any(named: 'fileName'),
+          title: any(named: 'title'),
+        ),
+      );
     });
 
     test('de la respuesta de la API al APK verificado', () async {
@@ -307,7 +318,9 @@ void main() {
         'assets': [
           {
             'name': 'comfylist-2026.10.11+231.apk',
-            'browser_download_url': 'https://example.test/apk',
+            'browser_download_url':
+                'https://github.com/ComfyPenguin/ComfyList/releases/download/'
+                'v2026.10.11.231/comfylist-2026.10.11%2B231.apk',
             'digest': 'sha256:$contentHash',
           },
         ],
