@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Única ruta que el instalador del sistema puede leer: donde el
-     DownloadManager deja el APK de la release. -->
+<!-- Única ruta que el instalador del sistema puede leer: la carpeta Download
+     de los ficheros externos de la app, donde el DownloadManager deja el APK
+     de la release. -->
 <paths>
-    <external-files-path name="external-files" path="." />
+    <external-files-path name="external-files" path="Download/" />
 </paths>

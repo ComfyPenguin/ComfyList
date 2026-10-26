@@ -15,6 +15,15 @@ if (hasReleaseKey) {
     keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
 }
 
+// En CI un release sin keystore saldría firmado con la debug key y no
+// actualizaría sobre el APK firmado con la clave real.
+val isCi = System.getenv("CI") == "true"
+gradle.taskGraph.whenReady {
+    if (isCi && !hasReleaseKey && allTasks.any { it.name.contains("Release") }) {
+        throw GradleException("Falta android/key.properties: no se firma un release con la debug key en CI.")
+    }
+}
+
 android {
     namespace = "andypr.comfylist"
     compileSdk = flutter.compileSdkVersion
