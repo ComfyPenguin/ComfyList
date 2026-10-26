@@ -16,7 +16,7 @@ class FirebaseEndpoints {
   // Web Client ID OAuth (client_type 3 en google-services.json).
   // Necesario como `serverClientId` en GoogleSignIn.initialize() para que
   // Google devuelva un ID token verificable por Firebase Identity Toolkit.
-  // TODO: Override en build vía --dart-define=GOOGLE_SIGN_IN_WEB_CLIENT_ID=...
+  // Permite override en build vía --dart-define=GOOGLE_SIGN_IN_WEB_CLIENT_ID=...
   static const String googleSignInWebClientId = String.fromEnvironment(
     'GOOGLE_SIGN_IN_WEB_CLIENT_ID',
     defaultValue:
