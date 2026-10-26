@@ -11,6 +11,7 @@ import '../../../settings/domain/entities/app_settings.dart';
 import '../../../settings/presentation/providers/app_version_provider.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../../settings/presentation/providers/settings_state.dart';
+import '../../data/datasources/apk_download_manager.dart';
 import '../../data/datasources/github_releases_remote.dart';
 import '../../data/repositories/app_updates_repository_impl.dart';
 import '../../domain/entities/app_release.dart';
@@ -31,7 +32,10 @@ final githubReleasesRemoteProvider = Provider<GithubReleasesRemote>(
 );
 
 final appUpdatesRepositoryProvider = Provider<AppUpdatesRepository>(
-  (ref) => AppUpdatesRepositoryImpl(ref.watch(githubReleasesRemoteProvider)),
+  (ref) => AppUpdatesRepositoryImpl(
+    ref.watch(githubReleasesRemoteProvider),
+    const ApkDownloadManager(),
+  ),
 );
 
 /// Instalador del sistema, sustituible en tests.

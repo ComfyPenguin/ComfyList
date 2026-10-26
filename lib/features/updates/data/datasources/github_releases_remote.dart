@@ -25,26 +25,10 @@ class GithubReleasesRemote {
     return GithubReleaseDto.fromJson(body).toRelease();
   }
 
-  Future<void> downloadApk({
-    required String url,
-    required String path,
-    void Function(int received, int total)? onProgress,
-  }) async {
-    await _dio.download(
-      url,
-      path,
-      onReceiveProgress: onProgress,
-      options: Options(receiveTimeout: _downloadTimeout),
-    );
-  }
-
   static const Map<String, String> _headers = {
     'Accept': 'application/vnd.github+json',
     'X-GitHub-Api-Version': '2022-11-28',
     // GitHub rechaza las peticiones que no llevan User-Agent.
     'User-Agent': 'ComfyList',
   };
-
-  /// Un APK de release pasa de 30 MB: el timeout normal se queda corto.
-  static const Duration _downloadTimeout = Duration(minutes: 10);
 }

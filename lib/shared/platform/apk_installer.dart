@@ -32,8 +32,8 @@ class ApkInstaller {
 
   static String _messageFor(PlatformException e) => switch (e.code) {
     'unknownSources' =>
-      'Activa «Instalar apps desconocidas» para ComfyList en los ajustes de '
-          'Android y vuelve a intentarlo.',
+      'Da permiso a ComfyList para instalar apps en el ajuste que se ha '
+          'abierto y vuelve a intentarlo.',
     'noActivity' => 'No se ha podido abrir el instalador de Android.',
     'noFile' => 'El APK descargado ya no está disponible. Vuelve a intentarlo.',
     _ => e.message ?? 'No se ha podido abrir el instalador.',

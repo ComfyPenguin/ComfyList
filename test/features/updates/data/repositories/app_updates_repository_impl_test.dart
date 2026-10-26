@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:comfy_list/features/updates/data/datasources/apk_download_manager.dart';
 import 'package:comfy_list/features/updates/data/datasources/github_releases_remote.dart';
 import 'package:comfy_list/features/updates/data/models/github_release_dto.dart';
 import 'package:comfy_list/features/updates/data/repositories/app_updates_repository_impl.dart';
@@ -7,6 +8,7 @@ import 'package:comfy_list/features/updates/domain/entities/app_release.dart';
 import 'package:comfy_list/shared/core/failures/failure.dart';
 import 'package:comfy_list/shared/core/result/result.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -14,24 +16,24 @@ import '../../../../helpers/test_helpers.dart';
 
 class _MockGithubReleasesRemote extends Mock implements GithubReleasesRemote {}
 
+class _MockApkDownloadManager extends Mock implements ApkDownloadManager {}
+
 void main() {
   late _MockGithubReleasesRemote remote;
-  late Directory cache;
-
-  setUpAll(() {
-    registerFallbackValue(buildAppRelease());
-    registerFallbackValue((int received, int total) {});
-  });
+  late _MockApkDownloadManager downloads;
+  late Directory downloadsDir;
 
   setUp(() {
     remote = _MockGithubReleasesRemote();
-    cache = Directory.systemTemp.createTempSync('comfylist-updates-test');
+    downloads = _MockApkDownloadManager();
+    downloadsDir = Directory.systemTemp.createTempSync('comfylist-updates-test');
+    when(() => downloads.remove(any())).thenAnswer((_) async {});
   });
 
-  tearDown(() => cache.deleteSync(recursive: true));
+  tearDown(() => downloadsDir.deleteSync(recursive: true));
 
   AppUpdatesRepositoryImpl buildRepo() =>
-      AppUpdatesRepositoryImpl(remote, cacheDirectory: () async => cache);
+      AppUpdatesRepositoryImpl(remote, downloads, pollInterval: Duration.zero);
 
   DioException dioError(
     DioExceptionType type, {
@@ -49,19 +51,29 @@ void main() {
           ),
   );
 
-  /// Finge la descarga escribiendo [content] donde el repositorio pidió el
-  /// archivo, como haría `Dio.download`.
-  void stubDownload({String content = ''}) {
-    when(
-      () => remote.downloadApk(
-        url: any(named: 'url'),
-        path: any(named: 'path'),
-        onProgress: any(named: 'onProgress'),
-      ),
-    ).thenAnswer((invocation) async {
-      final path = invocation.namedArguments[#path] as String;
-      File(path).writeAsStringSync(content);
-    });
+  void stubEnqueue() => when(
+    () => downloads.enqueue(
+      url: any(named: 'url'),
+      fileName: any(named: 'fileName'),
+      title: any(named: 'title'),
+    ),
+  ).thenAnswer((_) async => 7);
+
+  /// Va devolviendo [statuses] en orden, como el DownloadManager al preguntarle
+  /// varias veces.
+  void stubStatuses(List<ApkDownloadStatus> statuses) {
+    final queue = [...statuses];
+    when(() => downloads.status(7)).thenAnswer((_) async => queue.removeAt(0));
+  }
+
+  /// Finge una descarga terminada con [content] en disco.
+  void stubCompletedDownload({String content = ''}) {
+    final file = File('${downloadsDir.path}/comfylist.apk')
+      ..writeAsStringSync(content);
+    stubEnqueue();
+    stubStatuses([
+      ApkDownloadStatus(phase: ApkDownloadPhase.successful, path: file.path),
+    ]);
   }
 
   group('latestRelease', () {
@@ -92,6 +104,19 @@ void main() {
       expect((result as Err<AppRelease>).failure, isA<NetworkFailure>());
     });
 
+    test('una conexión cortada a mitad se traduce a NetworkFailure', () async {
+      when(() => remote.latestRelease()).thenThrow(
+        dioError(
+          DioExceptionType.unknown,
+          error: const HttpException('Connection closed while receiving data'),
+        ),
+      );
+
+      final result = await buildRepo().latestRelease();
+
+      expect((result as Err<AppRelease>).failure, isA<NetworkFailure>());
+    });
+
     test('el límite de peticiones de GitHub tiene su propio mensaje', () async {
       when(() => remote.latestRelease())
           .thenThrow(dioError(DioExceptionType.badResponse, statusCode: 403));
@@ -103,70 +128,127 @@ void main() {
   });
 
   group('downloadApk', () {
-    test('deja el APK en la caché con la versión en el nombre', () async {
-      stubDownload();
+    test('encola la release y devuelve dónde quedó el APK', () async {
+      stubCompletedDownload();
       final release = buildAppRelease();
 
       final result = await buildRepo().downloadApk(release: release);
 
-      expect(result, isA<Ok<String>>());
-      final path = (result as Ok<String>).value;
-      expect(path, startsWith(cache.path));
-      expect(path, endsWith('comfylist-2026.10.11.231.apk'));
+      expect((result as Ok<String>).value, startsWith(downloadsDir.path));
       verify(
-        () => remote.downloadApk(
+        () => downloads.enqueue(
           url: release.downloadUrl,
-          path: path,
-          onProgress: any(named: 'onProgress'),
+          fileName: 'comfylist-2026.10.11.231.apk',
+          title: any(named: 'title'),
         ),
       ).called(1);
     });
 
-    test('sin sitio en el disco es un fallo de caché', () async {
-      when(
-        () => remote.downloadApk(
-          url: any(named: 'url'),
-          path: any(named: 'path'),
-          onProgress: any(named: 'onProgress'),
+    test('informa del progreso mientras el sistema descarga', () async {
+      final file = File('${downloadsDir.path}/comfylist.apk')
+        ..writeAsStringSync('');
+      stubEnqueue();
+      stubStatuses([
+        const ApkDownloadStatus(
+          phase: ApkDownloadPhase.running,
+          received: 10,
+          total: 100,
         ),
-      ).thenThrow(FileSystemException('sin espacio'));
+        const ApkDownloadStatus(
+          phase: ApkDownloadPhase.running,
+          received: 60,
+          total: 100,
+        ),
+        ApkDownloadStatus(phase: ApkDownloadPhase.successful, path: file.path),
+      ]);
+      final progress = <int>[];
+
+      final result = await buildRepo().downloadApk(
+        release: buildAppRelease(),
+        onProgress: (received, _) => progress.add(received),
+      );
+
+      expect(result, isA<Ok<String>>());
+      expect(progress, [10, 60]);
+    });
+
+    test('una descarga fallida se limpia y explica el motivo', () async {
+      stubEnqueue();
+      stubStatuses([
+        const ApkDownloadStatus(phase: ApkDownloadPhase.failed, reason: 1006),
+      ]);
 
       final result = await buildRepo().downloadApk(release: buildAppRelease());
 
       expect((result as Err<String>).failure, isA<CacheFailure>());
+      verify(() => downloads.remove(7)).called(1);
     });
 
-    test('un timeout al bajar el APK se traduce a TimeoutFailure', () async {
-      when(
-        () => remote.downloadApk(
-          url: any(named: 'url'),
-          path: any(named: 'path'),
-          onProgress: any(named: 'onProgress'),
-        ),
-      ).thenThrow(dioError(DioExceptionType.receiveTimeout));
-
-      final result = await buildRepo().downloadApk(release: buildAppRelease());
-
-      expect((result as Err<String>).failure, isA<TimeoutFailure>());
-    });
-
-    test('una conexión cortada a mitad se traduce a NetworkFailure', () async {
-      when(
-        () => remote.downloadApk(
-          url: any(named: 'url'),
-          path: any(named: 'path'),
-          onProgress: any(named: 'onProgress'),
-        ),
-      ).thenThrow(
-        dioError(
-          DioExceptionType.unknown,
-          error: const HttpException('Connection closed while receiving data'),
-        ),
-      );
+    test('un corte de datos es un fallo de red', () async {
+      stubEnqueue();
+      stubStatuses([
+        const ApkDownloadStatus(phase: ApkDownloadPhase.failed, reason: 1004),
+      ]);
 
       final result = await buildRepo().downloadApk(release: buildAppRelease());
 
       expect((result as Err<String>).failure, isA<NetworkFailure>());
+    });
+
+    test('si deja de avanzar se deja de esperar sin cancelarla', () async {
+      stubEnqueue();
+      const stuck = ApkDownloadStatus(
+        phase: ApkDownloadPhase.running,
+        received: 10,
+        total: 100,
+      );
+      stubStatuses([stuck, stuck]);
+
+      final result = await AppUpdatesRepositoryImpl(
+        remote,
+        downloads,
+        pollInterval: Duration.zero,
+        stallTimeout: Duration.zero,
+      ).downloadApk(release: buildAppRelease());
+
+      expect((result as Err<String>).failure, isA<NetworkFailure>());
+      verifyNever(() => downloads.remove(any()));
+    });
+
+    test('si no se puede borrar la fallida, manda su motivo', () async {
+      stubEnqueue();
+      stubStatuses([
+        const ApkDownloadStatus(phase: ApkDownloadPhase.failed, reason: 404),
+      ]);
+      when(() => downloads.remove(any()))
+          .thenThrow(PlatformException(code: 'downloadFailed'));
+
+      final result = await buildRepo().downloadApk(release: buildAppRelease());
+
+      expect((result as Err<String>).failure.message, contains('encontrado'));
+    });
+
+    test('cancelada desde la notificación lo dice así', () async {
+      stubEnqueue();
+      stubStatuses([const ApkDownloadStatus(phase: ApkDownloadPhase.failed)]);
+
+      final result = await buildRepo().downloadApk(release: buildAppRelease());
+
+      expect((result as Err<String>).failure.message, contains('cancelado'));
+    });
+
+    test('si el sistema no acepta la descarga no se queda colgada', () async {
+      when(
+        () => downloads.enqueue(
+          url: any(named: 'url'),
+          fileName: any(named: 'fileName'),
+          title: any(named: 'title'),
+        ),
+      ).thenThrow(PlatformException(code: 'downloadFailed'));
+
+      final result = await buildRepo().downloadApk(release: buildAppRelease());
+
+      expect((result as Err<String>).failure, isA<UnknownFailure>());
     });
   });
 
@@ -177,7 +259,7 @@ void main() {
         'a8f872c6dbaae56fb57f94dc74502da8a14eb2257e3731ebb7ab6aff256edd8b';
 
     test('con el hash de GitHub el APK queda listo para instalar', () async {
-      stubDownload(content: content);
+      stubCompletedDownload(content: content);
 
       final result = await buildRepo().downloadApk(
         release: buildAppRelease(sha256: contentHash),
@@ -187,19 +269,19 @@ void main() {
       expect(File((result as Ok<String>).value).existsSync(), isTrue);
     });
 
-    test('si no cuadra, no se deja nada que instalar', () async {
-      stubDownload(content: content);
+    test('si no cuadra, se borra la descarga', () async {
+      stubCompletedDownload(content: content);
 
       final result = await buildRepo().downloadApk(
         release: buildAppRelease(sha256: 'f' * 64),
       );
 
       expect((result as Err<String>).failure, isA<IntegrityFailure>());
-      expect(cache.listSync(), isEmpty);
+      verify(() => downloads.remove(7)).called(1);
     });
 
     test('un hash de otra descarga tampoco cuela', () async {
-      stubDownload(content: 'otro APK distinto');
+      stubCompletedDownload(content: 'otro APK distinto');
 
       final result = await buildRepo().downloadApk(
         release: buildAppRelease(sha256: contentHash),
@@ -209,7 +291,7 @@ void main() {
     });
 
     test('sin hash publicado la descarga se acepta como antes', () async {
-      stubDownload(content: content);
+      stubCompletedDownload(content: content);
 
       final result = await buildRepo().downloadApk(release: buildAppRelease());
 
@@ -230,7 +312,7 @@ void main() {
           },
         ],
       }).toRelease();
-      stubDownload(content: content);
+      stubCompletedDownload(content: content);
 
       final result = await buildRepo().downloadApk(release: release!);
 
