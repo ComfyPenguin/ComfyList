@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../../shared/core/env/firebase_endpoints.dart';
+import '../../../../shared/data/remote/firestore_commit.dart';
 import '../../../../shared/data/remote/firestore_pages.dart';
 import '../../domain/entities/trash_entry.dart';
 import '../models/trash_dto.dart';
@@ -22,27 +23,34 @@ class FirestoreTrashRemote {
         .toList(growable: false);
   }
 
-  Future<TrashEntry> createEntry({
+  /// Guarda [items] en un solo `commit`. El id lo pone el cliente porque con
+  /// `createDocument` lo reparte el servidor y haría falta una petición por
+  /// elemento.
+  Future<void> createEntries({
     required String uid,
     required String groupId,
-    required TrashItem item,
+    required List<TrashItem> items,
     required DateTime deletedAt,
-  }) async {
-    final res = await _dio.post<Map<String, dynamic>>(
-      _collectionPath(uid),
-      data: TrashDto.toCreateBody(
-        groupId: groupId,
-        item: item,
-        deletedAt: deletedAt,
-      ),
-    );
-    return TrashDto.fromDocument(res.data!, uid: uid);
+  }) {
+    return _dio.commitWrites([
+      for (final item in items)
+        FirestoreWrite.update(
+          'users/$uid/trash/${generateFirestoreId()}',
+          TrashDto.toCreateBody(
+            groupId: groupId,
+            item: item,
+            deletedAt: deletedAt,
+          ),
+        ),
+    ]);
   }
 
-  Future<void> deleteEntry({
+  Future<void> deleteEntries({
     required String uid,
-    required String id,
-  }) async {
-    await _dio.delete<void>('${_collectionPath(uid)}/$id');
+    required List<String> ids,
+  }) {
+    return _dio.commitWrites([
+      for (final id in ids) FirestoreWrite.delete('users/$uid/trash/$id'),
+    ]);
   }
 }

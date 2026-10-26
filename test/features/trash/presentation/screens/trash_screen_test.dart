@@ -4,6 +4,7 @@ import 'package:comfy_list/features/todo_lists/domain/repositories/todo_lists_re
 import 'package:comfy_list/features/todo_lists/presentation/providers/todo_lists_provider.dart';
 import 'package:comfy_list/features/todos/domain/repositories/todos_repository.dart';
 import 'package:comfy_list/features/todos/presentation/providers/todos_provider.dart';
+import 'package:comfy_list/features/todos/domain/entities/todo.dart';
 import 'package:comfy_list/features/trash/domain/entities/trash_entry.dart';
 import 'package:comfy_list/features/trash/domain/repositories/trash_repository.dart';
 import 'package:comfy_list/features/trash/presentation/providers/trash_provider.dart';
@@ -87,6 +88,7 @@ void main() {
     // mocktail necesita un valor de relleno para los matchers de entidades.
     registerFallbackValue(buildTodoList());
     registerFallbackValue(buildTodo());
+    registerFallbackValue(<Todo>[]);
 
     TestWidgetsFlutterBinding.ensureInitialized();
     final loader = FontLoader('PlusJakartaSans')
@@ -99,6 +101,10 @@ void main() {
   setUp(() {
     listsRepo = _MockListsRepo();
     todosRepo = _MockTodosRepo();
+    when(() => todosRepo.refresh(
+          uid: any(named: 'uid'),
+          listId: any(named: 'listId'),
+        )).thenAnswer((_) async {});
   });
 
   TrashEntry entry({
@@ -275,25 +281,25 @@ void main() {
   testWidgets('restaurar esa lista devuelve también la tarea que colgaba',
       (tester) async {
     seedTaskThenList();
-    when(() => listsRepo.restoreList(uid: 'u1', list: any(named: 'list')))
-        .thenAnswer((_) async => Ok(buildTodoList(id: 'L1')));
-    when(() => todosRepo.restoreTodo(
+    when(() => listsRepo.restoreList(
           uid: 'u1',
-          listId: 'L1',
-          todo: any(named: 'todo'),
-        )).thenAnswer((_) async => Ok(buildTodo()));
+          list: any(named: 'list'),
+          todos: any(named: 'todos'),
+        ))
+        .thenAnswer((_) async => const Ok(null));
 
     await pumpScreen(tester);
     await tester.tap(find.text('Restaurar'));
     await tester.pumpAndSettle();
 
-    verify(
-      () => todosRepo.restoreTodo(
+    final todos = verify(
+      () => listsRepo.restoreList(
         uid: 'u1',
-        listId: 'L1',
-        todo: any(named: 'todo'),
+        list: any(named: 'list'),
+        todos: captureAny(named: 'todos'),
       ),
-    ).called(2);
+    ).captured.single as List<Todo>;
+    expect(todos, hasLength(2));
     // La lista, su tarea y la que ya estaba borrada antes.
     expect(trash.removed, ['d2', 'd1', 'd3']);
   });
@@ -301,29 +307,26 @@ void main() {
   testWidgets('restaurar devuelve la lista con sus tareas enteras',
       (tester) async {
     seedListWithTasks();
-    when(() => listsRepo.restoreList(uid: 'u1', list: any(named: 'list')))
-        .thenAnswer((_) async => Ok(buildTodoList(id: 'L1')));
-    when(() => todosRepo.restoreTodo(
+    when(() => listsRepo.restoreList(
           uid: 'u1',
-          listId: 'L1',
-          todo: any(named: 'todo'),
-        )).thenAnswer((_) async => Ok(buildTodo()));
+          list: any(named: 'list'),
+          todos: any(named: 'todos'),
+        ))
+        .thenAnswer((_) async => const Ok(null));
 
     await pumpScreen(tester);
     await tester.tap(find.text('Restaurar'));
     await tester.pumpAndSettle();
 
-    // La lista primero y luego cada tarea, aunque no se haya desplegado nada.
-    verify(
-      () => listsRepo.restoreList(uid: 'u1', list: any(named: 'list')),
-    ).called(1);
-    verify(
-      () => todosRepo.restoreTodo(
+    // Todas las tareas van con la lista, aunque no se haya desplegado nada.
+    final todos = verify(
+      () => listsRepo.restoreList(
         uid: 'u1',
-        listId: 'L1',
-        todo: any(named: 'todo'),
+        list: any(named: 'list'),
+        todos: captureAny(named: 'todos'),
       ),
-    ).called(2);
+    ).captured.single as List<Todo>;
+    expect(todos, hasLength(2));
     expect(trash.removed, ['d2', 'd1', 'd3']);
   });
 

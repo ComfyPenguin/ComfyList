@@ -221,39 +221,39 @@ void main() {
     // como una tarea.
     final list = buildTodoList(id: 'L1');
     final now = DateTime.now().toUtc();
-    await trash.createEntry(
+    await trash.createEntries(
       uid: 'u1',
       groupId: 'g1',
-      item: TrashItem(
+      items: [TrashItem(
         kind: TrashKind.todo,
         itemId: 't1',
         parentId: 'L1',
         label: 'Pan',
         payload: buildTodo(id: 't1', title: 'Pan').toJson(),
-      ),
+      )],
       deletedAt: now.subtract(const Duration(minutes: 1)),
     );
-    await trash.createEntry(
+    await trash.createEntries(
       uid: 'u1',
       groupId: 'g2',
-      item: TrashItem(
+      items: [TrashItem(
         kind: TrashKind.list,
         itemId: list.id,
         label: list.name,
         payload: list.toJson(),
-      ),
+      )],
       deletedAt: now,
     );
-    await trash.createEntry(
+    await trash.createEntries(
       uid: 'u1',
       groupId: 'g2',
-      item: TrashItem(
+      items: [TrashItem(
         kind: TrashKind.todo,
         itemId: 't2',
         parentId: list.id,
         label: 'Leche',
         payload: buildTodo(id: 't2', title: 'Leche').toJson(),
-      ),
+      )],
       deletedAt: now,
     );
 

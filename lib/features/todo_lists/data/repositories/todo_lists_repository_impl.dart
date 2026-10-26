@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import '../../../../shared/core/failures/failure.dart';
 import '../../../../shared/core/result/result.dart';
 import '../../../../shared/core/time/clock.dart';
+import '../../../todos/domain/entities/todo.dart';
 import '../../domain/entities/todo_list.dart';
 import '../../domain/repositories/todo_lists_repository.dart';
 import '../datasources/firestore_lists_remote.dart';
@@ -93,22 +94,10 @@ class TodoListsRepositoryImpl implements TodoListsRepository {
   Future<Result<void>> deleteList({
     required String uid,
     required String id,
+    required List<String> todoIds,
   }) async {
     try {
-      // Cascade manual: Firestore no borra subcolecciones automáticamente,
-      // así que recogemos los IDs de todos y los borramos antes de la lista.
-      // Si esto falla a la mitad, la lista quedaría inconsistente — para v1
-      // asumimos que el coste/riesgo es aceptable (mejor que dejar
-      // huérfanos siempre).
-      final todoIds = await _remote.listTodoIdsOfList(uid: uid, listId: id);
-      for (final todoId in todoIds) {
-        await _remote.deleteTodoOfList(
-          uid: uid,
-          listId: id,
-          todoId: todoId,
-        );
-      }
-      await _remote.deleteList(uid: uid, id: id);
+      await _remote.deleteListWithTodos(uid: uid, id: id, todoIds: todoIds);
       await _refresh(uid);
       return const Ok(null);
     } on DioException catch (e) {
@@ -117,14 +106,15 @@ class TodoListsRepositoryImpl implements TodoListsRepository {
   }
 
   @override
-  Future<Result<TodoList>> restoreList({
+  Future<Result<void>> restoreList({
     required String uid,
     required TodoList list,
+    required List<Todo> todos,
   }) async {
     try {
-      final restored = await _remote.restoreList(uid: uid, list: list);
+      await _remote.restoreListWithTodos(uid: uid, list: list, todos: todos);
       await _refresh(uid);
-      return Ok(restored);
+      return const Ok(null);
     } on DioException catch (e) {
       return Err(_mapDioError(e));
     }

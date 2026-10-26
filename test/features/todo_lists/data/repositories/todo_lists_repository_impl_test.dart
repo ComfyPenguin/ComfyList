@@ -1,6 +1,7 @@
 import 'package:comfy_list/features/todo_lists/data/datasources/firestore_lists_remote.dart';
 import 'package:comfy_list/features/todo_lists/data/repositories/todo_lists_repository_impl.dart';
 import 'package:comfy_list/features/todo_lists/domain/entities/todo_list.dart';
+import 'package:comfy_list/features/todos/domain/entities/todo.dart';
 import 'package:comfy_list/shared/core/failures/failure.dart';
 import 'package:comfy_list/shared/core/result/result.dart';
 import 'package:dio/dio.dart';
@@ -12,6 +13,11 @@ import '../../../../helpers/test_helpers.dart';
 class _MockRemote extends Mock implements FirestoreListsRemote {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(buildTodoList());
+    registerFallbackValue(<Todo>[]);
+  });
+
   late _MockRemote remote;
   late TodoListsRepositoryImpl repo;
 
@@ -140,31 +146,66 @@ void main() {
       expect((res as Err).failure, isA<ServerFailure>());
     });
 
-    test('deleteList cascades over the todos subcollection', () async {
-      when(() => remote.listTodoIdsOfList(uid: 'u1', listId: 'L1'))
-          .thenAnswer((_) async => ['t1', 't2']);
-      when(() => remote.deleteTodoOfList(
+    test('deleteList borra la lista y sus tareas con una sola llamada',
+        () async {
+      when(() => remote.deleteListWithTodos(
             uid: 'u1',
-            listId: 'L1',
-            todoId: any(named: 'todoId'),
+            id: 'L1',
+            todoIds: any(named: 'todoIds'),
           )).thenAnswer((_) async {});
-      when(() => remote.deleteList(uid: 'u1', id: 'L1'))
-          .thenAnswer((_) async {});
 
-      final res = await repo.deleteList(uid: 'u1', id: 'L1');
+      final res = await repo.deleteList(
+        uid: 'u1',
+        id: 'L1',
+        todoIds: const ['t1', 't2'],
+      );
 
       expect(res.isOk, isTrue);
-      verify(() => remote.deleteTodoOfList(
+      verify(() => remote.deleteListWithTodos(
             uid: 'u1',
-            listId: 'L1',
-            todoId: 't1',
+            id: 'L1',
+            todoIds: const ['t1', 't2'],
           )).called(1);
-      verify(() => remote.deleteTodoOfList(
+    });
+
+    test('deleteList devuelve Err si el commit falla', () async {
+      when(() => remote.deleteListWithTodos(
             uid: 'u1',
-            listId: 'L1',
-            todoId: 't2',
-          )).called(1);
-      verify(() => remote.deleteList(uid: 'u1', id: 'L1')).called(1);
+            id: 'L1',
+            todoIds: any(named: 'todoIds'),
+          )).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: ''),
+          type: DioExceptionType.connectionError,
+        ),
+      );
+
+      final res = await repo.deleteList(uid: 'u1', id: 'L1', todoIds: const []);
+
+      expect((res as Err).failure, isA<NetworkFailure>());
+    });
+
+    test('restoreList devuelve la lista y sus tareas con una sola llamada',
+        () async {
+      when(() => remote.restoreListWithTodos(
+            uid: 'u1',
+            list: any(named: 'list'),
+            todos: any(named: 'todos'),
+          )).thenAnswer((_) async {});
+
+      final res = await repo.restoreList(
+        uid: 'u1',
+        list: buildTodoList(id: 'L1'),
+        todos: [buildTodo(id: 't1')],
+      );
+
+      expect(res.isOk, isTrue);
+      final sent = verify(() => remote.restoreListWithTodos(
+            uid: 'u1',
+            list: any(named: 'list'),
+            todos: captureAny(named: 'todos'),
+          )).captured.single as List<Todo>;
+      expect(sent.map((t) => t.id), ['t1']);
     });
   });
 }

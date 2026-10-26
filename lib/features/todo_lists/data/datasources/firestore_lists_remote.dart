@@ -1,7 +1,10 @@
 import 'package:dio/dio.dart';
 
 import '../../../../shared/core/env/firebase_endpoints.dart';
+import '../../../../shared/data/remote/firestore_commit.dart';
 import '../../../../shared/data/remote/firestore_pages.dart';
+import '../../../todos/data/models/todo_dto.dart';
+import '../../../todos/domain/entities/todo.dart';
 import '../../domain/entities/todo_list.dart';
 import '../models/todo_list_dto.dart';
 
@@ -62,52 +65,36 @@ class FirestoreListsRemote {
     return TodoListDto.fromDocument(res.data!);
   }
 
-  Future<void> deleteList({
+  /// Borra la lista y sus tareas en un solo `commit`: Firestore no borra las
+  /// subcolecciones al eliminar el documento padre. La lista va la última.
+  Future<void> deleteListWithTodos({
     required String uid,
     required String id,
-  }) async {
-    await _dio.delete<void>('${_collectionPath(uid)}/$id');
+    required List<String> todoIds,
+  }) {
+    final listPath = 'users/$uid/todo_lists/$id';
+    return _dio.commitWrites([
+      for (final todoId in todoIds)
+        FirestoreWrite.delete('$listPath/todos/$todoId'),
+      FirestoreWrite.delete(listPath),
+    ]);
   }
 
-  /// Vuelve a escribir el documento de [list] con su mismo id.
-  Future<TodoList> restoreList({
+  /// Vuelve a escribir la lista y sus tareas, con sus mismos ids, en un solo
+  /// `commit`.
+  Future<void> restoreListWithTodos({
     required String uid,
     required TodoList list,
-  }) async {
-    final res = await _dio.patch<Map<String, dynamic>>(
-      '${_collectionPath(uid)}/${list.id}',
-      data: TodoListDto.toRestoreBody(list),
-    );
-    return TodoListDto.fromDocument(res.data!);
-  }
-
-  /// Lista los IDs de los documentos de la subcolección `todos` de una
-  /// lista. Útil para el cascade delete (Firestore no borra subcolecciones
-  /// automáticamente al eliminar el documento padre).
-  Future<List<String>> listTodoIdsOfList({
-    required String uid,
-    required String listId,
-  }) async {
-    final res = await _dio.get<Map<String, dynamic>>(
-      '${_collectionPath(uid)}/$listId/todos',
-    );
-    final docs = (res.data?['documents'] as List?) ?? const [];
-    return docs
-        .cast<Map<String, dynamic>>()
-        .map((d) {
-          final name = d['name'] as String? ?? '';
-          return name.split('/').last;
-        })
-        .toList(growable: false);
-  }
-
-  Future<void> deleteTodoOfList({
-    required String uid,
-    required String listId,
-    required String todoId,
-  }) async {
-    await _dio.delete<void>(
-      '${_collectionPath(uid)}/$listId/todos/$todoId',
-    );
+    required List<Todo> todos,
+  }) {
+    final listPath = 'users/$uid/todo_lists/${list.id}';
+    return _dio.commitWrites([
+      FirestoreWrite.update(listPath, TodoListDto.toRestoreBody(list)),
+      for (final todo in todos)
+        FirestoreWrite.update(
+          '$listPath/todos/${todo.id}',
+          TodoDto.toRestoreBody(todo),
+        ),
+    ]);
   }
 }

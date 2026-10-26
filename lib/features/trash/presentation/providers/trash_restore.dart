@@ -18,11 +18,37 @@ class TrashRestorer {
 
   final Ref _ref;
 
-  /// Devuelve un borrado entero: una lista vuelve con sus tareas. El grupo ya
-  /// trae la lista delante, que es de quien cuelgan.
+  /// Devuelve un borrado entero: una lista vuelve con sus tareas en una sola
+  /// escritura.
   Future<bool> restoreGroup(TrashGroup group) async {
+    final listEntry =
+        group.entries.where((e) => e.kind == TrashKind.list).firstOrNull;
+    if (listEntry == null) {
+      for (final entry in group.entries) {
+        if (!await restore(entry)) return false;
+      }
+      return true;
+    }
+
+    bool isChild(TrashEntry e) =>
+        e.kind == TrashKind.todo && e.parentId == listEntry.itemId;
+    final res = await _ref.read(todoListsRepositoryProvider).restoreList(
+          uid: listEntry.uid,
+          list: TodoList.fromJson(listEntry.payload),
+          todos: [
+            for (final entry in group.entries)
+              if (isChild(entry)) Todo.fromJson(entry.payload),
+          ],
+        );
+    if (res.isErr) return false;
+    await _ref
+        .read(todosRepositoryProvider)
+        .refresh(uid: listEntry.uid, listId: listEntry.itemId);
+
     for (final entry in group.entries) {
-      if (!await restore(entry)) return false;
+      if (entry != listEntry && !isChild(entry) && !await restore(entry)) {
+        return false;
+      }
     }
     return true;
   }
@@ -33,6 +59,7 @@ class TrashRestorer {
         final res = await _ref.read(todoListsRepositoryProvider).restoreList(
               uid: entry.uid,
               list: TodoList.fromJson(entry.payload),
+              todos: const [],
             );
         return res.isOk;
 
