@@ -23,7 +23,7 @@ dependencies:
   http: ^1.6.0
 
   # Routing
-  go_router: ^18.0.2
+  go_router: ^18.1.1
 
   # Local DB
   drift: ^2.35.1
@@ -44,7 +44,7 @@ dependencies:
   # Notificaciones locales
   flutter_local_notifications: ^21.0.0
   # Zonas horarias: `zonedSchedule` recibe la hora como TZDateTime
-  timezone: ^0.11.1
+  timezone: ^0.11.2
 
   # Animaciones / assets
   flutter_animate: ^4.5.2
