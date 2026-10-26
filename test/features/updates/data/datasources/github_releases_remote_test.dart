@@ -25,6 +25,7 @@ void main() {
         'browser_download_url':
             'https://github.com/ComfyPenguin/ComfyList/releases/download/'
                 'v2026.10.11.231/comfylist-2026.10.11%2B231.apk',
+        'digest': 'sha256:${'a' * 64}',
       },
     ],
   };

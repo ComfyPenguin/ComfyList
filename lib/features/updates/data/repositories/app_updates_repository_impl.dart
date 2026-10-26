@@ -83,9 +83,7 @@ class AppUpdatesRepositoryImpl implements AppUpdatesRepository {
             if (path == null) {
               return const Err(CacheFailure('No se ha podido guardar la descarga.'));
             }
-            final expected = release.sha256;
-            if (expected != null &&
-                !await _matchesPublishedHash(File(path), expected)) {
+            if (!await _matchesPublishedHash(File(path), release.sha256)) {
               await _discard(id);
               return const Err(IntegrityFailure());
             }

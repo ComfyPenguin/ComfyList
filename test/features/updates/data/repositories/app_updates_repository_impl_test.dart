@@ -290,14 +290,6 @@ void main() {
       expect((result as Err<String>).failure, isA<IntegrityFailure>());
     });
 
-    test('sin hash publicado la descarga se acepta como antes', () async {
-      stubCompletedDownload(content: content);
-
-      final result = await buildRepo().downloadApk(release: buildAppRelease());
-
-      expect(result, isA<Ok<String>>());
-    });
-
     test('de la respuesta de la API al APK verificado', () async {
       // Sin nada simulado por medio: el JSON que devuelve `/releases/latest`,
       // con el `digest` del asset, tiene que acabar en un APK que cuadra.
@@ -307,7 +299,9 @@ void main() {
         'assets': [
           {
             'name': 'comfylist-2026.10.11+231.apk',
-            'browser_download_url': 'https://example.test/apk',
+            'browser_download_url':
+                'https://github.com/ComfyPenguin/ComfyList/releases/download/'
+                'v2026.10.11.231/comfylist-2026.10.11%2B231.apk',
             'digest': 'sha256:$contentHash',
           },
         ],
