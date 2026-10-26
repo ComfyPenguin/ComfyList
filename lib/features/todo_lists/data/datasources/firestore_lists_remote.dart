@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../../shared/core/env/firebase_endpoints.dart';
+import '../../../../shared/data/remote/firestore_pages.dart';
 import '../../domain/entities/todo_list.dart';
 import '../models/todo_list_dto.dart';
 
@@ -14,10 +15,8 @@ class FirestoreListsRemote {
       '${FirebaseEndpoints.firestoreBase}/users/$uid/todo_lists';
 
   Future<List<TodoList>> listLists(String uid) async {
-    final res = await _dio.get<Map<String, dynamic>>(_collectionPath(uid));
-    final docs = (res.data?['documents'] as List?) ?? const [];
+    final docs = await _dio.getAllDocuments(_collectionPath(uid));
     return docs
-        .cast<Map<String, dynamic>>()
         .map(TodoListDto.fromDocument)
         .toList(growable: false);
   }

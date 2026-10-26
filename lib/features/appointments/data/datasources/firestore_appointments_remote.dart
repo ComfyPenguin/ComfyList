@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../../shared/core/env/firebase_endpoints.dart';
+import '../../../../shared/data/remote/firestore_pages.dart';
 import '../../domain/entities/appointment.dart';
 import '../models/appointment_dto.dart';
 
@@ -18,12 +19,8 @@ class FirestoreAppointmentsRemote {
   Future<List<Appointment>> listAppointments({
     required String uid,
   }) async {
-    final res = await _dio.get<Map<String, dynamic>>(
-      _collectionPath(uid),
-    );
-    final docs = (res.data?['documents'] as List?) ?? const [];
+    final docs = await _dio.getAllDocuments(_collectionPath(uid));
     return docs
-        .cast<Map<String, dynamic>>()
         .map(AppointmentDto.fromDocument)
         .toList(growable: false);
   }

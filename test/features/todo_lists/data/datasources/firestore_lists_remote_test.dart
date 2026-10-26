@@ -48,7 +48,7 @@ void main() {
           ),
         ],
       };
-      stubDioGet(dio, body: body);
+      stubDioGet(dio, body: body, withQueryParameters: true);
 
       final lists = await remote.listLists('u1');
 
@@ -58,13 +58,16 @@ void main() {
       expect(lists.first.iconKey, 'cart');
       verify(() => dio.get<Map<String, dynamic>>(
             any(),
-            options: any(named: 'options'),
-            cancelToken: any(named: 'cancelToken'),
+            queryParameters: any(named: 'queryParameters'),
           )).called(1);
     });
 
     test('listLists returns an empty list when no documents', () async {
-      stubDioGet(dio, body: <String, dynamic>{'documents': <dynamic>[]});
+      stubDioGet(
+        dio,
+        body: <String, dynamic>{'documents': <dynamic>[]},
+        withQueryParameters: true,
+      );
 
       final lists = await remote.listLists('u1');
 

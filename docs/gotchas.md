@@ -6,6 +6,7 @@ Trampas y decisiones no obvias del proyecto, por área. `AGENTS.md` solo enlaza 
 
 - **Nada de SDK de Firebase**: todo va por REST con Dio (Identity Toolkit + Firestore REST). `firebase_core` está solo por compatibilidad; no importar `cloud_firestore` ni `firebase_auth`.
 - **Dos clientes Dio**: `instance` (con auth interceptor) y `authClient` (sin interceptor, para signUp/signIn).
+- **Los listados se leen por páginas** (`getAllDocuments`, `firestore_pages.dart`): Firestore corta las colecciones y puede devolver menos de lo pedido, así que una sola petición puede dejar documentos fuera; hay que seguir el `nextPageToken`.
 - **La apiKey solo abre tres APIs**: en Google Cloud está restringida a Identity Toolkit, Token Service y Cloud Firestore. Cualquier API nueva falla con `403 API_KEY_SERVICE_BLOCKED` aunque el código esté bien: hay que añadirla a la lista. Va sin restricción de aplicación a propósito (las llamadas salen con Dio, sin las cabeceras `X-Android-Package`/`X-Android-Cert`, y la usan los builds de escritorio).
 
 ## Config y build
