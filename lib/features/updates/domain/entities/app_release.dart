@@ -10,7 +10,7 @@ class AppRelease {
     required this.notes,
     required this.downloadUrl,
     required this.assetName,
-    this.sha256,
+    required this.sha256,
     this.publishedAt,
   });
 
@@ -28,9 +28,8 @@ class AppRelease {
   final String assetName;
 
   /// SHA-256 que GitHub publica del APK (el `digest` del asset), en hexadecimal.
-  /// `null` si la release no lo trae: sin hash no hay nada que comparar tras
-  /// descargar.
-  final String? sha256;
+  /// Una release sin él no se ofrece.
+  final String sha256;
 
   final DateTime? publishedAt;
 

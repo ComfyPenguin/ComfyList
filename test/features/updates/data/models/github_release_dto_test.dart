@@ -2,9 +2,19 @@ import 'package:comfy_list/features/updates/data/models/github_release_dto.dart'
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  Map<String, dynamic> asset(String name, {String? digest}) => {
+  const downloads =
+      'https://github.com/ComfyPenguin/ComfyList/releases/download/v2026.10.11.231';
+
+  const publishedHash =
+      '2151b604e3429bff440b9fbc03eb3617bc2603cda96c95b9bb05277f9ddba255';
+
+  Map<String, dynamic> asset(
+    String name, {
+    String? digest = 'sha256:$publishedHash',
+    String? url,
+  }) => {
     'name': name,
-    'browser_download_url': 'https://example.test/download/$name',
+    'browser_download_url': url ?? '$downloads/$name',
     'digest': ?digest,
   };
 
@@ -42,40 +52,43 @@ void main() {
   });
 
   test('recoge el sha256 que publica el asset', () {
-    final parsed = GithubReleaseDto.fromJson(
-      release(
-        assets: [
-          asset(
-            'comfylist-2026.10.11+231.apk',
-            digest:
-                'sha256:2151b604e3429bff440b9fbc03eb3617bc2603cda96c95b9bb05277f9ddba255',
-          ),
-        ],
-      ),
-    ).toRelease();
-
-    expect(
-      parsed?.sha256,
-      '2151b604e3429bff440b9fbc03eb3617bc2603cda96c95b9bb05277f9ddba255',
-    );
-  });
-
-  test('un digest que no sea sha256 se ignora', () {
-    final parsed = GithubReleaseDto.fromJson(
-      release(
-        assets: [
-          asset('comfylist-2026.10.11+231.apk', digest: 'sha1:2151b604e3429bff'),
-        ],
-      ),
-    ).toRelease();
-
-    expect(parsed?.sha256, isNull);
-  });
-
-  test('sin digest la release no trae hash que comprobar', () {
     final parsed = GithubReleaseDto.fromJson(release()).toRelease();
 
-    expect(parsed?.sha256, isNull);
+    expect(parsed?.sha256, publishedHash);
+  });
+
+  test('sin un sha256 que comprobar la release no se ofrece', () {
+    for (final digest in [null, 'sha1:2151b604e3429bff']) {
+      final parsed = GithubReleaseDto.fromJson(
+        release(
+          assets: [asset('comfylist-2026.10.11+231.apk', digest: digest)],
+        ),
+      ).toRelease();
+
+      expect(parsed, isNull, reason: '$digest');
+    }
+  });
+
+  test('un APK que no se baja de las releases del repo descarta la release', () {
+    const apk = 'comfylist-2026.10.11+231.apk';
+    final rejected = [
+      'http://github.com/ComfyPenguin/ComfyList/releases/download/v1/$apk',
+      'https://evil.test/ComfyPenguin/ComfyList/releases/download/v1/$apk',
+      'https://github.com.evil.test/ComfyPenguin/ComfyList/releases/download/v1/$apk',
+      'https://github.com@evil.test/ComfyPenguin/ComfyList/releases/download/v1/$apk',
+      'https://github.com:8443/ComfyPenguin/ComfyList/releases/download/v1/$apk',
+      'https://github.com/otro/ComfyList/releases/download/v1/$apk',
+      'https://github.com/ComfyPenguin/ComfyList/releases/download/../../../otro/x/releases/download/v1/$apk',
+      '',
+    ];
+
+    for (final url in rejected) {
+      final parsed = GithubReleaseDto.fromJson(
+        release(assets: [asset(apk, url: url)]),
+      ).toRelease();
+
+      expect(parsed, isNull, reason: url);
+    }
   });
 
   test('sin APK no hay nada que instalar', () {

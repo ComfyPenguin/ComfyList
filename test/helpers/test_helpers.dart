@@ -90,14 +90,16 @@ Appointment buildAppointment({
   );
 }
 
-/// Release publicada, tal como la deja `tool/release.dart` en GitHub.
+/// Release publicada, tal como la deja `tool/release.dart` en GitHub. El
+/// [sha256] por defecto es el de un archivo vacío.
 AppRelease buildAppRelease({
   String version = '2026.10.11',
   int build = 231,
   String notes = '',
   String? downloadUrl,
   String? assetName,
-  String? sha256,
+  String sha256 =
+      'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
   DateTime? publishedAt,
 }) {
   final name = assetName ?? 'comfylist-$version+$build.apk';
