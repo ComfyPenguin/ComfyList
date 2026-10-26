@@ -7,6 +7,7 @@ import android.database.Cursor
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.provider.Settings
 import android.view.WindowManager
 import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterActivity
@@ -149,11 +150,17 @@ class MainActivity : FlutterActivity() {
             return
         }
 
-        // Sin este permiso del sistema el instalador se cierra sin más: mejor
-        // decirlo antes de intentarlo.
+        // Sin este permiso del sistema el instalador se cierra sin más: se abre
+        // directamente su ajuste para ComfyList.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
             !packageManager.canRequestPackageInstalls()
         ) {
+            startActivity(
+                Intent(
+                    Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                    Uri.parse("package:$packageName"),
+                ),
+            )
             result.error("unknownSources", null, null)
             return
         }

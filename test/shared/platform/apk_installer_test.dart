@@ -43,7 +43,7 @@ void main() {
     expect(result, isA<Err<void>>());
     expect(
       (result as Err<void>).failure.message,
-      contains('apps desconocidas'),
+      contains('ajuste que se ha abierto'),
     );
   });
 
