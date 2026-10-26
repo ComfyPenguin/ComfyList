@@ -31,7 +31,8 @@ class GithubReleaseDto {
 
   /// Traduce la release a algo comparable e instalable. `null` si no hay APK
   /// (el AAB es para Play y no se instala a mano), si el APK no se baja de las
-  /// releases de este repo o si el tag no dice qué versión es.
+  /// releases de este repo, si no publica su sha256 o si el tag no dice qué
+  /// versión es.
   AppRelease? toRelease() {
     GithubReleaseAssetDto? apk;
     for (final asset in assets) {
@@ -40,7 +41,10 @@ class GithubReleaseDto {
         break;
       }
     }
-    if (apk == null || !_isOwnReleaseAsset(apk.downloadUrl)) return null;
+    final sha256 = apk?.sha256;
+    if (apk == null || sha256 == null || !_isOwnReleaseAsset(apk.downloadUrl)) {
+      return null;
+    }
 
     final version =
         AppRelease.versionFromTag(tagName) ??
@@ -56,7 +60,7 @@ class GithubReleaseDto {
       notes: body.trim(),
       downloadUrl: apk.downloadUrl,
       assetName: apk.name,
-      sha256: apk.sha256,
+      sha256: sha256,
       publishedAt: publishedAt?.toUtc(),
     );
   }

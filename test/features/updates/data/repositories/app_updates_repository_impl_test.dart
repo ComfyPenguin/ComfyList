@@ -290,25 +290,6 @@ void main() {
       expect((result as Err<String>).failure, isA<IntegrityFailure>());
     });
 
-    test('sin hash publicado no se llega a descargar', () async {
-      stubCompletedDownload(content: content);
-
-      final result = await buildRepo().downloadApk(
-        release: buildAppRelease(sha256: null),
-      );
-
-      final failure = (result as Err<String>).failure;
-      expect(failure, isA<IntegrityFailure>());
-      expect(failure.message, contains('auténtica'));
-      verifyNever(
-        () => downloads.enqueue(
-          url: any(named: 'url'),
-          fileName: any(named: 'fileName'),
-          title: any(named: 'title'),
-        ),
-      );
-    });
-
     test('de la respuesta de la API al APK verificado', () async {
       // Sin nada simulado por medio: el JSON que devuelve `/releases/latest`,
       // con el `digest` del asset, tiene que acabar en un APK que cuadra.

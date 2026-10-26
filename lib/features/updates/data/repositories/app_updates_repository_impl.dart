@@ -50,14 +50,6 @@ class AppUpdatesRepositoryImpl implements AppUpdatesRepository {
     required AppRelease release,
     void Function(int received, int total)? onProgress,
   }) async {
-    final expected = release.sha256;
-    if (expected == null) {
-      return const Err(
-        IntegrityFailure(
-          'No se puede comprobar que esta versión sea auténtica, así que no se descargará.',
-        ),
-      );
-    }
     try {
       final id = await _downloads.enqueue(
         url: release.downloadUrl,
@@ -91,7 +83,7 @@ class AppUpdatesRepositoryImpl implements AppUpdatesRepository {
             if (path == null) {
               return const Err(CacheFailure('No se ha podido guardar la descarga.'));
             }
-            if (!await _matchesPublishedHash(File(path), expected)) {
+            if (!await _matchesPublishedHash(File(path), release.sha256)) {
               await _discard(id);
               return const Err(IntegrityFailure());
             }

@@ -5,7 +5,14 @@ void main() {
   const downloads =
       'https://github.com/ComfyPenguin/ComfyList/releases/download/v2026.10.11.231';
 
-  Map<String, dynamic> asset(String name, {String? digest, String? url}) => {
+  const publishedHash =
+      '2151b604e3429bff440b9fbc03eb3617bc2603cda96c95b9bb05277f9ddba255';
+
+  Map<String, dynamic> asset(
+    String name, {
+    String? digest = 'sha256:$publishedHash',
+    String? url,
+  }) => {
     'name': name,
     'browser_download_url': url ?? '$downloads/$name',
     'digest': ?digest,
@@ -45,40 +52,21 @@ void main() {
   });
 
   test('recoge el sha256 que publica el asset', () {
-    final parsed = GithubReleaseDto.fromJson(
-      release(
-        assets: [
-          asset(
-            'comfylist-2026.10.11+231.apk',
-            digest:
-                'sha256:2151b604e3429bff440b9fbc03eb3617bc2603cda96c95b9bb05277f9ddba255',
-          ),
-        ],
-      ),
-    ).toRelease();
-
-    expect(
-      parsed?.sha256,
-      '2151b604e3429bff440b9fbc03eb3617bc2603cda96c95b9bb05277f9ddba255',
-    );
-  });
-
-  test('un digest que no sea sha256 se ignora', () {
-    final parsed = GithubReleaseDto.fromJson(
-      release(
-        assets: [
-          asset('comfylist-2026.10.11+231.apk', digest: 'sha1:2151b604e3429bff'),
-        ],
-      ),
-    ).toRelease();
-
-    expect(parsed?.sha256, isNull);
-  });
-
-  test('sin digest la release no trae hash que comprobar', () {
     final parsed = GithubReleaseDto.fromJson(release()).toRelease();
 
-    expect(parsed?.sha256, isNull);
+    expect(parsed?.sha256, publishedHash);
+  });
+
+  test('sin un sha256 que comprobar la release no se ofrece', () {
+    for (final digest in [null, 'sha1:2151b604e3429bff']) {
+      final parsed = GithubReleaseDto.fromJson(
+        release(
+          assets: [asset('comfylist-2026.10.11+231.apk', digest: digest)],
+        ),
+      ).toRelease();
+
+      expect(parsed, isNull, reason: '$digest');
+    }
   });
 
   test('un APK que no se baja de las releases del repo descarta la release', () {
