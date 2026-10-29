@@ -18,7 +18,7 @@ Trampas y decisiones no obvias del proyecto, por área. `AGENTS.md` solo enlaza 
 
 ## Auth
 
-- **Correo sin verificar**: deja el estado en `AuthUnverifiedEmail` y el router solo permite `/verify-email` (`VerifyEmailScreen`): comprobar, reenviar el correo o cerrar sesión.
+- **Correo sin verificar**: deja el estado en `AuthUnverifiedEmail` y el router solo permite `/verify-email` (`VerifyEmailScreen`): comprobar, reenviar el correo o cerrar sesión. Sin red se usa el estado de verificación guardado en `SecureSessionStore` (`session.emailVerified`); si no hay ninguno (sesión anterior a esa clave), entra como antes y se guarda en la primera comprobación con red.
 - **Cerrar sesión revoca los tokens en el servidor**: `accounts:update` con `validSince` y el idToken — el refreshToken no caduca solo. Es best-effort (sin red la sesión local se borra igual) y `validSince` sale del reloj del dispositivo: un reloj muy adelantado deja esa cuenta fuera hasta esa hora.
 - **Contraseñas**: la política vive en `PasswordPolicy` (8 caracteres, con una letra y un número). Firebase solo impone 6 y no es configurable sin Identity Platform, así que la comprobación es local, antes de llamar a la API; el registro la enseña en vivo con `PasswordRulesChecklist`.
 - **Google Sign-In**: solo Android, en `main()` con `Platform.isAndroid`.
