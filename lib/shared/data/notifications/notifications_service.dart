@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 
+import '../../core/logging/debug_log.dart';
+
 /// Canal por el que salen los recordatorios de citas.
 const _channelId = 'appointments';
 const _channelName = 'Recordatorios de citas';
@@ -57,7 +59,7 @@ class NotificationsService {
               ?.requestNotificationsPermission() ??
           false;
     } catch (e) {
-      debugPrint('No se pudo pedir el permiso de notificaciones: $e');
+      debugLog('No se pudo pedir el permiso de notificaciones: $e');
       return false;
     }
   }
@@ -92,7 +94,7 @@ class NotificationsService {
         androidScheduleMode: await _scheduleMode(),
       );
     } catch (e) {
-      debugPrint('No se pudo programar el aviso $id: $e');
+      debugLog('No se pudo programar el aviso $id: $e');
     }
   }
 
@@ -101,7 +103,7 @@ class NotificationsService {
     try {
       await _plugin.cancel(id: id);
     } catch (e) {
-      debugPrint('No se pudo cancelar el aviso $id: $e');
+      debugLog('No se pudo cancelar el aviso $id: $e');
     }
   }
 
@@ -111,7 +113,7 @@ class NotificationsService {
     try {
       await _plugin.cancelAllPendingNotifications();
     } catch (e) {
-      debugPrint('No se pudieron cancelar los avisos: $e');
+      debugLog('No se pudieron cancelar los avisos: $e');
     }
   }
 
@@ -175,7 +177,7 @@ class NotificationsService {
       _canScheduleExact = granted;
       return granted;
     } catch (e) {
-      debugPrint('No se pudo pedir el permiso de alarmas exactas: $e');
+      debugLog('No se pudo pedir el permiso de alarmas exactas: $e');
       return false;
     }
   }

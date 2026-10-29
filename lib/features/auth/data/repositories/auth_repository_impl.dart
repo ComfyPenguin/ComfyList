@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../../../shared/core/failures/failure.dart';
@@ -183,24 +182,21 @@ class AuthRepositoryImpl implements AuthRepository {
       debugLog('[AuthRepo] GoogleSignIn.authenticate() OK → ${account.email}');
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled) {
-        debugPrint('[AuthRepo] GoogleSignIn cancelado por el usuario.');
         return const Err(GoogleSignInCancelledFailure());
       }
-      debugPrint('[AuthRepo] GoogleSignInException: ${e.code} — ${e.description}');
+      debugLog('[AuthRepo] GoogleSignInException: ${e.code} — ${e.description}');
       return Err(GoogleSignInFailure(
         e.description ?? 'No se ha podido iniciar sesión con Google.',
       ));
     } catch (e, st) {
-      debugPrint('[AuthRepo] Error inesperado en GoogleSignIn: $e\n$st');
+      debugLog('[AuthRepo] Error inesperado en GoogleSignIn: $e\n$st');
       return const Err(GoogleSignInFailure());
     }
 
     final googleIdToken = account.authentication.idToken;
     debugLog('[AuthRepo] idToken recibido: ${googleIdToken != null ? '${googleIdToken.length} chars' : 'null'}');
     if (googleIdToken == null || googleIdToken.isEmpty) {
-      // Sin ID token no podemos verificarlo en Firebase. Causa habitual:
-      // serverClientId vacío o mal configurado en initialize().
-      debugPrint('[AuthRepo] idToken vacío — serverClientId mal configurado.');
+      debugLog('[AuthRepo] idToken vacío — serverClientId mal configurado.');
       return const Err(GoogleSignInFailure(
         'Google no ha devuelto un token válido. Revisa la configuración.',
       ));
@@ -228,10 +224,10 @@ class AuthRepositoryImpl implements AuthRepository {
         emailVerified: true,
       ));
     } on DioException catch (e) {
-      debugPrint('[AuthRepo] DioException en signInWithIdp: ${e.response?.statusCode} ${e.message}');
+      debugLog('[AuthRepo] DioException en signInWithIdp: ${e.type} ${e.response?.statusCode}');
       return Err(_mapDioError(e));
     } catch (e, st) {
-      debugPrint('[AuthRepo] Error inesperado en signInWithIdp: $e\n$st');
+      debugLog('[AuthRepo] Error inesperado en signInWithIdp: $e\n$st');
       return const Err(UnknownFailure());
     }
   }
