@@ -12,4 +12,11 @@ abstract class AppUpdatesRepository {
     required AppRelease release,
     void Function(int received, int total)? onProgress,
   });
+
+  /// Vuelve a comprobar el APK de [path] contra el hash de [release] justo
+  /// antes de instalarlo. Si ya no coincide, lo borra.
+  Future<Result<void>> verifyApk({
+    required AppRelease release,
+    required String path,
+  });
 }
