@@ -18,6 +18,11 @@ class _MockGithubReleasesRemote extends Mock implements GithubReleasesRemote {}
 
 class _MockApkDownloadManager extends Mock implements ApkDownloadManager {}
 
+// Lo que escribe el stub, con el sha256 que da `sha256sum` de ese contenido.
+const content = 'APK de prueba de ComfyList';
+const contentHash =
+    'a8f872c6dbaae56fb57f94dc74502da8a14eb2257e3731ebb7ab6aff256edd8b';
+
 void main() {
   late _MockGithubReleasesRemote remote;
   late _MockApkDownloadManager downloads;
@@ -252,12 +257,67 @@ void main() {
     });
   });
 
-  group('comprobación del hash publicado', () {
-    // Lo que escribe el stub, con el sha256 que da `sha256sum` de ese contenido.
-    const content = 'APK de prueba de ComfyList';
-    const contentHash =
-        'a8f872c6dbaae56fb57f94dc74502da8a14eb2257e3731ebb7ab6aff256edd8b';
+  group('verifyApk', () {
+    Future<String> downloaded() async {
+      stubCompletedDownload(content: content);
+      final result = await buildRepo().downloadApk(
+        release: buildAppRelease(sha256: contentHash),
+      );
+      return (result as Ok<String>).value;
+    }
 
+    test('si el APK sigue igual, queda listo para instalar', () async {
+      final path = await downloaded();
+
+      final result = await buildRepo().verifyApk(
+        release: buildAppRelease(sha256: contentHash),
+        path: path,
+      );
+
+      expect(result, isA<Ok<void>>());
+      expect(File(path).existsSync(), isTrue);
+    });
+
+    test('un APK cambiado tras la descarga se borra', () async {
+      final path = await downloaded();
+      File(path).writeAsStringSync('otro APK');
+
+      final result = await buildRepo().verifyApk(
+        release: buildAppRelease(sha256: contentHash),
+        path: path,
+      );
+
+      expect((result as Err<void>).failure, isA<IntegrityFailure>());
+      expect(File(path).existsSync(), isFalse);
+    });
+
+    test('un APK que ya no está no se lee como manipulación', () async {
+      final path = '${downloadsDir.path}/no-existe.apk';
+
+      final result = await buildRepo().verifyApk(
+        release: buildAppRelease(sha256: contentHash),
+        path: path,
+      );
+
+      final failure = (result as Err<void>).failure;
+      expect(failure, isA<CacheFailure>());
+      expect(failure, isNot(isA<IntegrityFailure>()));
+      expect(failure.message, contains('ya no está disponible'));
+    });
+
+    test('el hash publicado en mayúsculas también cuadra', () async {
+      final path = await downloaded();
+
+      final result = await buildRepo().verifyApk(
+        release: buildAppRelease(sha256: contentHash.toUpperCase()),
+        path: path,
+      );
+
+      expect(result, isA<Ok<void>>());
+    });
+  });
+
+  group('comprobación del hash publicado', () {
     test('con el hash de GitHub el APK queda listo para instalar', () async {
       stubCompletedDownload(content: content);
 

@@ -53,6 +53,12 @@ void main() {
     when(
       () => installer.install(any()),
     ).thenAnswer((_) async => const Ok<void>(null));
+    when(
+      () => repository.verifyApk(
+        release: any(named: 'release'),
+        path: any(named: 'path'),
+      ),
+    ).thenAnswer((_) async => const Ok<void>(null));
   });
 
   // Sin tipo de retorno a propósito: `Override` no se exporta desde
@@ -165,6 +171,36 @@ void main() {
     );
     expect(find.text('INSTALAR'), findsNothing);
     expect(find.text('REINTENTAR'), findsOneWidget);
+  });
+
+  testWidgets('si el APK cambia antes de instalar, avisa y deja reintentar', (
+    tester,
+  ) async {
+    when(
+      () => repository.downloadApk(
+        release: any(named: 'release'),
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer((_) async => const Ok('/tmp/comfylist-2026.10.11.231.apk'));
+    when(
+      () => repository.verifyApk(
+        release: any(named: 'release'),
+        path: any(named: 'path'),
+      ),
+    ).thenAnswer((_) async => const Err(IntegrityFailure()));
+    await pumpDialog(tester);
+
+    await tester.tap(find.text('ACTUALIZAR'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('INSTALAR'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('no coincide con el archivo publicado'),
+      findsOneWidget,
+    );
+    expect(find.text('REINTENTAR'), findsOneWidget);
+    verifyNever(() => installer.install(any()));
   });
 
   testWidgets('«Ahora no» cierra el aviso y no vuelve a preguntar', (

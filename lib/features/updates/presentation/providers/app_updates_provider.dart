@@ -124,10 +124,20 @@ class AppUpdatesNotifier extends Notifier<AppUpdatesState> {
     }
   }
 
-  /// Lanza el instalador del sistema con el APK ya descargado.
+  /// Lanza el instalador del sistema con el APK ya descargado, tras volver a
+  /// comprobar su hash.
   Future<void> install() async {
     final ready = _state;
     if (ready is! AppUpdatesReady) return;
+
+    final verified = await ref
+        .read(appUpdatesRepositoryProvider)
+        .verifyApk(release: ready.release, path: ready.filePath);
+    if (!ref.mounted) return;
+    if (verified case Err(:final failure)) {
+      _set(AppUpdatesFailed(failure, release: ready.release));
+      return;
+    }
 
     final result = await ref.read(apkInstallerProvider).install(ready.filePath);
     if (!ref.mounted) return;
