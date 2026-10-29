@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/provider_scope.dart';
+import '../../../../helpers/test_helpers.dart';
 
 class _MockIdentityToolkitRemote extends Mock
     implements IdentityToolkitRemote {}
@@ -31,6 +32,11 @@ void main() {
       session: session,
       accountCache: accountCache,
     );
+
+    when(() => session.saveEmailVerified(any())).thenAnswer((_) async {});
+    when(() => session.clear()).thenAnswer((_) async {});
+    when(() => session.readIdToken()).thenAnswer((_) async => null);
+    when(() => accountCache.deleteAll()).thenAnswer((_) async {});
   });
 
   /// Respuesta de error de Identity Toolkit con el código dado.
@@ -174,6 +180,74 @@ void main() {
       final res = await repo.signIn(email: 'a@b.c', password: 'pw123456');
 
       expect((res as Ok<AuthUser>).value.emailVerified, isFalse);
+      verify(() => session.saveEmailVerified(false)).called(1);
+    });
+
+    test('guarda que el correo está verificado cuando el lookup lo confirma',
+        () async {
+      when(() => remote.signInWithPassword(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+          )).thenAnswer(
+        (_) async => IdentityAuthResponse(
+          idToken: 'i-tok',
+          refreshToken: 'r-tok',
+          localId: 'u-1',
+          email: 'a@b.c',
+        ),
+      );
+      when(() => session.saveSession(
+            idToken: any(named: 'idToken'),
+            refreshToken: any(named: 'refreshToken'),
+            uid: any(named: 'uid'),
+          )).thenAnswer((_) async {});
+      when(() => accountCache.upsert(
+            uid: any(named: 'uid'),
+            email: any(named: 'email'),
+            displayName: any(named: 'displayName'),
+          )).thenAnswer((_) async {});
+      when(() => remote.lookup('i-tok')).thenAnswer(
+        (_) async => IdentityLookupUser(
+          localId: 'u-1',
+          email: 'a@b.c',
+          emailVerified: true,
+        ),
+      );
+
+      await repo.signIn(email: 'a@b.c', password: 'pw123456');
+
+      verify(() => session.saveEmailVerified(true)).called(1);
+    });
+
+    test('sin respuesta del lookup guarda el correo como no verificado',
+        () async {
+      when(() => remote.signInWithPassword(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+          )).thenAnswer(
+        (_) async => IdentityAuthResponse(
+          idToken: 'i-tok',
+          refreshToken: 'r-tok',
+          localId: 'u-1',
+          email: 'a@b.c',
+        ),
+      );
+      when(() => session.saveSession(
+            idToken: any(named: 'idToken'),
+            refreshToken: any(named: 'refreshToken'),
+            uid: any(named: 'uid'),
+          )).thenAnswer((_) async {});
+      when(() => accountCache.upsert(
+            uid: any(named: 'uid'),
+            email: any(named: 'email'),
+            displayName: any(named: 'displayName'),
+          )).thenAnswer((_) async {});
+      when(() => remote.lookup('i-tok')).thenAnswer((_) async => null);
+
+      final res = await repo.signIn(email: 'a@b.c', password: 'pw123456');
+
+      expect((res as Ok<AuthUser>).value.emailVerified, isFalse);
+      verify(() => session.saveEmailVerified(false)).called(1);
     });
   });
 
@@ -235,6 +309,7 @@ void main() {
       final res = await repo.signUp(email: 'a@b.c', password: 'pw123456');
 
       expect((res as Ok<AuthUser>).value.emailVerified, isFalse);
+      verify(() => session.saveEmailVerified(false)).called(1);
       verify(() => remote.sendEmailVerification('i-tok')).called(1);
     });
 
@@ -342,6 +417,111 @@ void main() {
 
       expect(res.isErr, isTrue);
       expect((res as Err).failure, isA<NetworkFailure>());
+    });
+
+    group('con la sesión guardada', () {
+      DioException offline() => DioException(
+            requestOptions: RequestOptions(path: ''),
+            type: DioExceptionType.connectionError,
+          );
+
+      void stubStoredSession({String? uid = 'u-1', bool? emailVerified}) {
+        when(() => session.hasSession()).thenAnswer((_) async => true);
+        when(() => session.readRefreshToken())
+            .thenAnswer((_) async => 'old-refresh');
+        when(() => session.readUid()).thenAnswer((_) async => uid);
+        when(() => session.readEmailVerified())
+            .thenAnswer((_) async => emailVerified);
+        when(() => accountCache.findByUid('u-1')).thenAnswer(
+          (_) async => buildAccountCacheRow(uid: 'u-1', email: 'a@b.c'),
+        );
+        when(() => session.saveSession(
+              idToken: any(named: 'idToken'),
+              refreshToken: any(named: 'refreshToken'),
+              uid: any(named: 'uid'),
+            )).thenAnswer((_) async {});
+        when(() => accountCache.upsert(
+              uid: any(named: 'uid'),
+              email: any(named: 'email'),
+              displayName: any(named: 'displayName'),
+            )).thenAnswer((_) async {});
+      }
+
+      test('sin red usa el estado de verificación guardado (true)', () async {
+        stubStoredSession(emailVerified: true);
+        when(() => remote.refresh('old-refresh')).thenThrow(offline());
+
+        final res = await repo.currentUser();
+
+        expect((res as Ok<AuthUser?>).value!.emailVerified, isTrue);
+      });
+
+      test('sin red usa el estado de verificación guardado (false)', () async {
+        stubStoredSession(emailVerified: false);
+        when(() => remote.refresh('old-refresh')).thenThrow(offline());
+
+        final res = await repo.currentUser();
+
+        expect((res as Ok<AuthUser?>).value!.emailVerified, isFalse);
+      });
+
+      test('sin red y sin estado guardado queda en null, como antes',
+          () async {
+        stubStoredSession();
+        when(() => remote.refresh('old-refresh')).thenThrow(offline());
+
+        final res = await repo.currentUser();
+
+        final user = (res as Ok<AuthUser?>).value!;
+        expect(user.uid, 'u-1');
+        expect(user.emailVerified, isNull);
+      });
+
+      for (final uid in <String?>[null, '']) {
+        test('sin red y con uid ${uid == null ? 'ausente' : 'vacío'} no hidrata',
+            () async {
+          stubStoredSession(uid: uid, emailVerified: true);
+          when(() => remote.refresh('old-refresh')).thenThrow(offline());
+
+          final res = await repo.currentUser();
+
+          expect((res as Err).failure, isA<NetworkFailure>());
+        });
+      }
+
+      for (final verified in [true, false]) {
+        test('con red guarda que el correo está verificado=$verified',
+            () async {
+          stubStoredSession();
+          when(() => remote.refresh('old-refresh')).thenAnswer(
+            (_) async => (idToken: 'new-id', refreshToken: 'new-refresh'),
+          );
+          when(() => remote.lookup('new-id')).thenAnswer(
+            (_) async => IdentityLookupUser(
+              localId: 'u-1',
+              email: 'a@b.c',
+              emailVerified: verified,
+            ),
+          );
+
+          final res = await repo.currentUser();
+
+          expect((res as Ok<AuthUser?>).value!.emailVerified, verified);
+          verify(() => session.saveEmailVerified(verified)).called(1);
+        });
+      }
+
+      test('con el refreshToken rechazado cierra la sesión local', () async {
+        stubStoredSession(emailVerified: true);
+        when(() => remote.refresh('old-refresh')).thenThrow(badResponse(
+          'TOKEN_EXPIRED',
+        ));
+
+        final res = await repo.currentUser();
+
+        expect((res as Ok<AuthUser?>).value, isNull);
+        verify(() => session.clear()).called(1);
+      });
     });
   });
 

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/core/logging/debug_log.dart';
@@ -59,8 +58,9 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 
   /// Con el correo sin verificar no se entra: la única pantalla posible es la
-  /// de verificación. `emailVerified` nulo (arranque sin red) sí pasa, porque
-  /// no hay nada que comprobar y el corte de datos lo hace Firestore.
+  /// de verificación. `emailVerified` nulo (sin red y sin estado guardado) sí
+  /// pasa, porque no hay nada que comprobar y el corte de datos lo hace
+  /// Firestore.
   AuthState _stateFor(AuthUser user) => user.emailVerified == false
       ? AuthUnverifiedEmail(user)
       : Authenticated(user);
@@ -95,10 +95,7 @@ class AuthNotifier extends Notifier<AuthState> {
         debugLog('[AuthNotifier] Google sign-in OK → uid=${user.uid}');
         return Authenticated(user);
       },
-      onErr: (f) {
-        debugPrint('[AuthNotifier] Google sign-in ERROR → ${f.message}');
-        return AuthError(f);
-      },
+      onErr: (f) => AuthError(f),
     );
   }
 

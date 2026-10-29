@@ -6,6 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 ///  - idToken (Bearer, expira ~1h)
 ///  - refreshToken (sin caducidad mientras no se cierre sesión)
 ///  - uid (cache rápido sin tener que decodificar el JWT)
+///  - si el correo está verificado, para decidirlo sin red
 class SecureSessionStore {
   SecureSessionStore({FlutterSecureStorage? storage})
       : _storage = storage ?? const FlutterSecureStorage();
@@ -13,6 +14,7 @@ class SecureSessionStore {
   static const _kIdToken = 'session.idToken';
   static const _kRefreshToken = 'session.refreshToken';
   static const _kUid = 'session.uid';
+  static const _kEmailVerified = 'session.emailVerified';
 
   final FlutterSecureStorage _storage;
 
@@ -35,6 +37,17 @@ class SecureSessionStore {
   Future<String?> readRefreshToken() => _storage.read(key: _kRefreshToken);
   Future<String?> readUid() => _storage.read(key: _kUid);
 
+  Future<void> saveEmailVerified(bool verified) =>
+      _storage.write(key: _kEmailVerified, value: verified.toString());
+
+  /// `null` cuando no se ha guardado nunca (o el valor no es `true`/`false`).
+  Future<bool?> readEmailVerified() async =>
+      switch (await _storage.read(key: _kEmailVerified)) {
+        'true' => true,
+        'false' => false,
+        _ => null,
+      };
+
   Future<bool> hasSession() async {
     final token = await _storage.read(key: _kRefreshToken);
     return token != null && token.isNotEmpty;
@@ -45,6 +58,7 @@ class SecureSessionStore {
       _storage.delete(key: _kIdToken),
       _storage.delete(key: _kRefreshToken),
       _storage.delete(key: _kUid),
+      _storage.delete(key: _kEmailVerified),
     ]);
   }
 }

@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../../../shared/core/failures/failure.dart';
@@ -47,6 +46,7 @@ class AuthRepositoryImpl implements AuthRepository {
           refreshToken: tokens.refreshToken,
           uid: lookup.localId,
         );
+        await _session.saveEmailVerified(lookup.emailVerified);
         await _accountCache.upsert(
           uid: lookup.localId,
           email: lookup.email,
@@ -95,12 +95,13 @@ class AuthRepositoryImpl implements AuthRepository {
     if (uid == null || uid.isEmpty) return null;
     final cached = await _accountCache.findByUid(uid);
     if (cached == null) return null;
-    // Sin red no hay forma de saber si el correo está verificado, así que se
-    // deja en `null` y no se bloquea a quien sí lo verificó.
+    // Sin red se usa lo último que se supo de la verificación; si nunca se
+    // guardó (sesión anterior a esta clave) queda en `null` y no se bloquea.
     return AuthUser(
       uid: cached.uid,
       email: cached.email,
       displayName: cached.displayName,
+      emailVerified: await _session.readEmailVerified(),
     );
   }
 
@@ -127,11 +128,13 @@ class AuthRepositoryImpl implements AuthRepository {
       // El inicio de sesión no dice si el correo está verificado: hay que
       // preguntarlo, y si no hay respuesta se trata como no verificado.
       final lookup = await _remote.lookup(res.idToken);
+      final emailVerified = lookup?.emailVerified ?? false;
+      await _session.saveEmailVerified(emailVerified);
       return Ok(AuthUser(
         uid: res.localId,
         email: res.email,
         displayName: res.displayName,
-        emailVerified: lookup?.emailVerified ?? false,
+        emailVerified: emailVerified,
       ));
     } on DioException catch (e) {
       return Err(_mapDioError(e));
@@ -157,6 +160,7 @@ class AuthRepositoryImpl implements AuthRepository {
         email: res.email,
         displayName: res.displayName,
       );
+      await _session.saveEmailVerified(false);
       // La cuenta recién creada nunca está verificada: se manda el correo de
       // una vez para que la pantalla de verificación tenga algo que esperar.
       await _sendVerificationEmailBestEffort(res.idToken);
@@ -183,24 +187,21 @@ class AuthRepositoryImpl implements AuthRepository {
       debugLog('[AuthRepo] GoogleSignIn.authenticate() OK → ${account.email}');
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled) {
-        debugPrint('[AuthRepo] GoogleSignIn cancelado por el usuario.');
         return const Err(GoogleSignInCancelledFailure());
       }
-      debugPrint('[AuthRepo] GoogleSignInException: ${e.code} — ${e.description}');
+      debugLog('[AuthRepo] GoogleSignInException: ${e.code} — ${e.description}');
       return Err(GoogleSignInFailure(
         e.description ?? 'No se ha podido iniciar sesión con Google.',
       ));
     } catch (e, st) {
-      debugPrint('[AuthRepo] Error inesperado en GoogleSignIn: $e\n$st');
+      debugLog('[AuthRepo] Error inesperado en GoogleSignIn: $e\n$st');
       return const Err(GoogleSignInFailure());
     }
 
     final googleIdToken = account.authentication.idToken;
     debugLog('[AuthRepo] idToken recibido: ${googleIdToken != null ? '${googleIdToken.length} chars' : 'null'}');
     if (googleIdToken == null || googleIdToken.isEmpty) {
-      // Sin ID token no podemos verificarlo en Firebase. Causa habitual:
-      // serverClientId vacío o mal configurado en initialize().
-      debugPrint('[AuthRepo] idToken vacío — serverClientId mal configurado.');
+      debugLog('[AuthRepo] idToken vacío — serverClientId mal configurado.');
       return const Err(GoogleSignInFailure(
         'Google no ha devuelto un token válido. Revisa la configuración.',
       ));
@@ -215,6 +216,7 @@ class AuthRepositoryImpl implements AuthRepository {
         refreshToken: res.refreshToken,
         uid: res.localId,
       );
+      await _session.saveEmailVerified(true);
       await _accountCache.upsert(
         uid: res.localId,
         email: res.email,
@@ -228,10 +230,10 @@ class AuthRepositoryImpl implements AuthRepository {
         emailVerified: true,
       ));
     } on DioException catch (e) {
-      debugPrint('[AuthRepo] DioException en signInWithIdp: ${e.response?.statusCode} ${e.message}');
+      debugLog('[AuthRepo] DioException en signInWithIdp: ${e.type} ${e.response?.statusCode}');
       return Err(_mapDioError(e));
     } catch (e, st) {
-      debugPrint('[AuthRepo] Error inesperado en signInWithIdp: $e\n$st');
+      debugLog('[AuthRepo] Error inesperado en signInWithIdp: $e\n$st');
       return const Err(UnknownFailure());
     }
   }
