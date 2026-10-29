@@ -97,8 +97,10 @@ class AuthInterceptor extends QueuedInterceptor {
       if (newId == null) return false;
 
       if (newRefresh != null) {
-        // securetoken puede rotar el refresh: persistimos el nuevo par.
-        final uid = await _session.readUid() ?? '';
+        // securetoken puede rotar el refresh: persistimos el nuevo par, pero
+        // nunca con un uid vacío.
+        final uid = await _session.readUid() ?? (body['user_id'] as String?);
+        if (uid == null || uid.isEmpty) return false;
         await _session.saveSession(
           idToken: newId,
           refreshToken: newRefresh,
