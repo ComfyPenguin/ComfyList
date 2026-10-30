@@ -12,6 +12,7 @@ import '../../../../shared/ui/navigation/app_shell.dart';
 import '../../../../shared/ui/toast/app_toast.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../domain/entities/todo.dart';
+import '../../domain/todo_order.dart';
 import '../providers/todos_provider.dart';
 import '../providers/todos_state.dart';
 import '../widgets/empty_state.dart';
@@ -301,20 +302,10 @@ class _TodosListState extends ConsumerState<_TodosList> {
       settingsOrDefaultsProvider.select((s) => s.completedToBottom),
     );
 
-    // Ordenar según el ajuste:
-    // - Activado: pendientes primero por fecha de actualización asc (lo
-    //   recién desmarcado cae al final, junto a las completadas); completadas
-    //   después por fecha de actualización desc.
-    // - Desactivado: por fecha de creación asc (mantiene la posición siempre).
-    final sorted = [...widget.items]
-      ..sort((a, b) {
-        if (completedToBottom) {
-          if (a.isDone != b.isDone) return a.isDone ? 1 : -1;
-          if (a.isDone) return b.updatedAt.compareTo(a.updatedAt);
-          return a.updatedAt.compareTo(b.updatedAt);
-        }
-        return a.createdAt.compareTo(b.createdAt);
-      });
+    final sorted = sortTodos(
+      widget.items,
+      completedToBottom: completedToBottom,
+    );
     _removeStaleRevealProgress(widget.items);
 
     // Mantener el orden previo mientras se anima el tachado de un toggle.

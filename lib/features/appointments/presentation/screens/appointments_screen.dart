@@ -17,7 +17,7 @@ import '../../../../shared/core/time/clock.dart';
 import '../../../../shared/ui/lists/slide_flow.dart';
 import '../../../../shared/ui/toast/app_toast.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
-import '../../../settings/presentation/providers/settings_state.dart';
+import '../../domain/appointment_agenda.dart';
 import '../../domain/entities/appointment.dart';
 import '../providers/appointments_provider.dart';
 import '../providers/appointments_state.dart';
@@ -253,52 +253,37 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
       Color.lerp(colors.muted, colors.body, 0.4),
     );
 
-    // Leer preferencias de completado en citas.
-    final settingsState = ref.watch(settingsProvider);
-    final settings = switch (settingsState) {
-      SettingsData(:final settings) => settings,
-      _ => null,
-    };
-    final completionEnabled = settings?.appointmentsCompletionEnabled ?? false;
-    // Si el ajuste está activado, las completadas van al final de su día.
-    final completedToBottom = settings?.appointmentsCompletedToBottom ?? true;
-    // Y el día de hoy va primero, por delante de los días pasados.
-    final todayOnTop = settings?.appointmentsTodayOnTop ?? true;
+    // Preferencias de las citas: con el ajuste de completado activado, las
+    // completadas van al final de su día; y hoy va primero, por delante de los
+    // días pasados.
+    final settings = ref.watch(settingsOrDefaultsProvider);
+    final completionEnabled = settings.appointmentsCompletionEnabled;
 
-    // Ordenar por fecha ascendente (más próximas primero).
-    // Separar las completadas al final de su día solo con el ajuste activo.
-    final sorted = [...widget.items]
-      ..sort((a, b) {
-        if (completionEnabled && completedToBottom && a.isDone != b.isDone) {
-          return a.isDone ? 1 : -1;
-        }
-        return a.dateTime.compareTo(b.dateTime);
-      });
+    final sorted = sortAppointments(
+      widget.items,
+      completedToBottom:
+          completionEnabled && settings.appointmentsCompletedToBottom,
+    );
 
     // Mantener el orden previo mientras se anima el tachado de un toggle.
     final displaySorted = _resolveDisplaySorted(sorted);
 
-    // Agrupar citas por día.
-    final grouped = <DateTime, List<Appointment>>{};
-    for (final appt in displaySorted) {
-      final d = appt.dateTime;
-      final dateOnly = DateTime(d.year, d.month, d.day);
-      grouped.putIfAbsent(dateOnly, () => []).add(appt);
-    }
+    final days = groupByDay(
+      displaySorted,
+      todayOnTop: settings.appointmentsTodayOnTop,
+      today: _today,
+    );
 
-    final sortedDates = grouped.keys.toList()..sort();
-    if (todayOnTop) _anchorNearDays(sortedDates);
-
-    final visibleDates = sortedDates.toSet();
+    final visibleDates = {for (final day in days) day.date};
     _tileRevealProgressByDate.removeWhere(
       (date, _) => !visibleDates.contains(date),
     );
 
     // Construir grupos de fecha: cabecera + tiles con radios/gaps animados.
     final listChildren = <Widget>[];
-    for (var i = 0; i < sortedDates.length; i++) {
-      final date = sortedDates[i];
-      final appts = grouped[date]!;
+    for (var i = 0; i < days.length; i++) {
+      final date = days[i].date;
+      final appts = days[i].appointments;
       _removeStaleRevealProgress(date, appts);
 
       if (i > 0) {
@@ -367,30 +352,13 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
     return DateTime(now.year, now.month, now.day);
   }
 
-  /// Sube hoy al principio y deja mañana justo debajo. Sin esto los días
-  /// pasados se cuelan entre los dos, porque el resto va en ascendente.
-  void _anchorNearDays(List<DateTime> dates) {
-    final today = _today;
-    final todayIndex = dates.indexOf(today);
-    if (todayIndex < 0) return;
-    if (todayIndex > 0) dates.insert(0, dates.removeAt(todayIndex));
-
-    final tomorrowIndex = dates.indexOf(_dayAfter(today));
-    if (tomorrowIndex > 1) dates.insert(1, dates.removeAt(tomorrowIndex));
-  }
-
-  /// Día siguiente. Constructor en vez de sumar 24 h: en los cambios de hora el
-  /// día siguiente no cae justo a medianoche.
-  static DateTime _dayAfter(DateTime date) =>
-      DateTime(date.year, date.month, date.day + 1);
-
   /// Formato de cabecera de fecha. Muestra "HOY" o "MAÑANA" cuando
   /// corresponde, y la fecha completa en otros casos.
   String _formatDateHeader(DateTime date) {
     final today = _today;
 
     if (date == today) return 'CITAS DE HOY';
-    if (date == _dayAfter(today)) return 'MAÑANA';
+    if (date == dayAfter(today)) return 'MAÑANA';
 
     return DateFormat('EEEE, d MMM', 'es_ES').format(date).toUpperCase();
   }
