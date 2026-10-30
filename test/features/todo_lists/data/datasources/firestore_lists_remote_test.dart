@@ -99,6 +99,29 @@ void main() {
           )).called(1);
     });
 
+    test('createList fecha el documento con el reloj que se le da', () async {
+      final fixed = DateTime(2026, 6, 1, 9);
+      remote = FirestoreListsRemote(dio, now: () => fixed);
+      stubDioPost(
+        dio,
+        body: buildDocBody(
+          name: 'projects/p/databases/(default)/documents/users/u1/todo_lists/L2',
+          listName: 'Trabajo',
+        ),
+      );
+
+      await remote.createList(uid: 'u1', name: 'Trabajo', iconKey: 'work');
+
+      final sent = verify(() => dio.post<Map<String, dynamic>>(
+            any(),
+            data: captureAny(named: 'data'),
+          )).captured.single as Map<String, dynamic>;
+      final fields = (sent['fields'] as Map<String, dynamic>);
+      final expected = {'timestampValue': fixed.toUtc().toIso8601String()};
+      expect(fields['createdAt'], expected);
+      expect(fields['updatedAt'], expected);
+    });
+
     const root = 'projects/comfy-list/databases/(default)/documents';
 
     test('deleteListWithTodos borra las tareas y la lista en un commit',

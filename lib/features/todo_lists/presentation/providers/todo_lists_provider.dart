@@ -16,7 +16,10 @@ import '../../domain/repositories/todo_lists_repository.dart';
 import 'todo_lists_state.dart';
 
 final firestoreListsRemoteProvider = Provider<FirestoreListsRemote>((ref) {
-  return FirestoreListsRemote(ref.watch(dioClientProvider).instance);
+  return FirestoreListsRemote(
+    ref.watch(dioClientProvider).instance,
+    now: ref.watch(clockProvider),
+  );
 });
 
 final todoListsRepositoryProvider = Provider<TodoListsRepository>((ref) {

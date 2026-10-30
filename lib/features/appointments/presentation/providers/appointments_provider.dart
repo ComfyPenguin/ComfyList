@@ -17,7 +17,10 @@ import 'appointments_state.dart';
 
 final firestoreAppointmentsRemoteProvider =
     Provider<FirestoreAppointmentsRemote>((ref) {
-  return FirestoreAppointmentsRemote(ref.watch(dioClientProvider).instance);
+  return FirestoreAppointmentsRemote(
+    ref.watch(dioClientProvider).instance,
+    now: ref.watch(clockProvider),
+  );
 });
 
 final appointmentsRepositoryProvider = Provider<AppointmentsRepository>((ref) {

@@ -1,18 +1,22 @@
 import 'package:dio/dio.dart';
 
 import '../../../../shared/core/env/firebase_endpoints.dart';
+import '../../../../shared/core/time/clock.dart';
 import '../../../../shared/data/remote/firestore_commit.dart';
+import '../../../../shared/data/remote/firestore_documents.dart';
 import '../../../../shared/data/remote/firestore_pages.dart';
 import '../../../todos/data/models/todo_dto.dart';
 import '../../../todos/domain/entities/todo.dart';
 import '../../domain/entities/todo_list.dart';
 import '../models/todo_list_dto.dart';
 
-/// Datasource Firestore REST para `users/{uid}/todo_lists`.
+/// Datasource Firestore REST para `users/{uid}/todo_lists`. [now] da el «ahora»
+/// de `createdAt` y `updatedAt`; en la app es el reloj de la app.
 class FirestoreListsRemote {
-  FirestoreListsRemote(this._dio);
+  FirestoreListsRemote(this._dio, {Now now = DateTime.now}) : _now = now;
 
   final Dio _dio;
+  final Now _now;
 
   String _collectionPath(String uid) =>
       '${FirebaseEndpoints.firestoreBase}/users/$uid/todo_lists';
@@ -29,17 +33,14 @@ class FirestoreListsRemote {
     required String name,
     required String iconKey,
   }) async {
-    final now = DateTime.now().toUtc();
     final body = TodoListDto.toCreateBody(
       name: name,
       iconKey: iconKey,
-      now: now,
+      now: _now().toUtc(),
     );
-    final res = await _dio.post<Map<String, dynamic>>(
-      _collectionPath(uid),
-      data: body,
+    return TodoListDto.fromDocument(
+      await _dio.createDocument(_collectionPath(uid), body),
     );
-    return TodoListDto.fromDocument(res.data!);
   }
 
   Future<TodoList> updateList({
@@ -48,21 +49,18 @@ class FirestoreListsRemote {
     String? name,
     String? iconKey,
   }) async {
-    final now = DateTime.now().toUtc();
     final (body, mask) = TodoListDto.toPatchBody(
       name: name,
       iconKey: iconKey,
-      now: now,
+      now: _now().toUtc(),
     );
-
-    final res = await _dio.patch<Map<String, dynamic>>(
-      '${_collectionPath(uid)}/$id',
-      data: body,
-      queryParameters: {
-        if (mask.isNotEmpty) 'updateMask.fieldPaths': mask,
-      },
+    return TodoListDto.fromDocument(
+      await _dio.patchDocument(
+        '${_collectionPath(uid)}/$id',
+        body,
+        updateMask: mask,
+      ),
     );
-    return TodoListDto.fromDocument(res.data!);
   }
 
   /// Borra la lista y sus tareas en un solo `commit`: Firestore no borra las
