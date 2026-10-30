@@ -214,7 +214,9 @@ void main() {
       await seedV8(reminderMinutes: 30);
 
       await db.migration.onUpgrade(Migrator(db), 8, 9);
-      await db.settingsDao.updateAppointmentReminderMinutes('0,30');
+      await db.settingsDao.write(
+        const SettingsTableCompanion(appointmentReminderMinutes: Value('0,30')),
+      );
 
       final count = await db.managers.settingsTable.count();
       expect(count, 1);
@@ -260,7 +262,9 @@ void main() {
       await seedV9();
 
       await db.migration.onUpgrade(Migrator(db), 9, 10);
-      await db.settingsDao.updateLongPressHintSeen(true);
+      await db.settingsDao.write(
+        const SettingsTableCompanion(longPressHintSeen: Value(true)),
+      );
 
       final streamed = await db.settingsDao.watch().first;
       expect(streamed.longPressHintSeen, isTrue);
@@ -303,7 +307,9 @@ void main() {
       await seedV10();
 
       await db.migration.onUpgrade(Migrator(db), 10, 11);
-      await db.settingsDao.updateTrashRetentionDays(30);
+      await db.settingsDao.write(
+        const SettingsTableCompanion(trashRetentionDays: Value(30)),
+      );
 
       final streamed = await db.settingsDao.watch().first;
       expect(streamed.trashRetentionDays, 30);

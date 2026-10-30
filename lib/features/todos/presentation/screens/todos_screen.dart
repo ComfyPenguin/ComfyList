@@ -11,7 +11,6 @@ import '../../../../shared/ui/lists/slide_flow.dart';
 import '../../../../shared/ui/navigation/app_shell.dart';
 import '../../../../shared/ui/toast/app_toast.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
-import '../../../settings/presentation/providers/settings_state.dart';
 import '../../domain/entities/todo.dart';
 import '../providers/todos_provider.dart';
 import '../providers/todos_state.dart';
@@ -298,10 +297,9 @@ class _TodosListState extends ConsumerState<_TodosList> {
   @override
   Widget build(BuildContext context) {
     final notifier = ref.read(todosProvider(widget.listId).notifier);
-    final completedToBottom = switch (ref.watch(settingsProvider)) {
-      SettingsData(:final settings) => settings.completedToBottom,
-      _ => true,
-    };
+    final completedToBottom = ref.watch(
+      settingsOrDefaultsProvider.select((s) => s.completedToBottom),
+    );
 
     // Ordenar según el ajuste:
     // - Activado: pendientes primero por fecha de actualización asc (lo
