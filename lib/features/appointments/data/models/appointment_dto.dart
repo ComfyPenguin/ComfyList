@@ -1,3 +1,4 @@
+import '../../../../shared/data/remote/firestore_patch.dart';
 import '../../../../shared/data/remote/firestore_value_codec.dart';
 import '../../domain/entities/appointment.dart';
 
@@ -68,38 +69,12 @@ class AppointmentDto {
     bool? isDone,
     required DateTime now,
   }) {
-    final fields = <String, dynamic>{};
-    final mask = <String>[];
-
-    if (title != null) {
-      fields['title'] = title;
-      mask.add('title');
-    }
-    if (clearDescription) {
-      fields['description'] = null;
-      mask.add('description');
-    } else if (description != null) {
-      fields['description'] = description;
-      mask.add('description');
-    }
-    if (clearLocation) {
-      fields['location'] = null;
-      mask.add('location');
-    } else if (location != null) {
-      fields['location'] = location;
-      mask.add('location');
-    }
-    if (dateTime != null) {
-      fields['dateTime'] = dateTime;
-      mask.add('dateTime');
-    }
-    if (isDone != null) {
-      fields['isDone'] = isDone;
-      mask.add('isDone');
-    }
-    fields['updatedAt'] = now;
-    mask.add('updatedAt');
-
-    return (FirestoreValueCodec.encodeFields(fields), mask);
+    return (FirestorePatch()
+          ..setIfNotNull('title', title)
+          ..setOrClear('description', description, clear: clearDescription)
+          ..setOrClear('location', location, clear: clearLocation)
+          ..setIfNotNull('dateTime', dateTime)
+          ..setIfNotNull('isDone', isDone))
+        .build(updatedAt: now);
   }
 }
