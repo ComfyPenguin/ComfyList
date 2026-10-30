@@ -57,14 +57,6 @@ class TrashNotifier extends Notifier<TrashState> {
     return const TrashLoading();
   }
 
-  /// Saca de la papelera lo que se acaba de devolver a Firestore.
-  Future<void> remove(List<TrashEntry> entries) async {
-    await ref.read(trashRepositoryProvider).remove(
-          uid: _uid,
-          ids: entries.map((entry) => entry.id).toList(growable: false),
-        );
-  }
-
   Future<void> empty() async {
     await ref.read(trashRepositoryProvider).empty(_uid);
   }

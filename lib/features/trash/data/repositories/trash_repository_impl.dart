@@ -43,11 +43,11 @@ class TrashRepositoryImpl implements TrashRepository {
   final TrashPendingStore _pending;
 
   @override
-  Future<Result<void>> save({
+  Future<Result<List<TrashEntry>>> save({
     required String uid,
     required List<TrashItem> items,
   }) {
-    if (items.isEmpty) return Future.value(const Ok(null));
+    if (items.isEmpty) return Future.value(const Ok([]));
 
     final done = _writes.then((_) => _saveNow(uid: uid, items: items));
     // La cola sigue aunque un guardado reviente: el siguiente no hereda su
@@ -56,11 +56,11 @@ class TrashRepositoryImpl implements TrashRepository {
     return done;
   }
 
-  Future<Result<void>> _saveNow({
+  Future<Result<List<TrashEntry>>> _saveNow({
     required String uid,
     required List<TrashItem> items,
   }) =>
-      _entries.guard<void>(uid, () async {
+      _entries.guard<List<TrashEntry>>(uid, () async {
         final deletedAt = _nextDeletedAt();
         final groupId = deletedAt.microsecondsSinceEpoch.toString();
         await _remote.createEntries(
@@ -71,21 +71,10 @@ class TrashRepositoryImpl implements TrashRepository {
         );
         final entries = await _remote.listEntries(uid);
         await _trim(_remote, uid, entries);
-      });
-
-  @override
-  Future<Result<List<TrashEntry>>> latestGroup({
-    required String uid,
-    required TrashKind kind,
-    String? parentId,
-  }) =>
-      _entries.read<List<TrashEntry>>(() async {
-        final entries = _newestFirst(await _remote.listEntries(uid));
-        final newest = _newestMatching(entries, kind: kind, parentId: parentId);
-        if (newest == null) return const [];
-        return entries
-            .where((entry) => entry.groupId == newest.groupId)
-            .toList(growable: false);
+        return [
+          for (final entry in entries)
+            if (entry.groupId == groupId) entry,
+        ];
       });
 
   @override
@@ -183,20 +172,6 @@ class TrashRepositoryImpl implements TrashRepository {
     } on DioException catch (e) {
       debugLog('La papelera no pudo quitar lo pendiente: ${e.type}');
     }
-  }
-
-  TrashEntry? _newestMatching(
-    List<TrashEntry> entries, {
-    required TrashKind kind,
-    String? parentId,
-  }) {
-    for (final entry in entries) {
-      if (entry.kind == kind &&
-          (parentId == null || entry.parentId == parentId)) {
-        return entry;
-      }
-    }
-    return null;
   }
 
   /// Marca temporal del borrado, siempre mayor que la del anterior. El reloj

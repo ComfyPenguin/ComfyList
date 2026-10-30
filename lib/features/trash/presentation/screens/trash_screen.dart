@@ -14,7 +14,7 @@ import '../../domain/entities/trash_entry.dart';
 import '../../domain/entities/trash_group.dart';
 import '../../domain/repositories/trash_repository.dart';
 import '../providers/trash_provider.dart';
-import '../providers/trash_restore.dart';
+import '../providers/deletions_provider.dart';
 import '../providers/trash_state.dart';
 import '../widgets/trash_empty_state.dart';
 
@@ -111,10 +111,8 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
     if (_busy) return;
     setState(() => _busy = true);
 
-    final restored = await ref.read(trashRestorerProvider).restoreGroup(group);
-    if (restored) {
-      await ref.read(trashProvider.notifier).remove(group.entries);
-    } else if (mounted) {
+    final restored = await ref.read(deletionsProvider).restore(group);
+    if (!restored && mounted) {
       AppToast.show(context, AppToast.restoreFailed);
     }
 

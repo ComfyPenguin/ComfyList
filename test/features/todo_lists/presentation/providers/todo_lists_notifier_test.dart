@@ -9,6 +9,9 @@ import 'package:comfy_list/features/todo_lists/presentation/providers/todo_lists
 import 'package:comfy_list/features/todos/domain/entities/todo.dart';
 import 'package:comfy_list/features/todos/domain/repositories/todos_repository.dart';
 import 'package:comfy_list/features/trash/data/datasources/firestore_trash_remote.dart';
+import 'package:comfy_list/features/trash/domain/entities/trash_entry.dart';
+import 'package:comfy_list/features/trash/domain/repositories/trash_repository.dart';
+import 'package:comfy_list/features/trash/presentation/providers/trash_provider.dart';
 import 'package:comfy_list/shared/core/failures/failure.dart';
 import 'package:comfy_list/shared/core/result/result.dart';
 import 'package:comfy_list/shared/core/time/clock.dart';
@@ -25,6 +28,8 @@ class _MockRepo extends Mock implements TodoListsRepository {}
 class _MockRemote extends Mock implements FirestoreListsRemote {}
 
 class _MockTodosRepo extends Mock implements TodosRepository {}
+
+class _MockTrash extends Mock implements TrashRepository {}
 
 void main() {
   late _MockRepo repo;
@@ -168,7 +173,7 @@ void main() {
     expect((after as TodoListsData).items, hasLength(1));
   });
 
-  test('delete guarda la lista con sus tareas y undoLastDelete devuelve todo',
+  test('delete guarda la lista con sus tareas y undo devuelve todo',
       () async {
     final controller = StreamController<List<TodoList>>();
     when(() => repo.watchLists('u1')).thenAnswer((_) => controller.stream);
@@ -209,7 +214,8 @@ void main() {
     await pumpEventQueue();
 
     final notifier = container.read(todoListsProvider.notifier);
-    expect(await notifier.delete('L1'), isTrue);
+    final deleted = await notifier.delete('L1');
+    expect(deleted, isNotNull);
 
     // Las tareas se leen antes de borrar: si no, se perderían en el deshacer.
     verifyInOrder([
@@ -217,7 +223,7 @@ void main() {
       () => repo.deleteList(uid: 'u1', id: 'L1', todoIds: ['t1']),
     ]);
 
-    expect(await notifier.undoLastDelete(), isTrue);
+    expect(await notifier.undo(deleted!), isTrue);
 
     // La lista vuelve con los datos de antes y sus tareas, en una sola llamada.
     final restored = verify(() => repo.restoreList(
@@ -271,7 +277,7 @@ void main() {
 
     // Ni borra ni guarda una copia a medias: las tareas se irían en cascada sin
     // poder volver.
-    expect(await notifier.delete('L1'), isFalse);
+    expect(await notifier.delete('L1'), isNull);
     verifyNever(
       () => repo.deleteList(
         uid: any(named: 'uid'),
@@ -341,7 +347,7 @@ void main() {
       expect(shownIds(), ['L2']);
 
       deleting.complete(const Ok(null));
-      expect(await result, isTrue);
+      expect(await result, isNotNull);
 
       // El servidor ya no la devuelve y sigue fuera.
       controller.add([buildTodoList(id: 'L2')]);
@@ -363,9 +369,10 @@ void main() {
       await seed();
       final notifier = container.read(todoListsProvider.notifier);
 
-      expect(await notifier.delete('L1'), isTrue);
+      final deleted = await notifier.delete('L1');
+      expect(deleted, isNotNull);
       // Sin emisión sin L1: el refresco posterior al borrado no llegó.
-      expect(await notifier.undoLastDelete(), isTrue);
+      expect(await notifier.undo(deleted!), isTrue);
       controller.add([buildTodoList(id: 'L1'), buildTodoList(id: 'L2')]);
       await pumpEventQueue();
 
@@ -374,7 +381,7 @@ void main() {
       verify(() => todosRepo.refresh(uid: 'u1', listId: 'L1')).called(1);
     });
 
-    test('si el borrado falla la lista vuelve y delete dice que no', () async {
+    test('si el borrado falla la lista vuelve y delete devuelve null', () async {
       final deleting = Completer<Result<void>>();
       when(() => repo.deleteList(
             uid: 'u1',
@@ -389,8 +396,10 @@ void main() {
 
       deleting.complete(const Err<void>(ServerFailure('Error 500')));
 
-      expect(await result, isFalse);
+      expect(await result, isNull);
       expect(shownIds(), ['L1', 'L2']);
+      // Y no se queda una copia de algo que no se borró.
+      expect(trash.entries, isEmpty);
     });
 
     test('si no se pueden leer las tareas la lista vuelve', () async {
@@ -402,8 +411,88 @@ void main() {
       final result = container.read(todoListsProvider.notifier).delete('L1');
       expect(shownIds(), ['L2']);
 
-      expect(await result, isFalse);
+      expect(await result, isNull);
       expect(shownIds(), ['L1', 'L2']);
+    });
+
+    test('si no se puede guardar la copia la lista vuelve y no se borra',
+        () async {
+      registerFallbackValue(<TrashItem>[]);
+      final trashRepo = _MockTrash();
+      when(() => trashRepo.save(
+            uid: any(named: 'uid'),
+            items: any(named: 'items'),
+          )).thenAnswer((_) async => const Err(NetworkFailure()));
+      final container = createTestContainer(
+        authedUser: buildAuthUser(),
+        repositoryOverrides: {
+          TodoListsRepository: repo,
+          TodosRepository: todosRepo,
+        },
+        extra: [trashRepositoryProvider.overrideWithValue(trashRepo)],
+      );
+      expect(container.read(todoListsProvider), isA<TodoListsLoading>());
+      controller.add([buildTodoList(id: 'L1'), buildTodoList(id: 'L2')]);
+      await pumpEventQueue();
+
+      final deleted =
+          await container.read(todoListsProvider.notifier).delete('L1');
+
+      expect(deleted, isNull);
+      final shown = (container.read(todoListsProvider) as TodoListsData)
+          .items
+          .map((l) => l.id);
+      expect(shown, ['L1', 'L2']);
+      verifyNever(() => repo.deleteList(
+            uid: any(named: 'uid'),
+            id: any(named: 'id'),
+            todoIds: any(named: 'todoIds'),
+          ));
+    });
+
+    test('delete de una lista que no está cargada no borra nada', () async {
+      await seed();
+
+      final deleted =
+          await container.read(todoListsProvider.notifier).delete('otra');
+
+      expect(deleted, isNull);
+      verifyNever(() => repo.deleteList(
+            uid: any(named: 'uid'),
+            id: any(named: 'id'),
+            todoIds: any(named: 'todoIds'),
+          ));
+    });
+
+    test('undo devuelve la lista que se le da y deja la otra en la papelera',
+        () async {
+      when(() => todosRepo.fetchTodos(uid: 'u1', listId: 'L2'))
+          .thenAnswer((_) async => const Ok(<Todo>[]));
+      when(() => repo.deleteList(
+            uid: 'u1',
+            id: any(named: 'id'),
+            todoIds: any(named: 'todoIds'),
+          )).thenAnswer((_) async => const Ok(null));
+      when(() => repo.restoreList(
+            uid: 'u1',
+            list: any(named: 'list'),
+            todos: any(named: 'todos'),
+          )).thenAnswer((_) async => const Ok(null));
+      await seed();
+      final notifier = container.read(todoListsProvider.notifier);
+      final first = await notifier.delete('L1');
+      await notifier.delete('L2');
+
+      expect(await notifier.undo(first!), isTrue);
+
+      final restored = verify(() => repo.restoreList(
+            uid: 'u1',
+            list: captureAny(named: 'list'),
+            todos: any(named: 'todos'),
+          )).captured.single as TodoList;
+      expect(restored.id, 'L1');
+      // La lista L2 y sus tareas (ninguna) siguen en la papelera.
+      expect(trash.entries.map((e) => e.itemId), ['L2']);
     });
   });
 

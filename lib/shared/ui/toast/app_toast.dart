@@ -28,6 +28,10 @@ class AppToast {
       'No se ha podido restaurar. Inténtalo de nuevo.';
   static const String listDeleteFailed =
       'No se ha podido eliminar la lista. Inténtalo de nuevo.';
+  static const String todoDeleteFailed =
+      'No se ha podido eliminar la tarea. Inténtalo de nuevo.';
+  static const String appointmentDeleteFailed =
+      'No se ha podido eliminar la cita. Inténtalo de nuevo.';
   static const String trashEmptied = 'Papelera vaciada.';
   static const String longPressHint =
       'Mantén pulsada una tarjeta para editarla.';

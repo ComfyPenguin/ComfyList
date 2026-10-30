@@ -7,8 +7,8 @@ import '../../../../shared/core/lifecycle/polling_registry.dart';
 import '../../../../shared/core/time/clock.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/providers/auth_state.dart';
-import '../../../trash/domain/entities/trash_entry.dart';
-import '../../../trash/presentation/providers/trash_provider.dart';
+import '../../../trash/domain/entities/trash_group.dart';
+import '../../../trash/presentation/providers/deletions_provider.dart';
 import '../../data/datasources/firestore_appointments_remote.dart';
 import '../../data/repositories/appointments_repository_impl.dart';
 import '../../domain/entities/appointment.dart';
@@ -108,56 +108,23 @@ class AppointmentsNotifier extends Notifier<AppointmentsState> {
         );
   }
 
-  Future<void> delete(String id) async {
+  /// Borra la cita con copia en la papelera. Devuelve el borrado, que es lo que
+  /// hay que pasar a [undo], o `null` si no se pudo: sin copia no se borra.
+  Future<TrashGroup?> delete(String id) async {
     final appointment = _findById(id);
-    if (appointment != null) {
-      await ref.read(trashRepositoryProvider).save(
-            uid: _uid,
-            items: [
-              TrashItem(
-                kind: TrashKind.appointment,
-                itemId: appointment.id,
-                label: appointment.title,
-                payload: appointment.toJson(),
-              ),
-            ],
-          );
-    }
+    if (appointment == null) return null;
 
-    await ref.read(appointmentsRepositoryProvider).deleteAppointment(
+    final res = await ref.read(deletionsProvider).deleteAppointment(
           uid: _uid,
-          id: id,
+          appointment: appointment,
         );
+    return res.fold(onOk: (group) => group, onErr: (_) => null);
   }
 
-  /// Devuelve la última cita borrada. Devuelve si se pudo.
-  Future<bool> undoLastDelete() async {
-    final trash = ref.read(trashRepositoryProvider);
-    final found = await trash.latestGroup(
-      uid: _uid,
-      kind: TrashKind.appointment,
-    );
-    final entries = found.fold(
-      onOk: (entries) => entries,
-      onErr: (_) => const <TrashEntry>[],
-    );
-    if (entries.isEmpty) return false;
-
-    final repo = ref.read(appointmentsRepositoryProvider);
-    for (final entry in entries) {
-      final res = await repo.restoreAppointment(
-        uid: _uid,
-        appointment: Appointment.fromJson(entry.payload),
-      );
-      if (res.isErr) return false;
-    }
-
-    await trash.remove(
-      uid: _uid,
-      ids: entries.map((entry) => entry.id).toList(growable: false),
-    );
-    return true;
-  }
+  /// Devuelve [group], el borrado que acaba de hacer [delete]. Devuelve si se
+  /// pudo.
+  Future<bool> undo(TrashGroup group) =>
+      ref.read(deletionsProvider).restore(group);
 
   Appointment? _findById(String id) {
     final current = state;

@@ -382,12 +382,17 @@ class _TodosListState extends ConsumerState<_TodosList> {
       onLongPress: () => context.push(Routes.todoEdit(widget.listId, todo.id)),
       onComplete: () => notifier.toggleDone(todo.id, !todo.isDone),
       onDelete: () async {
-        await notifier.delete(todo.id);
+        final deleted = await notifier.delete(todo.id);
         if (!context.mounted) return;
+
+        if (deleted == null) {
+          AppToast.show(context, AppToast.todoDeleteFailed);
+          return;
+        }
         AppToast.showUndo(
           context,
           message: AppToast.todoDeleted,
-          onUndo: notifier.undoLastDelete,
+          onUndo: () => notifier.undo(deleted),
         );
       },
     );

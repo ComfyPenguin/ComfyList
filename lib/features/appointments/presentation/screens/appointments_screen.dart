@@ -326,12 +326,17 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
               context.push(Routes.appointmentEdit(appt.id)),
           onComplete: (appt) => notifier.toggleDone(appt.id, !appt.isDone),
           onDelete: (appt) async {
-            await notifier.delete(appt.id);
+            final deleted = await notifier.delete(appt.id);
             if (!context.mounted) return;
+
+            if (deleted == null) {
+              AppToast.show(context, AppToast.appointmentDeleteFailed);
+              return;
+            }
             AppToast.showUndo(
               context,
               message: AppToast.appointmentDeleted,
-              onUndo: notifier.undoLastDelete,
+              onUndo: () => notifier.undo(deleted),
             );
           },
           onRevealProgressChanged: (appt, progress) {

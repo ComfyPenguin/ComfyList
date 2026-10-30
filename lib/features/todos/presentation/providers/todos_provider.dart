@@ -7,8 +7,8 @@ import '../../../../shared/core/lifecycle/polling_registry.dart';
 import '../../../../shared/core/time/clock.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/providers/auth_state.dart';
-import '../../../trash/domain/entities/trash_entry.dart';
-import '../../../trash/presentation/providers/trash_provider.dart';
+import '../../../trash/domain/entities/trash_group.dart';
+import '../../../trash/presentation/providers/deletions_provider.dart';
 import '../../data/datasources/firestore_rest_remote.dart';
 import '../../data/repositories/todos_repository_impl.dart';
 import '../../domain/entities/todo.dart';
@@ -101,65 +101,24 @@ class TodosNotifier extends Notifier<TodosState> {
         );
   }
 
-  Future<void> delete(String id) async {
+  /// Borra la tarea con copia en la papelera. Devuelve el borrado, que es lo
+  /// que hay que pasar a [undo], o `null` si no se pudo: sin copia no se borra.
+  Future<TrashGroup?> delete(String id) async {
     final todo = _findById(id);
-    if (todo != null) {
-      await ref.read(trashRepositoryProvider).save(
-            uid: _uid,
-            items: [
-              TrashItem(
-                kind: TrashKind.todo,
-                itemId: todo.id,
-                parentId: _listId,
-                label: todo.title,
-                payload: todo.toJson(),
-              ),
-            ],
-          );
-    }
+    if (todo == null) return null;
 
-    await ref.read(todosRepositoryProvider).deleteTodo(
+    final res = await ref.read(deletionsProvider).deleteTodo(
           uid: _uid,
           listId: _listId,
-          id: id,
+          todo: todo,
         );
+    return res.fold(onOk: (group) => group, onErr: (_) => null);
   }
 
-  /// Devuelve el último todo borrado de esta lista. Devuelve si se pudo.
-  Future<bool> undoLastDelete() async {
-    final trash = ref.read(trashRepositoryProvider);
-    final found = await trash.latestGroup(
-      uid: _uid,
-      kind: TrashKind.todo,
-      parentId: _listId,
-    );
-    final entries = found.fold(
-      onOk: (entries) => entries,
-      onErr: (_) => const <TrashEntry>[],
-    );
-    // El grupo puede traer la lista delante si se borró con sus tareas: aquí
-    // solo vuelven las tareas, que la lista se queda en la papelera.
-    final todos = entries
-        .where((entry) => entry.kind == TrashKind.todo)
-        .toList(growable: false);
-    if (todos.isEmpty) return false;
-
-    final repo = ref.read(todosRepositoryProvider);
-    for (final entry in todos) {
-      final res = await repo.restoreTodo(
-        uid: _uid,
-        listId: entry.parentId ?? _listId,
-        todo: Todo.fromJson(entry.payload),
-      );
-      if (res.isErr) return false;
-    }
-
-    await trash.remove(
-      uid: _uid,
-      ids: todos.map((entry) => entry.id).toList(growable: false),
-    );
-    return true;
-  }
+  /// Devuelve [group], el borrado que acaba de hacer [delete]. Devuelve si se
+  /// pudo.
+  Future<bool> undo(TrashGroup group) =>
+      ref.read(deletionsProvider).restore(group);
 
   Todo? _findById(String id) {
     final current = state;
