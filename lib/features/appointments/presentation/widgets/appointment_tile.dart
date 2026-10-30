@@ -8,7 +8,6 @@ import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/ui/lists/swipe_actions_card.dart';
 import '../../../../shared/ui/text/animated_strikethrough_text.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
-import '../../../settings/presentation/providers/settings_state.dart';
 import '../../domain/entities/appointment.dart';
 
 /// Item de la lista de citas con hora, título y ubicación.
@@ -51,11 +50,7 @@ class AppointmentTile extends ConsumerWidget {
     final done = completionEnabled && appointment.isDone;
     final titleStyle = AppTypography.bodyMdStrong;
 
-    final settingsState = ref.watch(settingsProvider);
-    final use24H = switch (settingsState) {
-      SettingsData(:final settings) => settings.use24HourFormat,
-      _ => false,
-    };
+    final use24H = ref.watch(use24HourFormatProvider);
     final invertActions = ref.watch(
       settingsOrDefaultsProvider.select((s) => s.invertSwipeActions),
     );

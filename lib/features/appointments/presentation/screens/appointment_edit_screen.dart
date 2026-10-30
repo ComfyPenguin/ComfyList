@@ -17,7 +17,6 @@ import '../../../../shared/ui/pickers/date_time_pickers.dart';
 import '../../../../shared/ui/text/app_tag.dart';
 import '../../../../shared/ui/toast/app_toast.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
-import '../../../settings/presentation/providers/settings_state.dart';
 import '../../domain/entities/appointment.dart';
 import '../providers/appointments_provider.dart';
 import '../providers/appointments_state.dart';
@@ -72,12 +71,6 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
     }
   }
 
-  /// Formato de hora según el ajuste del usuario, igual que las tiles.
-  static bool _use24HourFormatFrom(SettingsState state) => switch (state) {
-    SettingsData(:final settings) => settings.use24HourFormat,
-    _ => false,
-  };
-
   Future<void> _pickDateTime() async {
     final pickedDate = await showAppDatePicker(context, initialDate: _dateTime);
     if (pickedDate == null) return;
@@ -86,7 +79,7 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
     final pickedTime = await showAppTimePicker(
       context,
       initialTime: TimeOfDay.fromDateTime(_dateTime),
-      use24HourFormat: _use24HourFormatFrom(ref.read(settingsProvider)),
+      use24HourFormat: ref.read(use24HourFormatProvider),
     );
     if (pickedTime == null) return;
 
@@ -173,7 +166,7 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
     _hydrateFromState(state);
 
     // El formato de hora sigue el ajuste del usuario, igual que las tiles.
-    final use24H = _use24HourFormatFrom(ref.watch(settingsProvider));
+    final use24H = ref.watch(use24HourFormatProvider);
     final dateText = formatLongDate(_dateTime);
     final timeText = formatClockTimeWithPeriod(
       _dateTime,

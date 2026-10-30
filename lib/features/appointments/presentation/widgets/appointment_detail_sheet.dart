@@ -13,7 +13,6 @@ import '../../../../shared/ui/buttons/primary_button.dart';
 import '../../../../shared/ui/completed_status_indicator.dart';
 import '../../../../shared/ui/pending_status_indicator.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
-import '../../../settings/presentation/providers/settings_state.dart';
 import '../../domain/entities/appointment.dart';
 import '../providers/appointments_provider.dart';
 import '../providers/appointments_state.dart';
@@ -67,14 +66,10 @@ class AppointmentDetailSheet extends ConsumerWidget {
     final state = ref.watch(appointmentsProvider);
     final colors = context.colors;
 
-    final settingsState = ref.watch(settingsProvider);
     final completionEnabled = ref.watch(
       settingsOrDefaultsProvider.select((s) => s.appointmentsCompletionEnabled),
     );
-    final use24HourFormat = switch (settingsState) {
-      SettingsData(:final settings) => settings.use24HourFormat,
-      _ => false,
-    };
+    final use24HourFormat = ref.watch(use24HourFormatProvider);
 
     // El 85 % es un tope, no la altura de la hoja: quien la mide es el contenido,
     // así que las ramas sin contenido no lo llenan (`heightFactor: 1`).
