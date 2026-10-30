@@ -214,49 +214,6 @@ void main() {
     expect(entries.map((e) => e.itemId), ['t2', 't1']);
   });
 
-  test('latestGroup devuelve el grupo más reciente del tipo y la lista',
-      () async {
-    await repo.save(uid: 'u1', items: [item(id: 't1', parentId: 'L1')]);
-    await repo.save(
-      uid: 'u1',
-      items: [item(id: 'a1', kind: TrashKind.appointment)],
-    );
-    await repo.save(uid: 'u1', items: [item(id: 't2', parentId: 'L2')]);
-
-    final todosOfL1 = valueOf(
-      await repo.latestGroup(uid: 'u1', kind: TrashKind.todo, parentId: 'L1'),
-    );
-    expect(todosOfL1.map((e) => e.itemId), ['t1']);
-
-    final appointments = valueOf(
-      await repo.latestGroup(uid: 'u1', kind: TrashKind.appointment),
-    );
-    expect(appointments.map((e) => e.itemId), ['a1']);
-  });
-
-  test('latestGroup de una lista trae también sus tareas', () async {
-    await repo.save(
-      uid: 'u1',
-      items: [
-        item(id: 'L1', kind: TrashKind.list),
-        item(id: 't1', parentId: 'L1'),
-      ],
-    );
-
-    final group =
-        valueOf(await repo.latestGroup(uid: 'u1', kind: TrashKind.list));
-
-    expect(group.map((e) => e.itemId), containsAll(['L1', 't1']));
-  });
-
-  test('sin nada guardado no hay grupo que deshacer', () async {
-    final group = valueOf(
-      await repo.latestGroup(uid: 'u1', kind: TrashKind.todo),
-    );
-
-    expect(group, isEmpty);
-  });
-
   test('remove borra solo los ids indicados', () async {
     await repo.save(uid: 'u1', items: [item(id: 't1')]);
     await repo.save(uid: 'u1', items: [item(id: 't2')]);

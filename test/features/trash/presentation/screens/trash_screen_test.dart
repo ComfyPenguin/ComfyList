@@ -60,13 +60,6 @@ class _FixedTrashRepository implements TrashRepository {
   }) async => const Ok([]);
 
   @override
-  Future<Result<List<TrashEntry>>> latestGroup({
-    required String uid,
-    required TrashKind kind,
-    String? parentId,
-  }) async => const Ok([]);
-
-  @override
   Future<Result<void>> purgeExpired({
     required String uid,
     required int days,

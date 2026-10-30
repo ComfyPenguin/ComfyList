@@ -16,14 +16,6 @@ abstract class TrashRepository {
     required List<TrashItem> items,
   });
 
-  /// El grupo borrado más recientemente de ese tipo (y de esa lista, si es una
-  /// tarea), con todas sus filas. Vacío si no queda nada que deshacer.
-  Future<Result<List<TrashEntry>>> latestGroup({
-    required String uid,
-    required TrashKind kind,
-    String? parentId,
-  });
-
   /// Toda la papelera de la cuenta, lo último borrado primero.
   Future<Result<List<TrashEntry>>> list(String uid);
 

@@ -78,21 +78,6 @@ class TrashRepositoryImpl implements TrashRepository {
       });
 
   @override
-  Future<Result<List<TrashEntry>>> latestGroup({
-    required String uid,
-    required TrashKind kind,
-    String? parentId,
-  }) =>
-      _entries.read<List<TrashEntry>>(() async {
-        final entries = _newestFirst(await _remote.listEntries(uid));
-        final newest = _newestMatching(entries, kind: kind, parentId: parentId);
-        if (newest == null) return const [];
-        return entries
-            .where((entry) => entry.groupId == newest.groupId)
-            .toList(growable: false);
-      });
-
-  @override
   Future<Result<List<TrashEntry>>> list(String uid) => _entries.read(
         () async => _newestFirst(await _remote.listEntries(uid)),
       );
@@ -187,20 +172,6 @@ class TrashRepositoryImpl implements TrashRepository {
     } on DioException catch (e) {
       debugLog('La papelera no pudo quitar lo pendiente: ${e.type}');
     }
-  }
-
-  TrashEntry? _newestMatching(
-    List<TrashEntry> entries, {
-    required TrashKind kind,
-    String? parentId,
-  }) {
-    for (final entry in entries) {
-      if (entry.kind == kind &&
-          (parentId == null || entry.parentId == parentId)) {
-        return entry;
-      }
-    }
-    return null;
   }
 
   /// Marca temporal del borrado, siempre mayor que la del anterior. El reloj
