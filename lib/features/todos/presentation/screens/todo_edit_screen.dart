@@ -12,7 +12,6 @@ import '../../../../shared/ui/dialogs/confirm_action_dialog.dart';
 import '../../../../shared/ui/inputs/app_text_field.dart';
 import '../../../../shared/ui/text/app_tag.dart';
 import '../../../../shared/ui/toast/app_toast.dart';
-import '../../domain/entities/todo.dart';
 import '../providers/todos_provider.dart';
 import '../providers/todos_state.dart';
 
@@ -47,11 +46,7 @@ class _TodoEditScreenState extends ConsumerState<TodoEditScreen> {
   void _hydrateFromState(TodosState s) {
     if (_hydrated || !_isEditing) return;
     if (s is TodosData) {
-      final todo =
-          s.items.where((t) => t.id == widget.id).cast<Todo?>().firstWhere(
-                (e) => true,
-                orElse: () => null,
-              );
+      final todo = s.items.where((t) => t.id == widget.id).firstOrNull;
       if (todo != null) {
         _titleCtrl.text = todo.title;
         _descCtrl.text = todo.description ?? '';

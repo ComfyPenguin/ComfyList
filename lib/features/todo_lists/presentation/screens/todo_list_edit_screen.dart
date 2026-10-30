@@ -13,7 +13,6 @@ import '../../../../shared/ui/dialogs/confirm_action_dialog.dart';
 import '../../../../shared/ui/inputs/app_text_field.dart';
 import '../../../../shared/ui/text/app_tag.dart';
 import '../../../../shared/ui/toast/app_toast.dart';
-import '../../domain/entities/todo_list.dart';
 import '../../domain/entities/todo_list_icons.dart';
 import '../providers/todo_lists_provider.dart';
 import '../providers/todo_lists_state.dart';
@@ -49,11 +48,7 @@ class _TodoListEditScreenState extends ConsumerState<TodoListEditScreen> {
   void _hydrateFromState(TodoListsState s) {
     if (_hydrated || !_isEditing) return;
     if (s is TodoListsData) {
-      final list =
-          s.items.where((l) => l.id == widget.id).cast<TodoList?>().firstWhere(
-                (e) => true,
-                orElse: () => null,
-              );
+      final list = s.items.where((l) => l.id == widget.id).firstOrNull;
       if (list != null) {
         _nameCtrl.text = list.name;
         _iconKey = list.iconKey;

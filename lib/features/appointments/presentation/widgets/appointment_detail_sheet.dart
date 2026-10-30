@@ -114,10 +114,7 @@ class AppointmentDetailSheet extends ConsumerWidget {
     bool completionEnabled,
     bool use24HourFormat,
   ) {
-    final appointment = items.cast<Appointment?>().firstWhere(
-      (a) => a?.id == id,
-      orElse: () => null,
-    );
+    final appointment = items.where((a) => a.id == id).firstOrNull;
 
     // Si la cita fue eliminada mientras el sheet estaba abierto.
     if (appointment == null) {

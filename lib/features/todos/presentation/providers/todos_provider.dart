@@ -64,13 +64,11 @@ class TodosNotifier extends Notifier<TodosState> {
     return const TodosLoading();
   }
 
-  String get _uid => (ref.read(authProvider) as Authenticated).user.uid;
-
   /// Crea una tarea. Devuelve si se pudo; si no, la lista cargada se queda como
   /// está y quien llama decide cómo avisar.
   Future<bool> create({required String title, String? description}) async {
     final res = await ref.read(todosRepositoryProvider).createTodo(
-          uid: _uid,
+          uid: ref.signedInUid,
           listId: _listId,
           title: title,
           description: description,
@@ -81,7 +79,7 @@ class TodosNotifier extends Notifier<TodosState> {
   /// Marca o desmarca una tarea. Devuelve si se pudo guardar.
   Future<bool> toggleDone(String id, bool isDone) async {
     final res = await ref.read(todosRepositoryProvider).updateTodo(
-          uid: _uid,
+          uid: ref.signedInUid,
           listId: _listId,
           id: id,
           isDone: isDone,
@@ -97,7 +95,7 @@ class TodosNotifier extends Notifier<TodosState> {
     bool clearDescription = false,
   }) async {
     final res = await ref.read(todosRepositoryProvider).updateTodo(
-          uid: _uid,
+          uid: ref.signedInUid,
           listId: _listId,
           id: id,
           title: title,
@@ -114,7 +112,7 @@ class TodosNotifier extends Notifier<TodosState> {
     if (todo == null) return null;
 
     final res = await ref.read(deletionsProvider).deleteTodo(
-          uid: _uid,
+          uid: ref.signedInUid,
           listId: _listId,
           todo: todo,
         );
@@ -126,14 +124,10 @@ class TodosNotifier extends Notifier<TodosState> {
   Future<bool> undo(TrashGroup group) =>
       ref.read(deletionsProvider).restore(group);
 
-  Todo? _findById(String id) {
-    final current = state;
-    if (current is! TodosData) return null;
-    for (final todo in current.items) {
-      if (todo.id == id) return todo;
-    }
-    return null;
-  }
+  Todo? _findById(String id) => switch (state) {
+        TodosData(:final items) => items.where((e) => e.id == id).firstOrNull,
+        _ => null,
+      };
 }
 
 final todosProvider =

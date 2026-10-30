@@ -71,13 +71,11 @@ class TodoListsNotifier extends Notifier<TodoListsState> {
     return const TodoListsLoading();
   }
 
-  String get _uid => (ref.read(authProvider) as Authenticated).user.uid;
-
   /// Crea una lista. Devuelve si se pudo; si no, las listas cargadas se quedan
   /// como están y quien llama decide cómo avisar.
   Future<bool> create({required String name, required String iconKey}) async {
     final res = await ref.read(todoListsRepositoryProvider).createList(
-          uid: _uid,
+          uid: ref.signedInUid,
           name: name,
           iconKey: iconKey,
         );
@@ -91,7 +89,7 @@ class TodoListsNotifier extends Notifier<TodoListsState> {
     String? iconKey,
   }) async {
     final res = await ref.read(todoListsRepositoryProvider).updateList(
-          uid: _uid,
+          uid: ref.signedInUid,
           id: id,
           name: name,
           iconKey: iconKey,
@@ -121,7 +119,7 @@ class TodoListsNotifier extends Notifier<TodoListsState> {
     if (state is TodoListsData) state = TodoListsData(_visible());
 
     final res = await ref.read(deletionsProvider).deleteList(
-          uid: _uid,
+          uid: ref.signedInUid,
           list: list,
         );
     return res.fold(
@@ -143,14 +141,10 @@ class TodoListsNotifier extends Notifier<TodoListsState> {
     return true;
   }
 
-  TodoList? _findById(String id) {
-    final current = state;
-    if (current is! TodoListsData) return null;
-    for (final list in current.items) {
-      if (list.id == id) return list;
-    }
-    return null;
-  }
+  TodoList? _findById(String id) => switch (state) {
+        TodoListsData(:final items) => items.where((e) => e.id == id).firstOrNull,
+        _ => null,
+      };
 }
 
 final todoListsProvider =

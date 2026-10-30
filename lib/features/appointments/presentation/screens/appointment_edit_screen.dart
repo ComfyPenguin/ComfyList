@@ -17,7 +17,6 @@ import '../../../../shared/ui/pickers/date_time_pickers.dart';
 import '../../../../shared/ui/text/app_tag.dart';
 import '../../../../shared/ui/toast/app_toast.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
-import '../../domain/entities/appointment.dart';
 import '../providers/appointments_provider.dart';
 import '../providers/appointments_state.dart';
 import '../widgets/reminder_warning.dart';
@@ -56,10 +55,8 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
   void _hydrateFromState(AppointmentsState s) {
     if (_hydrated || !_isEditing) return;
     if (s is AppointmentsData) {
-      final appointment = s.items
-          .where((a) => a.id == widget.id)
-          .cast<Appointment?>()
-          .firstWhere((e) => true, orElse: () => null);
+      final appointment =
+          s.items.where((a) => a.id == widget.id).firstOrNull;
       if (appointment != null) {
         _titleCtrl.text = appointment.title;
         _descCtrl.text = appointment.description ?? '';
