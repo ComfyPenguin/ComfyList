@@ -14,6 +14,7 @@ import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/core/time/clock.dart';
+import '../../../../shared/ui/lists/held_reorder.dart';
 import '../../../../shared/ui/lists/reveal_progress.dart';
 import '../../../../shared/ui/lists/slide_flow.dart';
 import '../../../../shared/ui/toast/app_toast.dart';
@@ -92,12 +93,15 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
 
   final _reveal = RevealProgress();
 
-  // Orden visual mostrado en el último build (ids), los items previos y si
-  // se está retrasando el reordenado tras un cambio de isDone.
-  List<String>? _displayedIds;
-  List<Appointment>? _lastItems;
-  bool _holdingReorder = false;
-  Timer? _reorderTimer;
+  late final _held = HeldReorder<Appointment>(
+    idOf: (appointment) => appointment.id,
+    flagOf: (appointment) => appointment.isDone,
+    onRelease: () {
+      if (mounted) setState(() {});
+    },
+    delay: _reorderDelay,
+  );
+
 
   void _setTileRevealProgress(String appointmentId, double progress) {
     setState(() => _reveal.set(appointmentId, progress));
@@ -105,84 +109,8 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
 
   @override
   void dispose() {
-    _reorderTimer?.cancel();
+    _held.dispose();
     super.dispose();
-  }
-
-  bool _sameIds(List<String> a, List<String> b) {
-    if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
-  }
-
-  /// Compara como conjunto (sin importar el orden del provider): solo nos
-  /// importa que no haya altas/borrados para poder reordenar manteniendo
-  /// los ids mostrados.
-  bool _sameIdSet(List<String> a, List<String> b) {
-    if (a.length != b.length) return false;
-    final bSet = b.toSet();
-    for (final id in a) {
-      if (!bSet.contains(id)) return false;
-    }
-    return true;
-  }
-
-  /// Devuelve el orden a mostrar: si un único item acaba de cambiar de
-  /// [Appointment.isDone] y eso reordenaría la lista, mantiene el orden
-  /// anterior durante [_reorderDelay] para no cortar la animación del tachado.
-  List<Appointment> _resolveDisplaySorted(List<Appointment> desired) {
-    final items = widget.items;
-    final currentIds = [for (final t in items) t.id];
-    final previous = _lastItems;
-    _lastItems = items;
-
-    // Detectar si exactamente un item cambió de isDone desde el último build.
-    String? toggledId;
-    if (previous != null) {
-      final prevById = {for (final t in previous) t.id: t};
-      var flips = 0;
-      for (final t in items) {
-        final p = prevById[t.id];
-        if (p != null && p.isDone != t.isDone) {
-          toggledId = t.id;
-          flips++;
-        }
-      }
-      if (flips != 1) toggledId = null;
-    }
-
-    final canKeepLayout =
-        _displayedIds != null && _sameIdSet(_displayedIds!, currentIds);
-    final desiredIds = [for (final t in desired) t.id];
-    final wouldReorder =
-        toggledId != null &&
-        canKeepLayout &&
-        !_sameIds(_displayedIds!, desiredIds);
-
-    if (wouldReorder && !_holdingReorder) {
-      _holdingReorder = true;
-      _reorderTimer?.cancel();
-      _reorderTimer = Timer(_reorderDelay, () {
-        if (!mounted) return;
-        setState(() => _holdingReorder = false);
-      });
-    }
-
-    if (_holdingReorder) {
-      if (canKeepLayout) {
-        final byId = {for (final t in items) t.id: t};
-        return [for (final id in _displayedIds!) byId[id]!];
-      }
-      // El conjunto de ids cambió (alta/borrado): reordenar ya.
-      _holdingReorder = false;
-      _reorderTimer?.cancel();
-      _reorderTimer = null;
-    }
-
-    _displayedIds = desiredIds;
-    return desired;
   }
 
   @override
@@ -206,7 +134,7 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
     );
 
     // Mantener el orden previo mientras se anima el tachado de un toggle.
-    final displaySorted = _resolveDisplaySorted(sorted);
+    final displaySorted = _held.resolve(items: widget.items, desired: sorted);
 
     final days = groupByDay(
       displaySorted,
