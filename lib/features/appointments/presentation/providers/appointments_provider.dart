@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/core/failures/failure.dart';
+import '../../../../shared/core/lifecycle/polling_registry.dart';
 import '../../../../shared/core/time/clock.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/providers/auth_state.dart';
@@ -23,6 +24,7 @@ final appointmentsRepositoryProvider = Provider<AppointmentsRepository>((ref) {
   final repo = AppointmentsRepositoryImpl(
     ref.watch(firestoreAppointmentsRemoteProvider),
     pollInterval: ref.watch(pollIntervalProvider),
+    registry: ref.watch(pollingRegistryProvider),
   );
   ref.onDispose(repo.dispose);
   return repo;

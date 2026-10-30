@@ -1,68 +1,47 @@
-import 'dart:async';
-
-import 'package:dio/dio.dart';
-
-import '../../../../shared/core/failures/failure.dart';
+import '../../../../shared/core/lifecycle/polling_registry.dart';
 import '../../../../shared/core/result/result.dart';
 import '../../../../shared/core/time/clock.dart';
+import '../../../../shared/data/remote/polled_collection.dart';
 import '../../domain/entities/todo.dart';
 import '../../domain/repositories/todos_repository.dart';
 import '../datasources/firestore_rest_remote.dart';
 
 /// Implementación REST con polling 15s + refresh inmediato tras mutación.
 ///
-/// `watchTodos` devuelve un Stream construido sobre un controller broadcast:
-/// emite la primera lista tras un fetch inicial, refresca por timer, y se
-/// fuerza una emisión cada vez que cambia algo (create/update/delete).
-///
-/// Cada (uid, listId) tiene su propio watcher independiente.
+/// Cada (uid, listId) es una [PolledCollection] independiente: permite tener
+/// varias listas abiertas (p. ej. tras navegación rápida) sin que se pisen.
 class TodosRepositoryImpl implements TodosRepository {
-  TodosRepositoryImpl(this._remote, {this.pollInterval = defaultPollInterval});
+  TodosRepositoryImpl(
+    this._remote, {
+    Duration pollInterval = defaultPollInterval,
+    PollingRegistry? registry,
+  }) : _todos = PolledCollection<(String, String), Todo>(
+          fetch: (key) => _remote.listTodos(uid: key.$1, listId: key.$2),
+          interval: pollInterval,
+          registry: registry,
+        );
 
   final FirestoreRestRemote _remote;
 
-  /// Cada cuánto vuelve a pedir la lista cada watcher activo. En la app lo fija
-  /// [pollIntervalProvider]; los tests lo acortan para no esperar al tick real.
-  final Duration pollInterval;
-
-  // Un watcher por par (uid, listId). Permite tener varias listas abiertas
-  // (p. ej. tras navegación rápida) sin que se pisen entre sí.
-  final Map<_WatcherKey, _Watcher> _watchers = {};
+  final PolledCollection<(String, String), Todo> _todos;
 
   @override
   Stream<List<Todo>> watchTodos({
     required String uid,
     required String listId,
-  }) {
-    final key = _WatcherKey(uid, listId);
-    final w = _watchers.putIfAbsent(
-      key,
-      () => _Watcher(uid, listId, _remote, pollInterval),
-    );
-    return w.stream;
-  }
+  }) =>
+      _todos.watch((uid, listId));
 
   @override
   Future<void> refresh({required String uid, required String listId}) =>
-      _refresh(uid, listId);
-
-  Future<void> _refresh(String uid, String listId) async {
-    final w = _watchers[_WatcherKey(uid, listId)];
-    if (w != null) await w.refreshNow();
-  }
+      _todos.refresh((uid, listId));
 
   @override
   Future<Result<List<Todo>>> fetchTodos({
     required String uid,
     required String listId,
-  }) async {
-    try {
-      final list = await _remote.listTodos(uid: uid, listId: listId);
-      return Ok(list);
-    } on DioException catch (e) {
-      return Err(_mapDioError(e));
-    }
-  }
+  }) =>
+      _todos.read(() => _remote.listTodos(uid: uid, listId: listId));
 
   @override
   Future<Result<Todo>> createTodo({
@@ -70,20 +49,16 @@ class TodosRepositoryImpl implements TodosRepository {
     required String listId,
     required String title,
     String? description,
-  }) async {
-    try {
-      final todo = await _remote.createTodo(
-        uid: uid,
-        listId: listId,
-        title: title,
-        description: description,
+  }) =>
+      _todos.guard(
+        (uid, listId),
+        () => _remote.createTodo(
+          uid: uid,
+          listId: listId,
+          title: title,
+          description: description,
+        ),
       );
-      await _refresh(uid, listId);
-      return Ok(todo);
-    } on DioException catch (e) {
-      return Err(_mapDioError(e));
-    }
-  }
 
   @override
   Future<Result<Todo>> updateTodo({
@@ -94,171 +69,41 @@ class TodosRepositoryImpl implements TodosRepository {
     String? description,
     bool clearDescription = false,
     bool? isDone,
-  }) async {
-    try {
-      final todo = await _remote.updateTodo(
-        uid: uid,
-        listId: listId,
-        id: id,
-        title: title,
-        description: description,
-        clearDescription: clearDescription,
-        isDone: isDone,
+  }) =>
+      _todos.guard(
+        (uid, listId),
+        () => _remote.updateTodo(
+          uid: uid,
+          listId: listId,
+          id: id,
+          title: title,
+          description: description,
+          clearDescription: clearDescription,
+          isDone: isDone,
+        ),
       );
-      await _refresh(uid, listId);
-      return Ok(todo);
-    } on DioException catch (e) {
-      return Err(_mapDioError(e));
-    }
-  }
 
   @override
   Future<Result<void>> deleteTodo({
     required String uid,
     required String listId,
     required String id,
-  }) async {
-    try {
-      await _remote.deleteTodo(uid: uid, listId: listId, id: id);
-      await _refresh(uid, listId);
-      return const Ok(null);
-    } on DioException catch (e) {
-      return Err(_mapDioError(e));
-    }
-  }
+  }) =>
+      _todos.guard(
+        (uid, listId),
+        () => _remote.deleteTodo(uid: uid, listId: listId, id: id),
+      );
 
   @override
   Future<Result<Todo>> restoreTodo({
     required String uid,
     required String listId,
     required Todo todo,
-  }) async {
-    try {
-      final restored = await _remote.restoreTodo(
-        uid: uid,
-        listId: listId,
-        todo: todo,
+  }) =>
+      _todos.guard(
+        (uid, listId),
+        () => _remote.restoreTodo(uid: uid, listId: listId, todo: todo),
       );
-      await _refresh(uid, listId);
-      return Ok(restored);
-    } on DioException catch (e) {
-      return Err(_mapDioError(e));
-    }
-  }
 
-  @override
-  void pauseAll() {
-    for (final w in _watchers.values) {
-      w.pause();
-    }
-  }
-
-  @override
-  void resumeAll() {
-    for (final w in _watchers.values) {
-      w.resume();
-    }
-  }
-
-  void dispose() {
-    for (final w in _watchers.values) {
-      w.dispose();
-    }
-    _watchers.clear();
-  }
-
-  Failure _mapDioError(DioException e) {
-    if (e.type == DioExceptionType.connectionTimeout ||
-        e.type == DioExceptionType.receiveTimeout ||
-        e.type == DioExceptionType.sendTimeout) {
-      return const TimeoutFailure();
-    }
-    if (e.type == DioExceptionType.connectionError) {
-      return const NetworkFailure();
-    }
-    if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
-      return const AuthFailure();
-    }
-    if (e.response?.statusCode == 404) {
-      return const NotFoundFailure();
-    }
-    return ServerFailure('Error ${e.response?.statusCode ?? "?"}');
-  }
-}
-
-class _WatcherKey {
-  const _WatcherKey(this.uid, this.listId);
-  final String uid;
-  final String listId;
-
-  @override
-  bool operator ==(Object other) =>
-      other is _WatcherKey && other.uid == uid && other.listId == listId;
-
-  @override
-  int get hashCode => Object.hash(uid, listId);
-}
-
-class _Watcher {
-  _Watcher(this.uid, this.listId, this._remote, this._interval) {
-    _controller = StreamController<List<Todo>>.broadcast(
-      onListen: _start,
-      onCancel: _stop,
-    );
-  }
-
-  final String uid;
-  final String listId;
-  final FirestoreRestRemote _remote;
-  final Duration _interval;
-
-  late final StreamController<List<Todo>> _controller;
-  Timer? _timer;
-  bool _running = false;
-
-  Stream<List<Todo>> get stream => _controller.stream;
-
-  void _start() {
-    if (_running) return;
-    _running = true;
-    refreshNow();
-    _timer = Timer.periodic(_interval, (_) => refreshNow());
-  }
-
-  void _stop() {
-    if (_controller.hasListener) return;
-    _timer?.cancel();
-    _timer = null;
-    _running = false;
-  }
-
-  // Pausa el polling en background: el OS mata los sockets y el primer tick
-  // tras resume lanzaría errores de red/auth contra token/conexión caducados.
-  void pause() {
-    _timer?.cancel();
-    _timer = null;
-  }
-
-  // Reanuda el polling al volver a foreground; refreshNow fuerza un fetch
-  // inmediato para no esperar al siguiente tick del Timer.periodic.
-  void resume() {
-    if (_running && _timer == null && _controller.hasListener) {
-      refreshNow();
-      _timer = Timer.periodic(_interval, (_) => refreshNow());
-    }
-  }
-
-  Future<void> refreshNow() async {
-    try {
-      final list = await _remote.listTodos(uid: uid, listId: listId);
-      if (!_controller.isClosed) _controller.add(list);
-    } catch (e, st) {
-      if (!_controller.isClosed) _controller.addError(e, st);
-    }
-  }
-
-  void dispose() {
-    _timer?.cancel();
-    _controller.close();
-  }
+  void dispose() => _todos.dispose();
 }

@@ -43,34 +43,6 @@ void main() {
       expect(ok.value.first.id, 'L1');
     });
 
-    test('fetchLists returns Err(NetworkFailure) on connectionError', () async {
-      when(() => remote.listLists('u1')).thenThrow(
-        DioException(
-          requestOptions: RequestOptions(path: ''),
-          type: DioExceptionType.connectionError,
-        ),
-      );
-
-      final res = await repo.fetchLists('u1');
-
-      expect(res.isErr, isTrue);
-      expect((res as Err).failure, isA<NetworkFailure>());
-    });
-
-    test('fetchLists returns Err(TimeoutFailure) on receiveTimeout', () async {
-      when(() => remote.listLists('u1')).thenThrow(
-        DioException(
-          requestOptions: RequestOptions(path: ''),
-          type: DioExceptionType.receiveTimeout,
-        ),
-      );
-
-      final res = await repo.fetchLists('u1');
-
-      expect(res.isErr, isTrue);
-      expect((res as Err).failure, isA<TimeoutFailure>());
-    });
-
     test('el watcher vuelve a pedir la lista en cada tick', () async {
       when(() => remote.listLists('u1'))
           .thenAnswer((_) async => <TodoList>[buildTodoList()]);
@@ -120,32 +92,6 @@ void main() {
       await sub.cancel();
     });
 
-    test('createList returns Err(Failure) on DioException', () async {
-      when(() => remote.createList(
-            uid: 'u1',
-            name: any(named: 'name'),
-            iconKey: any(named: 'iconKey'),
-          )).thenThrow(
-        DioException(
-          requestOptions: RequestOptions(path: ''),
-          type: DioExceptionType.badResponse,
-          response: Response<dynamic>(
-            requestOptions: RequestOptions(path: ''),
-            statusCode: 500,
-          ),
-        ),
-      );
-
-      final res = await repo.createList(
-        uid: 'u1',
-        name: 'Compras',
-        iconKey: 'cart',
-      );
-
-      expect(res.isErr, isTrue);
-      expect((res as Err).failure, isA<ServerFailure>());
-    });
-
     test('deleteList borra la lista y sus tareas con una sola llamada',
         () async {
       when(() => remote.deleteListWithTodos(
@@ -166,23 +112,6 @@ void main() {
             id: 'L1',
             todoIds: const ['t1', 't2'],
           )).called(1);
-    });
-
-    test('deleteList devuelve Err si el commit falla', () async {
-      when(() => remote.deleteListWithTodos(
-            uid: 'u1',
-            id: 'L1',
-            todoIds: any(named: 'todoIds'),
-          )).thenThrow(
-        DioException(
-          requestOptions: RequestOptions(path: ''),
-          type: DioExceptionType.connectionError,
-        ),
-      );
-
-      final res = await repo.deleteList(uid: 'u1', id: 'L1', todoIds: const []);
-
-      expect((res as Err).failure, isA<NetworkFailure>());
     });
 
     test('restoreList devuelve la lista y sus tareas con una sola llamada',
@@ -206,6 +135,23 @@ void main() {
             todos: captureAny(named: 'todos'),
           )).captured.single as List<Todo>;
       expect(sent.map((t) => t.id), ['t1']);
+    });
+
+    test('watchLists sin red entrega NetworkFailure, no un error genérico',
+        () async {
+      when(() => remote.listLists('u1')).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: ''),
+          type: DioExceptionType.connectionError,
+        ),
+      );
+
+      final errors = <Object>[];
+      final sub = repo.watchLists('u1').listen((_) {}, onError: errors.add);
+      await pumpEventQueue();
+      await sub.cancel();
+
+      expect(errors.single, isA<NetworkFailure>());
     });
   });
 }

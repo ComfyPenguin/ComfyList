@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:comfy_list/features/auth/presentation/providers/auth_state.dart';
 import 'package:comfy_list/features/todo_lists/data/datasources/firestore_lists_remote.dart';
-import 'package:comfy_list/features/todo_lists/data/repositories/todo_lists_repository_impl.dart';
 import 'package:comfy_list/features/todo_lists/domain/entities/todo_list.dart';
 import 'package:comfy_list/features/todo_lists/domain/repositories/todo_lists_repository.dart';
 import 'package:comfy_list/features/todo_lists/presentation/providers/todo_lists_provider.dart';
@@ -38,18 +37,24 @@ void main() {
     registerFallbackValue(<Todo>[]);
   });
 
-  test('el repo de la app toma la cadencia del polling del provider', () {
+  test('el repo de la app toma la cadencia del polling del provider', () async {
+    final remote = _MockRemote();
+    when(() => remote.listLists('u1')).thenAnswer((_) async => <TodoList>[]);
     final container = createTestContainer(
-      remoteOverrides: {FirestoreListsRemote: _MockRemote()},
+      remoteOverrides: {FirestoreListsRemote: remote},
       extra: [
-        pollIntervalProvider.overrideWithValue(const Duration(seconds: 3)),
+        pollIntervalProvider.overrideWithValue(const Duration(milliseconds: 20)),
       ],
     );
+    final sub = container
+        .read(todoListsRepositoryProvider)
+        .watchLists('u1')
+        .listen((_) {});
+    addTearDown(sub.cancel);
 
-    final repo =
-        container.read(todoListsRepositoryProvider) as TodoListsRepositoryImpl;
+    await Future<void>.delayed(const Duration(milliseconds: 150));
 
-    expect(repo.pollInterval, const Duration(seconds: 3));
+    verify(() => remote.listLists('u1')).called(greaterThan(1));
   });
 
   setUp(() {

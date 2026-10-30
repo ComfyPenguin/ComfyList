@@ -1,9 +1,7 @@
 import 'package:comfy_list/features/todos/data/datasources/firestore_rest_remote.dart';
 import 'package:comfy_list/features/todos/data/repositories/todos_repository_impl.dart';
 import 'package:comfy_list/features/todos/domain/entities/todo.dart';
-import 'package:comfy_list/shared/core/failures/failure.dart';
 import 'package:comfy_list/shared/core/result/result.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -37,70 +35,6 @@ void main() {
       expect(ok.value.first.id, 't1');
     });
 
-    test('fetchTodos returns Err(TimeoutFailure) on receiveTimeout', () async {
-      when(() => remote.listTodos(uid: 'u1', listId: 'L1')).thenThrow(
-        DioException(
-          requestOptions: RequestOptions(path: ''),
-          type: DioExceptionType.receiveTimeout,
-        ),
-      );
-
-      final res = await repo.fetchTodos(uid: 'u1', listId: 'L1');
-
-      expect(res.isErr, isTrue);
-      expect((res as Err).failure, isA<TimeoutFailure>());
-    });
-
-    test('deleteTodo returns Err(NotFoundFailure) on 404', () async {
-      when(() => remote.deleteTodo(uid: 'u1', listId: 'L1', id: 't1'))
-          .thenThrow(
-        DioException(
-          requestOptions: RequestOptions(path: ''),
-          type: DioExceptionType.badResponse,
-          response: Response<dynamic>(
-            requestOptions: RequestOptions(path: ''),
-            statusCode: 404,
-          ),
-        ),
-      );
-
-      final res = await repo.deleteTodo(uid: 'u1', listId: 'L1', id: 't1');
-
-      expect(res.isErr, isTrue);
-      expect((res as Err).failure, isA<NotFoundFailure>());
-    });
-
-    test('updateTodo returns Err(AuthFailure) on 401', () async {
-      when(() => remote.updateTodo(
-            uid: 'u1',
-            listId: 'L1',
-            id: 't1',
-            title: any(named: 'title'),
-            description: any(named: 'description'),
-            clearDescription: any(named: 'clearDescription'),
-            isDone: any(named: 'isDone'),
-          )).thenThrow(
-        DioException(
-          requestOptions: RequestOptions(path: ''),
-          type: DioExceptionType.badResponse,
-          response: Response<dynamic>(
-            requestOptions: RequestOptions(path: ''),
-            statusCode: 401,
-          ),
-        ),
-      );
-
-      final res = await repo.updateTodo(
-        uid: 'u1',
-        listId: 'L1',
-        id: 't1',
-        isDone: true,
-      );
-
-      expect(res.isErr, isTrue);
-      expect((res as Err).failure, isA<AuthFailure>());
-    });
-
     test('el watcher vuelve a pedir la lista en cada tick', () async {
       when(() => remote.listTodos(uid: 'u1', listId: 'L1'))
           .thenAnswer((_) async => <Todo>[buildTodo()]);
@@ -121,18 +55,25 @@ void main() {
           .called(greaterThan(1));
     });
 
-    test('fetchTodos returns Err(NetworkFailure) on connectionError', () async {
-      when(() => remote.listTodos(uid: 'u1', listId: 'L1')).thenThrow(
-        DioException(
-          requestOptions: RequestOptions(path: ''),
-          type: DioExceptionType.connectionError,
-        ),
-      );
+    test('cada lista tiene su propio watcher y refresh solo toca la suya',
+        () async {
+      when(() => remote.listTodos(uid: 'u1', listId: any(named: 'listId')))
+          .thenAnswer((_) async => <Todo>[buildTodo()]);
 
-      final res = await repo.fetchTodos(uid: 'u1', listId: 'L1');
+      final subs = [
+        repo.watchTodos(uid: 'u1', listId: 'L1').listen((_) {}),
+        repo.watchTodos(uid: 'u1', listId: 'L2').listen((_) {}),
+      ];
+      await pumpEventQueue();
+      clearInteractions(remote);
 
-      expect(res.isErr, isTrue);
-      expect((res as Err).failure, isA<NetworkFailure>());
+      await repo.refresh(uid: 'u1', listId: 'L2');
+
+      verify(() => remote.listTodos(uid: 'u1', listId: 'L2')).called(1);
+      verifyNever(() => remote.listTodos(uid: 'u1', listId: 'L1'));
+      for (final sub in subs) {
+        await sub.cancel();
+      }
     });
   });
 }

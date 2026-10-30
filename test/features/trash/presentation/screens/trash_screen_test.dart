@@ -71,12 +71,6 @@ class _FixedTrashRepository implements TrashRepository {
     required String uid,
     required int days,
   }) async => const Ok(null);
-
-  @override
-  void pauseAll() {}
-
-  @override
-  void resumeAll() {}
 }
 
 void main() {
