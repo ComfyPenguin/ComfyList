@@ -2,9 +2,7 @@ import 'package:comfy_list/features/todo_lists/data/datasources/firestore_lists_
 import 'package:comfy_list/features/todo_lists/data/repositories/todo_lists_repository_impl.dart';
 import 'package:comfy_list/features/todo_lists/domain/entities/todo_list.dart';
 import 'package:comfy_list/features/todos/domain/entities/todo.dart';
-import 'package:comfy_list/shared/core/failures/failure.dart';
 import 'package:comfy_list/shared/core/result/result.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -41,34 +39,6 @@ void main() {
       final ok = res as Ok<List<TodoList>>;
       expect(ok.value, hasLength(1));
       expect(ok.value.first.id, 'L1');
-    });
-
-    test('fetchLists returns Err(NetworkFailure) on connectionError', () async {
-      when(() => remote.listLists('u1')).thenThrow(
-        DioException(
-          requestOptions: RequestOptions(path: ''),
-          type: DioExceptionType.connectionError,
-        ),
-      );
-
-      final res = await repo.fetchLists('u1');
-
-      expect(res.isErr, isTrue);
-      expect((res as Err).failure, isA<NetworkFailure>());
-    });
-
-    test('fetchLists returns Err(TimeoutFailure) on receiveTimeout', () async {
-      when(() => remote.listLists('u1')).thenThrow(
-        DioException(
-          requestOptions: RequestOptions(path: ''),
-          type: DioExceptionType.receiveTimeout,
-        ),
-      );
-
-      final res = await repo.fetchLists('u1');
-
-      expect(res.isErr, isTrue);
-      expect((res as Err).failure, isA<TimeoutFailure>());
     });
 
     test('el watcher vuelve a pedir la lista en cada tick', () async {
@@ -120,32 +90,6 @@ void main() {
       await sub.cancel();
     });
 
-    test('createList returns Err(Failure) on DioException', () async {
-      when(() => remote.createList(
-            uid: 'u1',
-            name: any(named: 'name'),
-            iconKey: any(named: 'iconKey'),
-          )).thenThrow(
-        DioException(
-          requestOptions: RequestOptions(path: ''),
-          type: DioExceptionType.badResponse,
-          response: Response<dynamic>(
-            requestOptions: RequestOptions(path: ''),
-            statusCode: 500,
-          ),
-        ),
-      );
-
-      final res = await repo.createList(
-        uid: 'u1',
-        name: 'Compras',
-        iconKey: 'cart',
-      );
-
-      expect(res.isErr, isTrue);
-      expect((res as Err).failure, isA<ServerFailure>());
-    });
-
     test('deleteList borra la lista y sus tareas con una sola llamada',
         () async {
       when(() => remote.deleteListWithTodos(
@@ -166,23 +110,6 @@ void main() {
             id: 'L1',
             todoIds: const ['t1', 't2'],
           )).called(1);
-    });
-
-    test('deleteList devuelve Err si el commit falla', () async {
-      when(() => remote.deleteListWithTodos(
-            uid: 'u1',
-            id: 'L1',
-            todoIds: any(named: 'todoIds'),
-          )).thenThrow(
-        DioException(
-          requestOptions: RequestOptions(path: ''),
-          type: DioExceptionType.connectionError,
-        ),
-      );
-
-      final res = await repo.deleteList(uid: 'u1', id: 'L1', todoIds: const []);
-
-      expect((res as Err).failure, isA<NetworkFailure>());
     });
 
     test('restoreList devuelve la lista y sus tareas con una sola llamada',

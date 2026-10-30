@@ -6,6 +6,7 @@ import '../../../features/todos/presentation/providers/todos_provider.dart';
 import '../../../features/todo_lists/presentation/providers/todo_lists_provider.dart';
 import '../../../features/trash/presentation/providers/trash_provider.dart';
 import '../../data/notifications/notifications_provider.dart';
+import 'polling_registry.dart';
 
 /// Pausa y reanuda el polling de los repositorios de datos cuando la app
 /// pasa a background / vuelve a foreground, evitando errores transitorios
@@ -25,9 +26,9 @@ class AppLifecycleController {
         // segundo plano, pero conservar el foco del campo. Lo liberamos al
         // volver para que el layout no se quede con un inset fantasma.
         FocusManager.instance.primaryFocus?.unfocus();
+        _ref.read(pollingRegistryProvider).resume();
         _ref.read(appointmentsRepositoryProvider).resumeAll();
         _ref.read(todosRepositoryProvider).resumeAll();
-        _ref.read(todoListsRepositoryProvider).resumeAll();
         _ref.read(trashRepositoryProvider).resumeAll();
         // Los permisos se cambian en los ajustes del sistema, así que pudieron
         // cambiar mientras la app estaba fuera: hay que volver a preguntarlos.
@@ -41,9 +42,9 @@ class AppLifecycleController {
         FocusManager.instance.primaryFocus?.unfocus();
         if (state == AppLifecycleState.paused ||
             state == AppLifecycleState.hidden) {
+          _ref.read(pollingRegistryProvider).pause();
           _ref.read(appointmentsRepositoryProvider).pauseAll();
           _ref.read(todosRepositoryProvider).pauseAll();
-          _ref.read(todoListsRepositoryProvider).pauseAll();
           _ref.read(trashRepositoryProvider).pauseAll();
         }
       case AppLifecycleState.detached:

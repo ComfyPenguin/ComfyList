@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/core/failures/failure.dart';
+import '../../../../shared/core/lifecycle/polling_registry.dart';
 import '../../../../shared/core/time/clock.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/providers/auth_state.dart';
@@ -24,6 +25,7 @@ final todoListsRepositoryProvider = Provider<TodoListsRepository>((ref) {
   final repo = TodoListsRepositoryImpl(
     ref.watch(firestoreListsRemoteProvider),
     pollInterval: ref.watch(pollIntervalProvider),
+    registry: ref.watch(pollingRegistryProvider),
   );
   ref.onDispose(repo.dispose);
   return repo;
