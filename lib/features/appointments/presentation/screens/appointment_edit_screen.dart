@@ -151,13 +151,17 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
     if (!confirmed) return;
 
     final notifier = ref.read(appointmentsProvider.notifier);
-    await notifier.delete(widget.id!);
+    final deleted = await notifier.delete(widget.id!);
     if (!mounted) return;
 
+    if (deleted == null) {
+      AppToast.show(context, AppToast.appointmentDeleteFailed);
+      return;
+    }
     AppToast.showUndo(
       context,
       message: AppToast.appointmentDeleted,
-      onUndo: notifier.undoLastDelete,
+      onUndo: () => notifier.undo(deleted),
     );
     router.pop();
   }
