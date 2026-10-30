@@ -27,7 +27,6 @@ class AppLifecycleController {
         // volver para que el layout no se quede con un inset fantasma.
         FocusManager.instance.primaryFocus?.unfocus();
         _ref.read(pollingRegistryProvider).resume();
-        _ref.read(trashRepositoryProvider).resumeAll();
         // Los permisos se cambian en los ajustes del sistema, así que pudieron
         // cambiar mientras la app estaba fuera: hay que volver a preguntarlos.
         _ref.invalidate(exactAlarmsGrantedProvider);
@@ -41,7 +40,6 @@ class AppLifecycleController {
         if (state == AppLifecycleState.paused ||
             state == AppLifecycleState.hidden) {
           _ref.read(pollingRegistryProvider).pause();
-          _ref.read(trashRepositoryProvider).pauseAll();
         }
       case AppLifecycleState.detached:
         break;
