@@ -7,10 +7,8 @@ import '../../../../shared/core/lifecycle/polling_registry.dart';
 import '../../../../shared/core/time/clock.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/providers/auth_state.dart';
-import '../../../todos/domain/entities/todo.dart';
-import '../../../todos/presentation/providers/todos_provider.dart';
-import '../../../trash/domain/entities/trash_entry.dart';
-import '../../../trash/presentation/providers/trash_provider.dart';
+import '../../../trash/domain/entities/trash_group.dart';
+import '../../../trash/presentation/providers/deletions_provider.dart';
 import '../../data/datasources/firestore_lists_remote.dart';
 import '../../data/repositories/todo_lists_repository_impl.dart';
 import '../../domain/entities/todo_list.dart';
@@ -107,100 +105,38 @@ class TodoListsNotifier extends Notifier<TodoListsState> {
     if (state is TodoListsData) state = TodoListsData(_visible());
   }
 
-  /// Borra [id] con sus tareas. Devuelve si pudo: sin leerlas no hay copia que
-  /// valga en la papelera, y el borrado se las lleva en cascada. La lista
-  /// desaparece de la pantalla de inmediato y vuelve si el borrado falla.
-  Future<bool> delete(String id) async {
+  /// Borra [id] con sus tareas y con copia en la papelera. Devuelve el borrado,
+  /// que es lo que hay que pasar a [undo], o `null` si no se pudo: sin leer las
+  /// tareas ni guardar la copia no se borra nada. La lista desaparece de la
+  /// pantalla de inmediato y vuelve si el borrado falla.
+  Future<TrashGroup?> delete(String id) async {
     final list = _findById(id);
+    if (list == null) return null;
+
     _hidden.add(id);
     if (state is TodoListsData) state = TodoListsData(_visible());
 
-    // Las tareas hay que leerlas antes: el borrado se las lleva en cascada.
-    final todos = await _todosOf(id);
-    if (todos == null) {
-      _unhide(id);
-      return false;
-    }
-
-    if (list != null) {
-      await ref.read(trashRepositoryProvider).save(
-            uid: _uid,
-            items: [
-              TrashItem(
-                kind: TrashKind.list,
-                itemId: list.id,
-                label: list.name,
-                payload: list.toJson(),
-              ),
-              for (final todo in todos)
-                TrashItem(
-                  kind: TrashKind.todo,
-                  itemId: todo.id,
-                  parentId: list.id,
-                  label: todo.title,
-                  payload: todo.toJson(),
-                ),
-            ],
-          );
-    }
-
-    final res = await ref.read(todoListsRepositoryProvider).deleteList(
+    final res = await ref.read(deletionsProvider).deleteList(
           uid: _uid,
-          id: id,
-          todoIds: [for (final todo in todos) todo.id],
+          list: list,
         );
-    if (res.isErr) {
-      _unhide(id);
-      return false;
-    }
-    return true;
+    return res.fold(
+      onOk: (group) => group,
+      onErr: (_) {
+        _unhide(id);
+        return null;
+      },
+    );
   }
 
-  /// Devuelve la última lista borrada junto con sus tareas. Devuelve si se pudo.
-  Future<bool> undoLastDelete() async {
-    final trash = ref.read(trashRepositoryProvider);
-    final found = await trash.latestGroup(uid: _uid, kind: TrashKind.list);
-    final entries = found.fold(
-      onOk: (entries) => entries,
-      onErr: (_) => const <TrashEntry>[],
-    );
-    if (entries.isEmpty) return false;
-
-    final listEntry = entries.firstWhere(
-      (entry) => entry.kind == TrashKind.list,
-    );
-    final todoEntries = [
-      for (final entry in entries)
-        if (entry.kind == TrashKind.todo &&
-            (entry.parentId ?? listEntry.itemId) == listEntry.itemId)
-          entry,
-    ];
-    final res = await ref.read(todoListsRepositoryProvider).restoreList(
-          uid: _uid,
-          list: TodoList.fromJson(listEntry.payload),
-          todos: [for (final entry in todoEntries) Todo.fromJson(entry.payload)],
-        );
-    if (res.isErr) return false;
+  /// Devuelve [group], el borrado que acaba de hacer [delete], con sus tareas.
+  /// Devuelve si se pudo.
+  Future<bool> undo(TrashGroup group) async {
+    if (!await ref.read(deletionsProvider).restore(group)) return false;
 
     // Si el refresco tras borrarla falló, la lista seguiría oculta.
-    _unhide(listEntry.itemId);
-    await ref
-        .read(todosRepositoryProvider)
-        .refresh(uid: _uid, listId: listEntry.itemId);
-    await trash.remove(
-      uid: _uid,
-      ids: [listEntry.id, for (final entry in todoEntries) entry.id],
-    );
+    _unhide(group.header.itemId);
     return true;
-  }
-
-  /// Las tareas de la lista, o `null` si no se han podido leer.
-  Future<List<Todo>?> _todosOf(String listId) async {
-    final res = await ref.read(todosRepositoryProvider).fetchTodos(
-          uid: _uid,
-          listId: listId,
-        );
-    return res.fold(onOk: (items) => items, onErr: (_) => null);
   }
 
   TodoList? _findById(String id) {
