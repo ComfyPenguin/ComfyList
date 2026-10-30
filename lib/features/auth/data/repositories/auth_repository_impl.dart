@@ -5,21 +5,26 @@ import '../../../../shared/core/failures/failure.dart';
 import '../../../../shared/core/logging/debug_log.dart';
 import '../../../../shared/core/result/result.dart';
 import '../../../../shared/data/local/daos/account_cache_dao.dart';
+import '../../../../shared/data/remote/token_refresher.dart';
 import '../../../../shared/data/secure/secure_session_store.dart';
 import '../../domain/entities/auth_user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/identity_toolkit_remote.dart';
+import '../models/auth_dto.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({
     required IdentityToolkitRemote remote,
+    required TokenRefresher refresher,
     required SecureSessionStore session,
     required AccountCacheDao accountCache,
   })  : _remote = remote,
+        _refresher = refresher,
         _session = session,
         _accountCache = accountCache;
 
   final IdentityToolkitRemote _remote;
+  final TokenRefresher _refresher;
   final SecureSessionStore _session;
   final AccountCacheDao _accountCache;
 
@@ -29,12 +34,20 @@ class AuthRepositoryImpl implements AuthRepository {
       final hasSession = await _session.hasSession();
       if (!hasSession) return const Ok<AuthUser?>(null);
 
-      final refreshToken = await _session.readRefreshToken();
-      if (refreshToken == null) return const Ok<AuthUser?>(null);
-
       try {
         // Refresca para asegurar idToken válido y luego pide perfil.
-        final tokens = await _remote.refresh(refreshToken);
+        final outcome = await _refresher.refresh();
+        final Refreshed tokens;
+        switch (outcome) {
+          case Refreshed():
+            tokens = outcome;
+          case RefreshRejected():
+            await signOut();
+            return const Ok<AuthUser?>(null);
+          case RefreshUnavailable(:final error):
+            // Lo decide el catch de abajo, igual que un fallo del perfil.
+            throw error;
+        }
         final lookup = await _remote.lookup(tokens.idToken);
         if (lookup == null) {
           await signOut();
@@ -83,6 +96,21 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  /// Deja la sesión recién abierta guardada: los tokens y los datos de la
+  /// cuenta que se enseñan sin red.
+  Future<void> _persist(IdentityAuthResponse res) async {
+    await _session.saveSession(
+      idToken: res.idToken,
+      refreshToken: res.refreshToken,
+      uid: res.localId,
+    );
+    await _accountCache.upsert(
+      uid: res.localId,
+      email: res.email,
+      displayName: res.displayName,
+    );
+  }
+
   bool _isNetworkError(DioException e) {
     return e.type == DioExceptionType.connectionError ||
         e.type == DioExceptionType.connectionTimeout ||
@@ -115,16 +143,7 @@ class AuthRepositoryImpl implements AuthRepository {
         email: email,
         password: password,
       );
-      await _session.saveSession(
-        idToken: res.idToken,
-        refreshToken: res.refreshToken,
-        uid: res.localId,
-      );
-      await _accountCache.upsert(
-        uid: res.localId,
-        email: res.email,
-        displayName: res.displayName,
-      );
+      await _persist(res);
       // El inicio de sesión no dice si el correo está verificado: hay que
       // preguntarlo, y si no hay respuesta se trata como no verificado.
       final lookup = await _remote.lookup(res.idToken);
@@ -150,16 +169,7 @@ class AuthRepositoryImpl implements AuthRepository {
   }) async {
     try {
       final res = await _remote.signUp(email: email, password: password);
-      await _session.saveSession(
-        idToken: res.idToken,
-        refreshToken: res.refreshToken,
-        uid: res.localId,
-      );
-      await _accountCache.upsert(
-        uid: res.localId,
-        email: res.email,
-        displayName: res.displayName,
-      );
+      await _persist(res);
       await _session.saveEmailVerified(false);
       // La cuenta recién creada nunca está verificada: se manda el correo de
       // una vez para que la pantalla de verificación tenga algo que esperar.
@@ -211,17 +221,8 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final res = await _remote.signInWithGoogle(googleIdToken: googleIdToken);
       debugLog('[AuthRepo] Firebase signInWithIdp OK → uid=${res.localId}');
-      await _session.saveSession(
-        idToken: res.idToken,
-        refreshToken: res.refreshToken,
-        uid: res.localId,
-      );
+      await _persist(res);
       await _session.saveEmailVerified(true);
-      await _accountCache.upsert(
-        uid: res.localId,
-        email: res.email,
-        displayName: res.displayName,
-      );
       return Ok(AuthUser(
         uid: res.localId,
         email: res.email,

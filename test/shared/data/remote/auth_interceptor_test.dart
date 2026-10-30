@@ -4,6 +4,7 @@ import 'package:mocktail/mocktail.dart';
 
 import 'package:comfy_list/shared/core/env/firebase_endpoints.dart';
 import 'package:comfy_list/shared/data/remote/auth_interceptor.dart';
+import 'package:comfy_list/shared/data/remote/token_refresher.dart';
 
 import '../../../helpers/dio_mock.dart';
 import '../../../helpers/provider_scope.dart';
@@ -20,7 +21,11 @@ void main() {
   setUp(() {
     session = MockSecureSessionStore();
     refreshClient = MockDio();
-    interceptor = AuthInterceptor(session: session, refreshClient: refreshClient);
+    interceptor = AuthInterceptor(
+      session: session,
+      refreshClient: refreshClient,
+      refresher: TokenRefresher(session: session, client: refreshClient),
+    );
 
     when(() => session.readRefreshToken()).thenAnswer((_) async => 'old-refresh');
     when(() => session.readUid()).thenAnswer((_) async => 'u-1');
@@ -114,52 +119,41 @@ void main() {
           ));
     });
 
-    test('un uid guardado vacío tampoco se persiste', () async {
-      when(() => session.readUid()).thenAnswer((_) async => '');
+    test('reintenta con el idToken que acaba de recibir', () async {
       stubDioPost(refreshClient, body: {
-        'id_token': 'new-id',
+        'id_token': 'rotated-id',
         'refresh_token': 'new-refresh',
       });
       final err = unauthorized();
 
-      expectOriginalError(await run(err), err);
-      verifyNever(() => session.saveSession(
-            idToken: any(named: 'idToken'),
-            refreshToken: any(named: 'refreshToken'),
-            uid: any(named: 'uid'),
-          ));
+      await run(err);
+
+      final retried = verify(() => refreshClient.fetch<dynamic>(captureAny()))
+          .captured
+          .single as RequestOptions;
+      expect(retried.headers['Authorization'], 'Bearer rotated-id');
     });
 
-    test('sin uid guardado usa el user_id de la respuesta', () async {
-      when(() => session.readUid()).thenAnswer((_) async => null);
-      stubDioPost(refreshClient, body: {
-        'id_token': 'new-id',
-        'refresh_token': 'new-refresh',
-        'user_id': 'u-9',
-      });
+    test('si otro refresco ya cambió el idToken, reintenta sin pedir otro',
+        () async {
+      // La petición salió con 'old-id' y entretanto la sesión ya tiene 'new-id'.
+      final options = RequestOptions(
+        path: '${FirebaseEndpoints.firestoreBase}/users/u-1/lists',
+        headers: {'Authorization': 'Bearer old-id'},
+      );
+      final err = DioException(
+        requestOptions: options,
+        response: Response<dynamic>(requestOptions: options, statusCode: 401),
+      );
 
-      final state = await run(unauthorized());
+      final state = await run(err);
 
-      verify(() => session.saveSession(
-            idToken: 'new-id',
-            refreshToken: 'new-refresh',
-            uid: 'u-9',
-          )).called(1);
+      verifyNoRefreshAttempt();
       expect(state.type.toString(), 'InterceptorResultType.resolve');
-    });
-
-    test('si no llega refresh_token solo actualiza el idToken', () async {
-      stubDioPost(refreshClient, body: {'id_token': 'new-id'});
-
-      final state = await run(unauthorized());
-
-      verify(() => session.updateIdToken('new-id')).called(1);
-      verifyNever(() => session.saveSession(
-            idToken: any(named: 'idToken'),
-            refreshToken: any(named: 'refreshToken'),
-            uid: any(named: 'uid'),
-          ));
-      expect(state.type.toString(), 'InterceptorResultType.resolve');
+      final retried = verify(() => refreshClient.fetch<dynamic>(captureAny()))
+          .captured
+          .single as RequestOptions;
+      expect(retried.headers['Authorization'], 'Bearer new-id');
     });
   });
 
