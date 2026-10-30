@@ -95,3 +95,17 @@ Qué avisar lo decide una función pura (`buildAppointmentReminders`); `Appointm
 - La firma llega por secrets del repo; en local, por `android/key.properties` y `android/app/upload-keystore.jks` (ignorados por git). Sin ellos, el build local cae a la debug key.
 - El APK es solo **arm64**: no se instala en móviles de 32 bits ni en emuladores x86. El AAB se compila solo lanzando el workflow a mano con la casilla `aab`.
 - `tool/verify_release.dart` corre **después** de publicar. Si falla, la release ya está publicada: se borra con `gh release delete "$TAG"` y se repite.
+
+## Agent skills
+
+### Issue tracker
+
+Las incidencias viven en GitHub Issues (`ComfyPenguin/ComfyList`, con `gh`). Ver `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Vocabulario por defecto: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. Ver `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Un solo contexto: `GLOSSARY.md` y `docs/adr/` en la raíz. Ver `docs/agents/domain.md`.
