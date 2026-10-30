@@ -68,10 +68,9 @@ class AppointmentDetailSheet extends ConsumerWidget {
     final colors = context.colors;
 
     final settingsState = ref.watch(settingsProvider);
-    final completionEnabled = switch (settingsState) {
-      SettingsData(:final settings) => settings.appointmentsCompletionEnabled,
-      _ => false,
-    };
+    final completionEnabled = ref.watch(
+      settingsOrDefaultsProvider.select((s) => s.appointmentsCompletionEnabled),
+    );
     final use24HourFormat = switch (settingsState) {
       SettingsData(:final settings) => settings.use24HourFormat,
       _ => false,

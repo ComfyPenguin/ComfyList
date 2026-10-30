@@ -56,10 +56,9 @@ class AppointmentTile extends ConsumerWidget {
       SettingsData(:final settings) => settings.use24HourFormat,
       _ => false,
     };
-    final invertActions = switch (settingsState) {
-      SettingsData(:final settings) => settings.invertSwipeActions,
-      _ => false,
-    };
+    final invertActions = ref.watch(
+      settingsOrDefaultsProvider.select((s) => s.invertSwipeActions),
+    );
     final timeText = formatClockTime(
       appointment.dateTime,
       use24HourFormat: use24H,

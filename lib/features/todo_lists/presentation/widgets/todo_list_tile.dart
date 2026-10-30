@@ -6,7 +6,6 @@ import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/ui/lists/swipe_actions_card.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
-import '../../../settings/presentation/providers/settings_state.dart';
 import '../../domain/entities/todo_list.dart';
 import '../../domain/entities/todo_list_icons.dart';
 
@@ -38,10 +37,9 @@ class TodoListTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
-    final invertActions = switch (ref.watch(settingsProvider)) {
-      SettingsData(:final settings) => settings.invertSwipeActions,
-      _ => false,
-    };
+    final invertActions = ref.watch(
+      settingsOrDefaultsProvider.select((s) => s.invertSwipeActions),
+    );
 
     return SwipeActionsCard(
       onTap: onTap,

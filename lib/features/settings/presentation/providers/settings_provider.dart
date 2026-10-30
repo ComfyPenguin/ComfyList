@@ -96,39 +96,39 @@ class SettingsNotifier extends Notifier<SettingsState> {
 final settingsProvider =
     NotifierProvider<SettingsNotifier, SettingsState>(SettingsNotifier.new);
 
-/// Helper para `MaterialApp.themeMode` — devuelve `system` mientras carga.
-final themeModeProvider = Provider<ThemeMode>((ref) {
-  final state = ref.watch(settingsProvider);
-  return switch (state) {
-    SettingsData(:final settings) => settings.themeMode,
-    _ => ThemeMode.system,
+/// Los ajustes de la app, o los de fábrica mientras cargan o si no se pudieron
+/// leer. Es lo que lee la pantalla: una sola respuesta a «qué valor tiene esto
+/// ahora», sin que cada widget elija el suyo mientras carga. Quien necesite
+/// distinguir «cargando» o «fallo» lee [settingsProvider].
+final settingsOrDefaultsProvider = Provider<AppSettings>((ref) {
+  return switch (ref.watch(settingsProvider)) {
+    SettingsData(:final settings) => settings,
+    _ => AppSettings.defaults,
   };
 });
+
+/// Helper para `MaterialApp.themeMode` — devuelve `system` mientras carga.
+final themeModeProvider = Provider<ThemeMode>(
+  (ref) => ref.watch(settingsOrDefaultsProvider.select((s) => s.themeMode)),
+);
 
 /// Formato de hora elegido — devuelve el por defecto mientras carga.
-final use24HourFormatProvider = Provider<bool>((ref) {
-  final state = ref.watch(settingsProvider);
-  return switch (state) {
-    SettingsData(:final settings) => settings.use24HourFormat,
-    _ => AppSettings.defaults.use24HourFormat,
-  };
-});
+final use24HourFormatProvider = Provider<bool>(
+  (ref) =>
+      ref.watch(settingsOrDefaultsProvider.select((s) => s.use24HourFormat)),
+);
 
 /// Márgenes de los recordatorios de citas — los de por defecto mientras carga.
-final appointmentReminderMinutesProvider = Provider<List<int>>((ref) {
-  final state = ref.watch(settingsProvider);
-  return switch (state) {
-    SettingsData(:final settings) => settings.appointmentReminderMinutes,
-    _ => AppSettings.defaults.appointmentReminderMinutes,
-  };
-});
+final appointmentReminderMinutesProvider = Provider<List<int>>(
+  (ref) => ref.watch(
+    settingsOrDefaultsProvider.select((s) => s.appointmentReminderMinutes),
+  ),
+);
 
 /// Días que aguanta un borrado en la papelera (0 = nunca) — el de por defecto
 /// mientras carga.
-final trashRetentionDaysProvider = Provider<int>((ref) {
-  final state = ref.watch(settingsProvider);
-  return switch (state) {
-    SettingsData(:final settings) => settings.trashRetentionDays,
-    _ => AppSettings.defaults.trashRetentionDays,
-  };
-});
+final trashRetentionDaysProvider = Provider<int>(
+  (ref) => ref.watch(
+    settingsOrDefaultsProvider.select((s) => s.trashRetentionDays),
+  ),
+);
