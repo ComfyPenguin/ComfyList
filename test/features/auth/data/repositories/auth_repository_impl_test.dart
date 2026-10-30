@@ -5,6 +5,7 @@ import 'package:comfy_list/features/auth/domain/entities/auth_user.dart';
 import 'package:comfy_list/shared/core/failures/failure.dart';
 import 'package:comfy_list/shared/core/result/result.dart';
 import 'package:comfy_list/shared/data/local/daos/account_cache_dao.dart';
+import 'package:comfy_list/shared/data/remote/token_refresher.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -17,18 +18,23 @@ class _MockIdentityToolkitRemote extends Mock
 
 class _MockAccountCacheDao extends Mock implements AccountCacheDao {}
 
+class _MockTokenRefresher extends Mock implements TokenRefresher {}
+
 void main() {
   late _MockIdentityToolkitRemote remote;
+  late _MockTokenRefresher refresher;
   late MockSecureSessionStore session;
   late _MockAccountCacheDao accountCache;
   late AuthRepositoryImpl repo;
 
   setUp(() {
     remote = _MockIdentityToolkitRemote();
+    refresher = _MockTokenRefresher();
     session = MockSecureSessionStore();
     accountCache = _MockAccountCacheDao();
     repo = AuthRepositoryImpl(
       remote: remote,
+      refresher: refresher,
       session: session,
       accountCache: accountCache,
     );
@@ -395,7 +401,7 @@ void main() {
       expect(res.isOk, isTrue);
       final ok = res as Ok<AuthUser?>;
       expect(ok.value, isNull);
-      verifyNever(() => remote.refresh(any()));
+      verifyNever(() => refresher.refresh());
     });
 
     test('returns Err(NetworkFailure) on connectionError when no cache',
@@ -406,10 +412,12 @@ void main() {
       when(() => session.readUid()).thenAnswer((_) async => 'u-1');
       when(() => accountCache.findByUid('u-1'))
           .thenAnswer((_) async => null);
-      when(() => remote.refresh('old-refresh')).thenThrow(
-        DioException(
-          requestOptions: RequestOptions(path: ''),
-          type: DioExceptionType.connectionError,
+      when(() => refresher.refresh()).thenAnswer(
+        (_) async => RefreshUnavailable(
+          DioException(
+            requestOptions: RequestOptions(path: ''),
+            type: DioExceptionType.connectionError,
+          ),
         ),
       );
 
@@ -449,7 +457,8 @@ void main() {
 
       test('sin red usa el estado de verificación guardado (true)', () async {
         stubStoredSession(emailVerified: true);
-        when(() => remote.refresh('old-refresh')).thenThrow(offline());
+        when(() => refresher.refresh())
+            .thenAnswer((_) async => RefreshUnavailable(offline()));
 
         final res = await repo.currentUser();
 
@@ -458,7 +467,8 @@ void main() {
 
       test('sin red usa el estado de verificación guardado (false)', () async {
         stubStoredSession(emailVerified: false);
-        when(() => remote.refresh('old-refresh')).thenThrow(offline());
+        when(() => refresher.refresh())
+            .thenAnswer((_) async => RefreshUnavailable(offline()));
 
         final res = await repo.currentUser();
 
@@ -468,7 +478,8 @@ void main() {
       test('sin red y sin estado guardado queda en null, como antes',
           () async {
         stubStoredSession();
-        when(() => remote.refresh('old-refresh')).thenThrow(offline());
+        when(() => refresher.refresh())
+            .thenAnswer((_) async => RefreshUnavailable(offline()));
 
         final res = await repo.currentUser();
 
@@ -481,7 +492,8 @@ void main() {
         test('sin red y con uid ${uid == null ? 'ausente' : 'vacío'} no hidrata',
             () async {
           stubStoredSession(uid: uid, emailVerified: true);
-          when(() => remote.refresh('old-refresh')).thenThrow(offline());
+          when(() => refresher.refresh())
+            .thenAnswer((_) async => RefreshUnavailable(offline()));
 
           final res = await repo.currentUser();
 
@@ -493,8 +505,9 @@ void main() {
         test('con red guarda que el correo está verificado=$verified',
             () async {
           stubStoredSession();
-          when(() => remote.refresh('old-refresh')).thenAnswer(
-            (_) async => (idToken: 'new-id', refreshToken: 'new-refresh'),
+          when(() => refresher.refresh()).thenAnswer(
+            (_) async =>
+                const Refreshed(idToken: 'new-id', refreshToken: 'new-refresh'),
           );
           when(() => remote.lookup('new-id')).thenAnswer(
             (_) async => IdentityLookupUser(
@@ -513,9 +526,8 @@ void main() {
 
       test('con el refreshToken rechazado cierra la sesión local', () async {
         stubStoredSession(emailVerified: true);
-        when(() => remote.refresh('old-refresh')).thenThrow(badResponse(
-          'TOKEN_EXPIRED',
-        ));
+        when(() => refresher.refresh())
+            .thenAnswer((_) async => const RefreshRejected());
 
         final res = await repo.currentUser();
 

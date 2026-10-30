@@ -4,6 +4,7 @@ import '../../../../shared/core/logging/debug_log.dart';
 import '../../../../shared/core/result/result.dart';
 import '../../../../shared/data/local/database_provider.dart';
 import '../../../../shared/data/remote/dio_client.dart';
+import '../../../../shared/data/remote/token_refresher.dart';
 import '../../../../shared/data/secure/secure_session_store.dart';
 import '../../data/datasources/identity_toolkit_remote.dart';
 import '../../data/datasources/login_preferences_store.dart';
@@ -26,6 +27,10 @@ final dioClientProvider = Provider<DioClient>((ref) {
 
 // ───────── Auth feature ─────────
 
+final tokenRefresherProvider = Provider<TokenRefresher>(
+  (ref) => ref.watch(dioClientProvider).refresher,
+);
+
 final identityToolkitRemoteProvider = Provider<IdentityToolkitRemote>((ref) {
   return IdentityToolkitRemote(ref.watch(dioClientProvider).authClient);
 });
@@ -33,6 +38,7 @@ final identityToolkitRemoteProvider = Provider<IdentityToolkitRemote>((ref) {
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepositoryImpl(
     remote: ref.watch(identityToolkitRemoteProvider),
+    refresher: ref.watch(tokenRefresherProvider),
     session: ref.watch(secureSessionStoreProvider),
     accountCache: ref.watch(accountCacheDaoProvider),
   );
