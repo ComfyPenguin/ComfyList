@@ -2,7 +2,9 @@ import 'package:comfy_list/features/todo_lists/data/datasources/firestore_lists_
 import 'package:comfy_list/features/todo_lists/data/repositories/todo_lists_repository_impl.dart';
 import 'package:comfy_list/features/todo_lists/domain/entities/todo_list.dart';
 import 'package:comfy_list/features/todos/domain/entities/todo.dart';
+import 'package:comfy_list/shared/core/failures/failure.dart';
 import 'package:comfy_list/shared/core/result/result.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -133,6 +135,23 @@ void main() {
             todos: captureAny(named: 'todos'),
           )).captured.single as List<Todo>;
       expect(sent.map((t) => t.id), ['t1']);
+    });
+
+    test('watchLists sin red entrega NetworkFailure, no un error genérico',
+        () async {
+      when(() => remote.listLists('u1')).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: ''),
+          type: DioExceptionType.connectionError,
+        ),
+      );
+
+      final errors = <Object>[];
+      final sub = repo.watchLists('u1').listen((_) {}, onError: errors.add);
+      await pumpEventQueue();
+      await sub.cancel();
+
+      expect(errors.single, isA<NetworkFailure>());
     });
   });
 }

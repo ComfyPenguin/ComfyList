@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../core/failures/failure.dart';
 import '../../core/lifecycle/polling_registry.dart';
@@ -49,13 +50,32 @@ class PolledCollection<K, T> {
 
   final Map<K, _Watcher<T>> _watchers = {};
 
+  /// Cuántas claves tienen watcher ahora mismo.
+  @visibleForTesting
+  int get activeWatchers => _watchers.length;
+
+  /// Stream de [key]. El watcher vive mientras haya oyentes: al irse el último
+  /// se da de baja, así que para volver a escuchar hay que pedir el stream de
+  /// nuevo.
   Stream<List<T>> watch(K key) {
     final watcher = _watchers.putIfAbsent(key, () {
-      final created = _Watcher<T>(() => _fetch(key), _interval);
+      final created = _Watcher<T>(
+        fetch: () => _fetch(key),
+        interval: _interval,
+        isPaused: () => _registry.isPaused,
+        onIdle: () => _evict(key),
+      );
       _registry.register(created);
       return created;
     });
     return watcher.stream;
+  }
+
+  void _evict(K key) {
+    final watcher = _watchers.remove(key);
+    if (watcher == null) return;
+    _registry.unregister(watcher);
+    watcher.dispose();
   }
 
   /// Vuelve a pedir ahora la lista de [key], si alguien la está mirando.
@@ -87,16 +107,27 @@ class PolledCollection<K, T> {
   }
 
   void dispose() {
-    for (final watcher in _watchers.values) {
+    // Copia y vacía antes: cerrar un watcher no debe tocar el mapa que se
+    // recorre.
+    final watchers = _watchers.values.toList();
+    _watchers.clear();
+    for (final watcher in watchers) {
       _registry.unregister(watcher);
       watcher.dispose();
     }
-    _watchers.clear();
   }
 }
 
 class _Watcher<T> implements PollingMember {
-  _Watcher(this._fetch, this._interval) {
+  _Watcher({
+    required Future<List<T>> Function() fetch,
+    required Duration interval,
+    required bool Function() isPaused,
+    required void Function() onIdle,
+  })  : _fetch = fetch,
+        _interval = interval,
+        _isPaused = isPaused,
+        _onIdle = onIdle {
     _controller = StreamController<List<T>>.broadcast(
       onListen: _start,
       onCancel: _stop,
@@ -105,6 +136,8 @@ class _Watcher<T> implements PollingMember {
 
   final Future<List<T>> Function() _fetch;
   final Duration _interval;
+  final bool Function() _isPaused;
+  final void Function() _onIdle;
 
   late final StreamController<List<T>> _controller;
   Timer? _timer;
@@ -115,6 +148,8 @@ class _Watcher<T> implements PollingMember {
   void _start() {
     if (_running) return;
     _running = true;
+    // Con la app en segundo plano no se sondea: [resume] arrancará el polling.
+    if (_isPaused()) return;
     refreshNow();
     _timer = Timer.periodic(_interval, (_) => refreshNow());
   }
@@ -124,6 +159,7 @@ class _Watcher<T> implements PollingMember {
     _timer?.cancel();
     _timer = null;
     _running = false;
+    _onIdle();
   }
 
   // Pausa el polling en background: el OS mata los sockets y el primer tick
@@ -149,7 +185,13 @@ class _Watcher<T> implements PollingMember {
       final list = await _fetch();
       if (!_controller.isClosed) _controller.add(list);
     } catch (e, st) {
-      if (!_controller.isClosed) _controller.addError(e, st);
+      // Siempre un [Failure]: quien escucha no conoce Dio.
+      final failure = switch (e) {
+        Failure() => e,
+        DioException() => mapDioFailure(e),
+        _ => const UnknownFailure(),
+      };
+      if (!_controller.isClosed) _controller.addError(failure, st);
     }
   }
 

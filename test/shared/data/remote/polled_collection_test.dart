@@ -247,6 +247,115 @@ void main() {
     });
   });
 
+  group('PolledCollection stream errors', () {
+    Future<List<Object>> errorsOf(Object thrown) async {
+      final failing = PolledCollection<String, int>(
+        fetch: (_) async => throw thrown,
+        interval: _tick,
+        registry: registry,
+      );
+      addTearDown(failing.dispose);
+      final errors = <Object>[];
+      subs.add(failing.watch('a').listen((_) {}, onError: errors.add));
+      await pumpEventQueue();
+      return errors;
+    }
+
+    test('a DioException reaches the stream as its Failure', () async {
+      final errors = await errorsOf(_dio(DioExceptionType.connectionError));
+
+      expect(errors.first, isA<NetworkFailure>());
+    });
+
+    test('a timeout reaches the stream as TimeoutFailure', () async {
+      final errors = await errorsOf(_dio(DioExceptionType.receiveTimeout));
+
+      expect(errors.first, isA<TimeoutFailure>());
+    });
+
+    test('any other error reaches the stream as UnknownFailure', () async {
+      final errors = await errorsOf(StateError('bug'));
+
+      expect(errors.first, isA<UnknownFailure>());
+    });
+  });
+
+  group('PolledCollection while the registry is paused', () {
+    test('a listener that arrives paused does not poll until resume',
+        () async {
+      registry.pause();
+
+      listen('a');
+      await Future<void>.delayed(_settle);
+      expect(fetches['a'], isNull);
+
+      registry.resume();
+      await Future<void>.delayed(_settle);
+      expect(fetches['a'], greaterThanOrEqualTo(2));
+    });
+
+    test('resubscribing while paused does not restart the polling', () async {
+      listen('a');
+      await pumpEventQueue();
+      registry.pause();
+      for (final sub in subs) {
+        await sub.cancel();
+      }
+      subs.clear();
+      final before = fetches['a'];
+
+      listen('a');
+      await Future<void>.delayed(_settle);
+
+      expect(fetches['a'], before);
+    });
+  });
+
+  group('PolledCollection watcher lifetime', () {
+    test('keeps the watcher while someone listens and drops it after',
+        () async {
+      listen('a');
+      listen('a');
+      listen('b');
+      expect(collection.activeWatchers, 2);
+
+      await subs[0].cancel();
+      expect(collection.activeWatchers, 2);
+
+      await subs[1].cancel();
+      expect(collection.activeWatchers, 1);
+
+      await subs[2].cancel();
+      expect(collection.activeWatchers, 0);
+    });
+
+    test('watching again after everyone left starts from a fresh fetch',
+        () async {
+      listen('a');
+      await pumpEventQueue();
+      await subs.removeLast().cancel();
+
+      final seen = listen('a');
+      await pumpEventQueue();
+
+      expect(fetches['a'], 2);
+      expect(seen.first, [1]);
+    });
+
+    test('a watcher that left is not reached by the registry', () async {
+      listen('a');
+      await pumpEventQueue();
+      await subs.removeLast().cancel();
+      final before = fetches['a'];
+
+      registry.pause();
+      registry.resume();
+      await Future<void>.delayed(_settle);
+
+      expect(fetches['a'], before);
+    });
+  });
+
   group('PolledCollection with the PollingRegistry', () {
     test('pause stops polling and resume fetches at once and keeps going',
         () async {
