@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:comfy_list/features/appointments/data/datasources/firestore_appointments_remote.dart';
-import 'package:comfy_list/features/appointments/data/repositories/appointments_repository_impl.dart';
 import 'package:comfy_list/features/appointments/domain/entities/appointment.dart';
 import 'package:comfy_list/features/appointments/domain/repositories/appointments_repository.dart';
 import 'package:comfy_list/features/appointments/presentation/providers/appointments_provider.dart';
@@ -36,19 +35,27 @@ void main() {
     trash = FakeTrashRemote();
   });
 
-  test('el repo de la app toma la cadencia del polling del provider', () {
+  test('el repo de la app toma la cadencia del polling del provider', () async {
+    final remote = _MockRemote();
+    when(() => remote.listAppointments(uid: 'u1'))
+        .thenAnswer((_) async => <Appointment>[]);
     final container = createTestContainer(
-      remoteOverrides: {FirestoreAppointmentsRemote: _MockRemote()},
+      remoteOverrides: {FirestoreAppointmentsRemote: remote},
       extra: [
-        pollIntervalProvider.overrideWithValue(const Duration(seconds: 3)),
+        pollIntervalProvider.overrideWithValue(
+          const Duration(milliseconds: 20),
+        ),
       ],
     );
+    final sub = container
+        .read(appointmentsRepositoryProvider)
+        .watchAppointments('u1')
+        .listen((_) {});
+    addTearDown(sub.cancel);
 
-    final repo =
-        container.read(appointmentsRepositoryProvider)
-            as AppointmentsRepositoryImpl;
+    await Future<void>.delayed(const Duration(milliseconds: 150));
 
-    expect(repo.pollInterval, const Duration(seconds: 3));
+    verify(() => remote.listAppointments(uid: 'u1')).called(greaterThan(1));
   });
 
   test('build returns AppointmentsInitial when auth is Unauthenticated', () {
