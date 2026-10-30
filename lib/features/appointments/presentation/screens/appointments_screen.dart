@@ -14,6 +14,7 @@ import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/core/time/clock.dart';
+import '../../../../shared/ui/lists/reveal_progress.dart';
 import '../../../../shared/ui/lists/slide_flow.dart';
 import '../../../../shared/ui/toast/app_toast.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
@@ -89,7 +90,7 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
   /// que el tachado se reproduzca en el sitio donde se hizo el gesto.
   static const Duration _reorderDelay = Duration(milliseconds: 600);
 
-  final _tileRevealProgressByDate = <DateTime, Map<String, double>>{};
+  final _reveal = RevealProgress();
 
   // Orden visual mostrado en el último build (ids), los items previos y si
   // se está retrasando el reordenado tras un cambio de isDone.
@@ -98,69 +99,8 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
   bool _holdingReorder = false;
   Timer? _reorderTimer;
 
-  ({double top, double bottom}) _effectiveSeparationFor({
-    required DateTime date,
-    required int tileIndex,
-    required List<Appointment> appointments,
-  }) {
-    final tileProgress = _tileRevealProgressByDate[date];
-    if (tileProgress == null || tileProgress.isEmpty) {
-      return (top: 0.0, bottom: 0.0);
-    }
-
-    final myId = appointments[tileIndex].id;
-    final myProgress = tileProgress[myId] ?? 0.0;
-
-    final prevId = tileIndex > 0 ? appointments[tileIndex - 1].id : null;
-    final nextId = tileIndex < appointments.length - 1
-        ? appointments[tileIndex + 1].id
-        : null;
-    final prevProgress = prevId != null ? (tileProgress[prevId] ?? 0.0) : 0.0;
-    final nextProgress = nextId != null ? (tileProgress[nextId] ?? 0.0) : 0.0;
-
-    final top = myProgress > prevProgress ? myProgress : prevProgress;
-    final bottom = myProgress > nextProgress ? myProgress : nextProgress;
-
-    return (top: top, bottom: bottom);
-  }
-
-  void _setTileRevealProgress({
-    required DateTime date,
-    required String appointmentId,
-    required double progress,
-  }) {
-    final nextTileProgress = progress.clamp(0.0, 1.0).toDouble();
-    final tileProgress = _tileRevealProgressByDate.putIfAbsent(
-      date,
-      () => <String, double>{},
-    );
-
-    if (nextTileProgress <= 0.001) {
-      tileProgress.remove(appointmentId);
-      if (tileProgress.isEmpty) {
-        _tileRevealProgressByDate.remove(date);
-      }
-    } else {
-      tileProgress[appointmentId] = nextTileProgress;
-    }
-
-    setState(() {});
-  }
-
-  void _removeStaleRevealProgress(
-    DateTime date,
-    List<Appointment> appointments,
-  ) {
-    final tileProgress = _tileRevealProgressByDate[date];
-    if (tileProgress == null) return;
-
-    final visibleIds = appointments
-        .map((appointment) => appointment.id)
-        .toSet();
-    tileProgress.removeWhere((id, _) => !visibleIds.contains(id));
-    if (tileProgress.isEmpty) {
-      _tileRevealProgressByDate.remove(date);
-    }
+  void _setTileRevealProgress(String appointmentId, double progress) {
+    setState(() => _reveal.set(appointmentId, progress));
   }
 
   @override
@@ -274,17 +214,16 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
       today: _today,
     );
 
-    final visibleDates = {for (final day in days) day.date};
-    _tileRevealProgressByDate.removeWhere(
-      (date, _) => !visibleDates.contains(date),
-    );
+    _reveal.retainOnly([
+      for (final day in days)
+        for (final appointment in day.appointments) appointment.id,
+    ]);
 
     // Construir grupos de fecha: cabecera + tiles con radios/gaps animados.
     final listChildren = <Widget>[];
     for (var i = 0; i < days.length; i++) {
       final date = days[i].date;
       final appts = days[i].appointments;
-      _removeStaleRevealProgress(date, appts);
 
       if (i > 0) {
         listChildren.add(const SizedBox(height: AppSpacing.md));
@@ -300,10 +239,10 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
           dateHeaderStyle: dateHeaderStyle,
           appointments: appts,
           completionEnabled: completionEnabled,
-          separationFor: (i) => _effectiveSeparationFor(
-            date: date,
-            tileIndex: i,
-            appointments: appts,
+          separationFor: (i) => _reveal.separationFor(
+            appts[i].id,
+            previousId: i > 0 ? appts[i - 1].id : null,
+            nextId: i < appts.length - 1 ? appts[i + 1].id : null,
           ),
           onTap: (appt) =>
               showAppointmentDetailSheet(context: context, id: appt.id),
@@ -324,13 +263,8 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
               onUndo: () => notifier.undo(deleted),
             );
           },
-          onRevealProgressChanged: (appt, progress) {
-            _setTileRevealProgress(
-              date: date,
-              appointmentId: appt.id,
-              progress: progress,
-            );
-          },
+          onRevealProgressChanged: (appt, progress) =>
+              _setTileRevealProgress(appt.id, progress),
         ),
       );
     }

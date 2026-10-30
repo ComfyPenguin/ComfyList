@@ -7,6 +7,7 @@ import '../../../../routing/routes.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
+import '../../../../shared/ui/lists/reveal_progress.dart';
 import '../../../../shared/ui/lists/slide_flow.dart';
 import '../../../../shared/ui/navigation/app_shell.dart';
 import '../../../../shared/ui/toast/app_toast.dart';
@@ -164,7 +165,7 @@ class _TodosListState extends ConsumerState<_TodosList> {
   /// que el tachado se reproduzca en el sitio donde se hizo el gesto.
   static const Duration _reorderDelay = Duration(milliseconds: 600);
 
-  final _tileRevealProgress = <String, double>{};
+  final _reveal = RevealProgress();
 
   // Orden visual mostrado en el último build (ids), los items previos y si
   // se está retrasando el reordenado tras un cambio de isDone.
@@ -173,44 +174,8 @@ class _TodosListState extends ConsumerState<_TodosList> {
   bool _holdingReorder = false;
   Timer? _reorderTimer;
 
-  ({double top, double bottom}) _effectiveSeparationFor(
-    int tileIndex,
-    List<Todo> todos,
-  ) {
-    if (_tileRevealProgress.isEmpty) {
-      return (top: 0.0, bottom: 0.0);
-    }
-
-    final currentId = todos[tileIndex].id;
-    final currentProgress = _tileRevealProgress[currentId] ?? 0.0;
-    final previousProgress = tileIndex > 0
-        ? (_tileRevealProgress[todos[tileIndex - 1].id] ?? 0.0)
-        : 0.0;
-    final nextProgress = tileIndex < todos.length - 1
-        ? (_tileRevealProgress[todos[tileIndex + 1].id] ?? 0.0)
-        : 0.0;
-
-    return (
-      top: currentProgress > previousProgress
-          ? currentProgress
-          : previousProgress,
-      bottom: currentProgress > nextProgress ? currentProgress : nextProgress,
-    );
-  }
-
   void _setTileRevealProgress(String todoId, double progress) {
-    final value = progress.clamp(0.0, 1.0).toDouble();
-    if (value <= 0.001) {
-      _tileRevealProgress.remove(todoId);
-    } else {
-      _tileRevealProgress[todoId] = value;
-    }
-    setState(() {});
-  }
-
-  void _removeStaleRevealProgress(List<Todo> todos) {
-    final visibleIds = todos.map((todo) => todo.id).toSet();
-    _tileRevealProgress.removeWhere((id, _) => !visibleIds.contains(id));
+    setState(() => _reveal.set(todoId, progress));
   }
 
   @override
@@ -306,7 +271,7 @@ class _TodosListState extends ConsumerState<_TodosList> {
       widget.items,
       completedToBottom: completedToBottom,
     );
-    _removeStaleRevealProgress(widget.items);
+    _reveal.retainOnly([for (final todo in widget.items) todo.id]);
 
     // Mantener el orden previo mientras se anima el tachado de un toggle.
     final displayItems = _resolveDisplayItems(sorted);
@@ -358,7 +323,11 @@ class _TodosListState extends ConsumerState<_TodosList> {
     int index,
   ) {
     final todo = displayItems[index];
-    final separation = _effectiveSeparationFor(index, displayItems);
+    final separation = _reveal.separationFor(
+      todo.id,
+      previousId: index > 0 ? displayItems[index - 1].id : null,
+      nextId: index < displayItems.length - 1 ? displayItems[index + 1].id : null,
+    );
     return TodoTile(
       todo: todo,
       groupIndex: index,
