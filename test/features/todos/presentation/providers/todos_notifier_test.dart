@@ -286,33 +286,87 @@ void main() {
     expect(trash.entries, hasLength(1));
   });
 
-  test('create Err propagates to state', () async {
-    final controller = StreamController<List<Todo>>();
-    when(() => repo.watchTodos(uid: 'u1', listId: 'L1'))
-        .thenAnswer((_) => controller.stream);
-    when(() => repo.createTodo(
-          uid: 'u1',
-          listId: 'L1',
-          title: any(named: 'title'),
-          description: any(named: 'description'),
-        )).thenAnswer(
-      (_) async => const Err<Todo>(
-        ServerFailure('Error 500'),
-      ),
-    );
+  group('mutaciones', () {
+    late StreamController<List<Todo>> controller;
+    late ProviderContainer container;
 
-    final container = createTestContainer(
-      authedUser: buildAuthUser(),
-      repositoryOverrides: {TodosRepository: repo},
-    );
-    addTearDown(controller.close);
+    setUp(() async {
+      controller = StreamController<List<Todo>>();
+      when(() => repo.watchTodos(uid: 'u1', listId: 'L1'))
+          .thenAnswer((_) => controller.stream);
+      container = createTestContainer(
+        authedUser: buildAuthUser(),
+        repositoryOverrides: {TodosRepository: repo},
+      );
+      addTearDown(controller.close);
+      expect(container.read(todosProvider('L1')), isA<TodosLoading>());
+      controller.add([buildTodo(id: 't1')]);
+      await pumpEventQueue();
+    });
 
-    expect(container.read(todosProvider('L1')), isA<TodosLoading>());
+    TodosNotifier notifier() => container.read(todosProvider('L1').notifier);
 
-    await container.read(todosProvider('L1').notifier).create(title: 'X');
+    List<String> shownIds() => (container.read(todosProvider('L1'))
+            as TodosData)
+        .items
+        .map((t) => t.id)
+        .toList();
 
-    final state = container.read(todosProvider('L1'));
-    expect(state, isA<TodosError>());
-    expect((state as TodosError).failure, isA<ServerFailure>());
+    test('create devuelve true si sale bien', () async {
+      when(() => repo.createTodo(
+            uid: 'u1',
+            listId: 'L1',
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+          )).thenAnswer((_) async => Ok(buildTodo(id: 't2')));
+
+      expect(await notifier().create(title: 'X'), isTrue);
+    });
+
+    test('create devuelve false si falla y no vacía la lista', () async {
+      when(() => repo.createTodo(
+            uid: 'u1',
+            listId: 'L1',
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+          )).thenAnswer((_) async => const Err<Todo>(ServerFailure('Error 500')));
+
+      expect(await notifier().create(title: 'X'), isFalse);
+
+      // Las tareas que ya estaban siguen en pantalla.
+      expect(shownIds(), ['t1']);
+    });
+
+    test('toggleDone devuelve si se pudo guardar', () async {
+      when(() => repo.updateTodo(
+            uid: 'u1',
+            listId: 'L1',
+            id: 't1',
+            isDone: true,
+          )).thenAnswer((_) async => Ok(buildTodo(id: 't1', isDone: true)));
+      when(() => repo.updateTodo(
+            uid: 'u1',
+            listId: 'L1',
+            id: 't1',
+            isDone: false,
+          )).thenAnswer((_) async => const Err<Todo>(NetworkFailure()));
+
+      expect(await notifier().toggleDone('t1', true), isTrue);
+      expect(await notifier().toggleDone('t1', false), isFalse);
+    });
+
+    test('updateFields devuelve false si falla', () async {
+      when(() => repo.updateTodo(
+            uid: 'u1',
+            listId: 'L1',
+            id: 't1',
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            clearDescription: any(named: 'clearDescription'),
+          )).thenAnswer((_) async => const Err<Todo>(NetworkFailure()));
+
+      expect(await notifier().updateFields(id: 't1', title: 'Nuevo'), isFalse);
+      expect(shownIds(), ['t1']);
+    });
   });
 }

@@ -61,33 +61,36 @@ class AppointmentsNotifier extends Notifier<AppointmentsState> {
     return const AppointmentsLoading();
   }
 
-  String get _uid => (ref.read(authProvider) as Authenticated).user.uid;
-
-  Future<void> create({
+  /// Crea una cita. Devuelve si se pudo; si no, la lista cargada se queda como
+  /// está y quien llama decide cómo avisar.
+  Future<bool> create({
     required String title,
     String? description,
     String? location,
     required DateTime dateTime,
   }) async {
     final res = await ref.read(appointmentsRepositoryProvider).createAppointment(
-          uid: _uid,
+          uid: ref.signedInUid,
           title: title,
           description: description,
           location: location,
           dateTime: dateTime,
         );
-    res.fold(onOk: (_) {}, onErr: (f) => state = AppointmentsError(f));
+    return res.isOk;
   }
 
-  Future<void> toggleDone(String id, bool isDone) async {
-    await ref.read(appointmentsRepositoryProvider).updateAppointment(
-          uid: _uid,
+  /// Marca o desmarca una cita. Devuelve si se pudo guardar.
+  Future<bool> toggleDone(String id, bool isDone) async {
+    final res = await ref.read(appointmentsRepositoryProvider).updateAppointment(
+          uid: ref.signedInUid,
           id: id,
           isDone: isDone,
         );
+    return res.isOk;
   }
 
-  Future<void> updateFields({
+  /// Guarda los cambios de una cita. Devuelve si se pudo guardar.
+  Future<bool> updateFields({
     required String id,
     String? title,
     String? description,
@@ -96,8 +99,8 @@ class AppointmentsNotifier extends Notifier<AppointmentsState> {
     bool clearLocation = false,
     DateTime? dateTime,
   }) async {
-    await ref.read(appointmentsRepositoryProvider).updateAppointment(
-          uid: _uid,
+    final res = await ref.read(appointmentsRepositoryProvider).updateAppointment(
+          uid: ref.signedInUid,
           id: id,
           title: title,
           description: description,
@@ -106,6 +109,7 @@ class AppointmentsNotifier extends Notifier<AppointmentsState> {
           clearLocation: clearLocation,
           dateTime: dateTime,
         );
+    return res.isOk;
   }
 
   /// Borra la cita con copia en la papelera. Devuelve el borrado, que es lo que
@@ -115,7 +119,7 @@ class AppointmentsNotifier extends Notifier<AppointmentsState> {
     if (appointment == null) return null;
 
     final res = await ref.read(deletionsProvider).deleteAppointment(
-          uid: _uid,
+          uid: ref.signedInUid,
           appointment: appointment,
         );
     return res.fold(onOk: (group) => group, onErr: (_) => null);
@@ -126,14 +130,10 @@ class AppointmentsNotifier extends Notifier<AppointmentsState> {
   Future<bool> undo(TrashGroup group) =>
       ref.read(deletionsProvider).restore(group);
 
-  Appointment? _findById(String id) {
-    final current = state;
-    if (current is! AppointmentsData) return null;
-    for (final appointment in current.items) {
-      if (appointment.id == id) return appointment;
-    }
-    return null;
-  }
+  Appointment? _findById(String id) => switch (state) {
+        AppointmentsData(:final items) => items.where((e) => e.id == id).firstOrNull,
+        _ => null,
+      };
 }
 
 final appointmentsProvider =

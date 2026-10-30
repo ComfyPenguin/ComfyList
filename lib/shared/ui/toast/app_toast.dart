@@ -32,6 +32,10 @@ class AppToast {
       'No se ha podido eliminar la tarea. Inténtalo de nuevo.';
   static const String appointmentDeleteFailed =
       'No se ha podido eliminar la cita. Inténtalo de nuevo.';
+  static const String saveFailed =
+      'No se ha podido guardar. Inténtalo de nuevo.';
+  static const String updateFailed =
+      'No se ha podido actualizar. Inténtalo de nuevo.';
   static const String trashEmptied = 'Papelera vaciada.';
   static const String longPressHint =
       'Mantén pulsada una tarjeta para editarla.';

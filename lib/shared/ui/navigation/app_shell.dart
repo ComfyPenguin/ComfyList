@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:marquee/marquee.dart';
 
 import '../../../features/auth/presentation/providers/auth_provider.dart';
-import '../../../features/todo_lists/domain/entities/todo_list.dart';
 import '../../../features/updates/presentation/widgets/update_available_watcher.dart';
 import '../../../features/todo_lists/presentation/providers/todo_lists_provider.dart';
 import '../../../features/todo_lists/presentation/providers/todo_lists_state.dart';
@@ -145,10 +144,7 @@ class AppShell extends ConsumerWidget {
       final listId = location.split('/').last;
       final listsState = ref.watch(todoListsProvider);
       if (listsState is TodoListsData) {
-        final list = listsState.items.cast<TodoList?>().firstWhere(
-          (l) => l?.id == listId,
-          orElse: () => null,
-        );
+        final list = listsState.items.where((l) => l.id == listId).firstOrNull;
         if (list != null) {
           appBarTitle = list.name;
         }

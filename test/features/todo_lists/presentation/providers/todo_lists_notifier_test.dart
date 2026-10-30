@@ -106,37 +106,67 @@ void main() {
     expect(container.read(todoListsProvider), isA<TodoListsError>());
   });
 
-  test('create propagates Err(Failure) into the state', () async {
-    final controller = StreamController<List<TodoList>>();
-    when(() => repo.watchLists('u1')).thenAnswer((_) => controller.stream);
-    when(() => repo.createList(
-          uid: 'u1',
-          name: 'Compras',
-          iconKey: 'cart',
-        )).thenAnswer(
-      (_) async => const Err<TodoList>(
-        ServerFailure('Error 500'),
-      ),
-    );
+  group('mutaciones', () {
+    late StreamController<List<TodoList>> controller;
+    late ProviderContainer container;
 
-    final container = buildContainer();
-    addTearDown(controller.close);
+    setUp(() async {
+      controller = StreamController<List<TodoList>>();
+      when(() => repo.watchLists('u1')).thenAnswer((_) => controller.stream);
+      container = buildContainer();
+      addTearDown(controller.close);
+      expect(container.read(todoListsProvider), isA<TodoListsLoading>());
+      controller.add([buildTodoList(id: 'L1')]);
+      await pumpEventQueue();
+    });
 
-    // Inicia la suscripción
-    expect(container.read(todoListsProvider), isA<TodoListsLoading>());
+    test('create devuelve true si sale bien', () async {
+      when(() => repo.createList(
+            uid: 'u1',
+            name: 'Compras',
+            iconKey: 'cart',
+          )).thenAnswer((_) async => Ok(buildTodoList(id: 'L2')));
 
-    // Emite data inicial para que el notifier entre en estado Data
-    controller.add(<TodoList>[]);
-    await pumpEventQueue();
+      final ok = await container
+          .read(todoListsProvider.notifier)
+          .create(name: 'Compras', iconKey: 'cart');
 
-    await container.read(todoListsProvider.notifier).create(
-          name: 'Compras',
-          iconKey: 'cart',
-        );
+      expect(ok, isTrue);
+    });
 
-    final state = container.read(todoListsProvider);
-    expect(state, isA<TodoListsError>());
-    expect((state as TodoListsError).failure, isA<ServerFailure>());
+    test('create devuelve false si falla y no vacía las listas', () async {
+      when(() => repo.createList(
+            uid: 'u1',
+            name: 'Compras',
+            iconKey: 'cart',
+          )).thenAnswer(
+        (_) async => const Err<TodoList>(ServerFailure('Error 500')),
+      );
+
+      final ok = await container
+          .read(todoListsProvider.notifier)
+          .create(name: 'Compras', iconKey: 'cart');
+
+      expect(ok, isFalse);
+      final state = container.read(todoListsProvider);
+      expect(state, isA<TodoListsData>());
+      expect((state as TodoListsData).items.map((l) => l.id), ['L1']);
+    });
+
+    test('updateFields devuelve false si falla', () async {
+      when(() => repo.updateList(
+            uid: 'u1',
+            id: 'L1',
+            name: any(named: 'name'),
+            iconKey: any(named: 'iconKey'),
+          )).thenAnswer((_) async => const Err<TodoList>(NetworkFailure()));
+
+      final ok = await container
+          .read(todoListsProvider.notifier)
+          .updateFields(id: 'L1', name: 'Nuevo');
+
+      expect(ok, isFalse);
+    });
   });
 
   test('create with Ok does not change state from Data', () async {

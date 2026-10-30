@@ -128,8 +128,14 @@ class TodosScreen extends ConsumerWidget {
             child: QuickAddBar(
               hint: 'Añadir tarea rápida...',
               showSubmitButton: keyboardVisible,
-              onSubmit: (title) =>
-                  ref.read(todosProvider(listId).notifier).create(title: title),
+              onSubmit: (title) async {
+                final saved = await ref
+                    .read(todosProvider(listId).notifier)
+                    .create(title: title);
+                if (!saved && context.mounted) {
+                  AppToast.show(context, AppToast.saveFailed);
+                }
+              },
             ),
           ),
         ),
@@ -266,7 +272,12 @@ class _TodosListState extends ConsumerState<_TodosList> {
           _setTileRevealProgress(todo.id, progress),
       onTap: () => _showDetailSheet(context, ref, todo.id),
       onLongPress: () => context.push(Routes.todoEdit(widget.listId, todo.id)),
-      onComplete: () => notifier.toggleDone(todo.id, !todo.isDone),
+      onComplete: () async {
+        final saved = await notifier.toggleDone(todo.id, !todo.isDone);
+        if (!saved && context.mounted) {
+          AppToast.show(context, AppToast.updateFailed);
+        }
+      },
       onDelete: () async {
         final deleted = await notifier.delete(todo.id);
         if (!context.mounted) return;

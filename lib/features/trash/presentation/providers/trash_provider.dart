@@ -58,10 +58,8 @@ class TrashNotifier extends Notifier<TrashState> {
   }
 
   Future<void> empty() async {
-    await ref.read(trashRepositoryProvider).empty(_uid);
+    await ref.read(trashRepositoryProvider).empty(ref.signedInUid);
   }
-
-  String get _uid => (ref.read(authProvider) as Authenticated).user.uid;
 }
 
 final trashProvider = NotifierProvider<TrashNotifier, TrashState>(

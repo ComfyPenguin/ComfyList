@@ -176,7 +176,12 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
               showAppointmentDetailSheet(context: context, id: appt.id),
           onLongPress: (appt) =>
               context.push(Routes.appointmentEdit(appt.id)),
-          onComplete: (appt) => notifier.toggleDone(appt.id, !appt.isDone),
+          onComplete: (appt) async {
+            final saved = await notifier.toggleDone(appt.id, !appt.isDone);
+            if (!saved && context.mounted) {
+              AppToast.show(context, AppToast.updateFailed);
+            }
+          },
           onDelete: (appt) async {
             final deleted = await notifier.delete(appt.id);
             if (!context.mounted) return;

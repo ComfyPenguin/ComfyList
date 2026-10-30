@@ -12,7 +12,6 @@ import '../../../../shared/ui/dialogs/confirm_action_dialog.dart';
 import '../../../../shared/ui/inputs/app_text_field.dart';
 import '../../../../shared/ui/text/app_tag.dart';
 import '../../../../shared/ui/toast/app_toast.dart';
-import '../../domain/entities/todo.dart';
 import '../providers/todos_provider.dart';
 import '../providers/todos_state.dart';
 
@@ -47,11 +46,7 @@ class _TodoEditScreenState extends ConsumerState<TodoEditScreen> {
   void _hydrateFromState(TodosState s) {
     if (_hydrated || !_isEditing) return;
     if (s is TodosData) {
-      final todo =
-          s.items.where((t) => t.id == widget.id).cast<Todo?>().firstWhere(
-                (e) => true,
-                orElse: () => null,
-              );
+      final todo = s.items.where((t) => t.id == widget.id).firstOrNull;
       if (todo != null) {
         _titleCtrl.text = todo.title;
         _descCtrl.text = todo.description ?? '';
@@ -72,20 +67,25 @@ class _TodoEditScreenState extends ConsumerState<TodoEditScreen> {
     final notifier = ref.read(todosProvider(widget.listId).notifier);
     final desc = _descCtrl.text.trim();
 
-    if (_isEditing) {
-      await notifier.updateFields(
-        id: widget.id!,
-        title: title,
-        description: desc.isEmpty ? null : desc,
-        clearDescription: desc.isEmpty,
-      );
-    } else {
-      await notifier.create(
-        title: title,
-        description: desc.isEmpty ? null : desc,
-      );
+    final saved = _isEditing
+        ? await notifier.updateFields(
+            id: widget.id!,
+            title: title,
+            description: desc.isEmpty ? null : desc,
+            clearDescription: desc.isEmpty,
+          )
+        : await notifier.create(
+            title: title,
+            description: desc.isEmpty ? null : desc,
+          );
+    if (!mounted) return;
+
+    // Sin guardar no se cierra: lo escrito se queda para reintentarlo.
+    if (!saved) {
+      AppToast.show(context, AppToast.saveFailed);
+      return;
     }
-    if (mounted) context.pop();
+    context.pop();
   }
 
   Future<void> _delete() async {

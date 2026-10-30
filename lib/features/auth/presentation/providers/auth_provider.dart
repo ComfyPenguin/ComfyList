@@ -136,3 +136,9 @@ class AuthNotifier extends Notifier<AuthState> {
 
 final authProvider =
     NotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);
+
+/// Uid de la sesión abierta. Solo vale en quien ya comprobó que hay sesión: los
+/// notifiers de datos devuelven su estado inicial cuando no la hay.
+extension SignedInUid on Ref {
+  String get signedInUid => (read(authProvider) as Authenticated).user.uid;
+}
