@@ -16,7 +16,10 @@ import '../../domain/repositories/todos_repository.dart';
 import 'todos_state.dart';
 
 final firestoreRestRemoteProvider = Provider<FirestoreRestRemote>((ref) {
-  return FirestoreRestRemote(ref.watch(dioClientProvider).instance);
+  return FirestoreRestRemote(
+    ref.watch(dioClientProvider).instance,
+    now: ref.watch(clockProvider),
+  );
 });
 
 final todosRepositoryProvider = Provider<TodosRepository>((ref) {

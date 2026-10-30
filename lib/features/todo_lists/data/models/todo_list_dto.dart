@@ -1,3 +1,4 @@
+import '../../../../shared/data/remote/firestore_patch.dart';
 import '../../../../shared/data/remote/firestore_value_codec.dart';
 import '../../domain/entities/todo_list.dart';
 import '../../domain/entities/todo_list_icons.dart';
@@ -45,20 +46,9 @@ class TodoListDto {
     String? iconKey,
     required DateTime now,
   }) {
-    final fields = <String, dynamic>{};
-    final mask = <String>[];
-
-    if (name != null) {
-      fields['name'] = name;
-      mask.add('name');
-    }
-    if (iconKey != null) {
-      fields['iconKey'] = iconKey;
-      mask.add('iconKey');
-    }
-    fields['updatedAt'] = now;
-    mask.add('updatedAt');
-
-    return (FirestoreValueCodec.encodeFields(fields), mask);
+    return (FirestorePatch()
+          ..setIfNotNull('name', name)
+          ..setIfNotNull('iconKey', iconKey))
+        .build(updatedAt: now);
   }
 }

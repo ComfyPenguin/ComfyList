@@ -1,17 +1,22 @@
 import 'package:dio/dio.dart';
 
 import '../../../../shared/core/env/firebase_endpoints.dart';
+import '../../../../shared/core/time/clock.dart';
+import '../../../../shared/data/remote/firestore_documents.dart';
 import '../../../../shared/data/remote/firestore_pages.dart';
 import '../../domain/entities/appointment.dart';
 import '../models/appointment_dto.dart';
 
 /// Datasource Firestore REST para `users/{uid}/appointments`.
 ///
-/// Usa el cliente principal del [DioClient] (con [AuthInterceptor]).
+/// Usa el cliente principal del [DioClient] (con [AuthInterceptor]). [now] da
+/// el «ahora» de `createdAt` y `updatedAt`; en la app es el reloj de la app.
 class FirestoreAppointmentsRemote {
-  FirestoreAppointmentsRemote(this._dio);
+  FirestoreAppointmentsRemote(this._dio, {Now now = DateTime.now})
+      : _now = now;
 
   final Dio _dio;
+  final Now _now;
 
   String _collectionPath(String uid) =>
       '${FirebaseEndpoints.firestoreBase}/users/$uid/appointments';
@@ -32,19 +37,16 @@ class FirestoreAppointmentsRemote {
     String? location,
     required DateTime dateTime,
   }) async {
-    final now = DateTime.now().toUtc();
     final body = AppointmentDto.toCreateBody(
       title: title,
       description: description,
       location: location,
       dateTime: dateTime,
-      now: now,
+      now: _now().toUtc(),
     );
-    final res = await _dio.post<Map<String, dynamic>>(
-      _collectionPath(uid),
-      data: body,
+    return AppointmentDto.fromDocument(
+      await _dio.createDocument(_collectionPath(uid), body),
     );
-    return AppointmentDto.fromDocument(res.data!);
   }
 
   Future<Appointment> updateAppointment({
@@ -58,7 +60,6 @@ class FirestoreAppointmentsRemote {
     DateTime? dateTime,
     bool? isDone,
   }) async {
-    final now = DateTime.now().toUtc();
     final (body, mask) = AppointmentDto.toPatchBody(
       title: title,
       description: description,
@@ -67,17 +68,15 @@ class FirestoreAppointmentsRemote {
       clearLocation: clearLocation,
       dateTime: dateTime,
       isDone: isDone,
-      now: now,
+      now: _now().toUtc(),
     );
-
-    final res = await _dio.patch<Map<String, dynamic>>(
-      '${_collectionPath(uid)}/$id',
-      data: body,
-      queryParameters: {
-        if (mask.isNotEmpty) 'updateMask.fieldPaths': mask,
-      },
+    return AppointmentDto.fromDocument(
+      await _dio.patchDocument(
+        '${_collectionPath(uid)}/$id',
+        body,
+        updateMask: mask,
+      ),
     );
-    return AppointmentDto.fromDocument(res.data!);
   }
 
   Future<void> deleteAppointment({
@@ -92,10 +91,11 @@ class FirestoreAppointmentsRemote {
     required String uid,
     required Appointment appointment,
   }) async {
-    final res = await _dio.patch<Map<String, dynamic>>(
-      '${_collectionPath(uid)}/${appointment.id}',
-      data: AppointmentDto.toRestoreBody(appointment),
+    return AppointmentDto.fromDocument(
+      await _dio.patchDocument(
+        '${_collectionPath(uid)}/${appointment.id}',
+        AppointmentDto.toRestoreBody(appointment),
+      ),
     );
-    return AppointmentDto.fromDocument(res.data!);
   }
 }

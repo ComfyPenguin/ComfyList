@@ -1,3 +1,4 @@
+import '../../../../shared/data/remote/firestore_patch.dart';
 import '../../../../shared/data/remote/firestore_value_codec.dart';
 import '../../domain/entities/todo.dart';
 
@@ -54,27 +55,10 @@ class TodoDto {
     bool? isDone,
     required DateTime now,
   }) {
-    final fields = <String, dynamic>{};
-    final mask = <String>[];
-
-    if (title != null) {
-      fields['title'] = title;
-      mask.add('title');
-    }
-    if (clearDescription) {
-      fields['description'] = null;
-      mask.add('description');
-    } else if (description != null) {
-      fields['description'] = description;
-      mask.add('description');
-    }
-    if (isDone != null) {
-      fields['isDone'] = isDone;
-      mask.add('isDone');
-    }
-    fields['updatedAt'] = now;
-    mask.add('updatedAt');
-
-    return (FirestoreValueCodec.encodeFields(fields), mask);
+    return (FirestorePatch()
+          ..setIfNotNull('title', title)
+          ..setOrClear('description', description, clear: clearDescription)
+          ..setIfNotNull('isDone', isDone))
+        .build(updatedAt: now);
   }
 }
