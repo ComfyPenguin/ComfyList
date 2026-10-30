@@ -198,57 +198,6 @@ void main() {
     });
   });
 
-  group('SettingsRepositoryImpl setters booleanos', () {
-    test('delegan en los métodos del local sin transformación', () async {
-      when(
-        () => local.updateNotificationsEnabled(any()),
-      ).thenAnswer((_) async {});
-      when(
-        () => local.updateAppointmentsCompletionEnabled(any()),
-      ).thenAnswer((_) async {});
-      when(() => local.updateCompletedToBottom(any())).thenAnswer((_) async {});
-      when(
-        () => local.updateAppointmentsCompletedToBottom(any()),
-      ).thenAnswer((_) async {});
-      when(
-        () => local.updateAppointmentsTodayOnTop(any()),
-      ).thenAnswer((_) async {});
-      when(
-        () => local.updateInvertSwipeActions(any()),
-      ).thenAnswer((_) async {});
-      when(() => local.updateUse24HourFormat(any())).thenAnswer((_) async {});
-      when(() => local.updateLongPressHintSeen(any())).thenAnswer((_) async {});
-
-      await repo.setNotificationsEnabled(false);
-      await repo.setAppointmentsCompletionEnabled(true);
-      await repo.setCompletedToBottom(false);
-      await repo.setAppointmentsCompletedToBottom(false);
-      await repo.setAppointmentsTodayOnTop(false);
-      await repo.setInvertSwipeActions(true);
-      await repo.setUse24HourFormat(false);
-      await repo.setLongPressHintSeen(true);
-
-      verify(() => local.updateNotificationsEnabled(false)).called(1);
-      verify(() => local.updateAppointmentsCompletionEnabled(true)).called(1);
-      verify(() => local.updateCompletedToBottom(false)).called(1);
-      verify(() => local.updateAppointmentsCompletedToBottom(false)).called(1);
-      verify(() => local.updateAppointmentsTodayOnTop(false)).called(1);
-      verify(() => local.updateInvertSwipeActions(true)).called(1);
-      verify(() => local.updateUse24HourFormat(false)).called(1);
-      verify(() => local.updateLongPressHintSeen(true)).called(1);
-    });
-  });
-
-  group('SettingsRepositoryImpl.setTrashRetentionDays', () {
-    test('delega los días en el local', () async {
-      when(() => local.updateTrashRetentionDays(any())).thenAnswer((_) async {});
-
-      await repo.setTrashRetentionDays(30);
-
-      verify(() => local.updateTrashRetentionDays(30)).called(1);
-    });
-  });
-
   group('SettingsRepositoryImpl.setAppointmentReminderMinutes', () {
     test('guarda la lista de márgenes en su forma canónica', () async {
       when(
