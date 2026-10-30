@@ -175,7 +175,7 @@ void main() {
         )).captured.single as Todo;
     expect(restored.id, 't1');
     expect(restored.title, 'Comprar pan');
-    expect(restored.createdAt, todo.createdAt);
+    expect(restored.createdAt.isAtSameMomentAs(todo.createdAt), isTrue);
 
     // Y sale de la papelera: ya no hay nada que deshacer.
     expect(trash.entries, isEmpty);

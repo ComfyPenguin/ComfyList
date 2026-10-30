@@ -24,16 +24,17 @@ class Appointment {
   /// Ubicación opcional de la cita (p. ej. "Calle Mayor 1, Madrid").
   final String? location;
 
-  /// Serialización para guardarla en local (papelera).
+  /// Serialización para la papelera, que vive en la cuenta. Las fechas van en
+  /// UTC: se pueden restaurar desde un dispositivo en otra zona horaria.
   Map<String, dynamic> toJson() => {
         'id': id,
         'title': title,
         'description': description,
         'location': location,
-        'dateTime': dateTime.toIso8601String(),
+        'dateTime': dateTime.toUtc().toIso8601String(),
         'isDone': isDone,
-        'createdAt': createdAt.toIso8601String(),
-        'updatedAt': updatedAt.toIso8601String(),
+        'createdAt': createdAt.toUtc().toIso8601String(),
+        'updatedAt': updatedAt.toUtc().toIso8601String(),
       };
 
   factory Appointment.fromJson(Map<String, dynamic> json) => Appointment(
@@ -41,10 +42,10 @@ class Appointment {
         title: json['title'] as String,
         description: json['description'] as String?,
         location: json['location'] as String?,
-        dateTime: DateTime.parse(json['dateTime'] as String),
+        dateTime: DateTime.parse(json['dateTime'] as String).toLocal(),
         isDone: json['isDone'] as bool,
-        createdAt: DateTime.parse(json['createdAt'] as String),
-        updatedAt: DateTime.parse(json['updatedAt'] as String),
+        createdAt: DateTime.parse(json['createdAt'] as String).toLocal(),
+        updatedAt: DateTime.parse(json['updatedAt'] as String).toLocal(),
       );
 
   Appointment copyWith({

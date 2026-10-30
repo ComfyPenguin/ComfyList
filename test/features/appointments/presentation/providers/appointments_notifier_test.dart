@@ -178,7 +178,7 @@ void main() {
         )).captured.single as Appointment;
     expect(restored.id, 'a1');
     expect(restored.title, 'Dentista');
-    expect(restored.dateTime, appointment.dateTime);
+    expect(restored.dateTime.isAtSameMomentAs(appointment.dateTime), isTrue);
 
     expect(trash.entries, isEmpty);
   });
