@@ -106,25 +106,30 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
     final desc = _descCtrl.text.trim();
     final loc = _locationCtrl.text.trim();
 
-    if (_isEditing) {
-      await notifier.updateFields(
-        id: widget.id!,
-        title: title,
-        description: desc.isEmpty ? null : desc,
-        clearDescription: desc.isEmpty,
-        location: loc.isEmpty ? null : loc,
-        clearLocation: loc.isEmpty,
-        dateTime: _dateTime,
-      );
-    } else {
-      await notifier.create(
-        title: title,
-        description: desc.isEmpty ? null : desc,
-        location: loc.isEmpty ? null : loc,
-        dateTime: _dateTime,
-      );
+    final saved = _isEditing
+        ? await notifier.updateFields(
+            id: widget.id!,
+            title: title,
+            description: desc.isEmpty ? null : desc,
+            clearDescription: desc.isEmpty,
+            location: loc.isEmpty ? null : loc,
+            clearLocation: loc.isEmpty,
+            dateTime: _dateTime,
+          )
+        : await notifier.create(
+            title: title,
+            description: desc.isEmpty ? null : desc,
+            location: loc.isEmpty ? null : loc,
+            dateTime: _dateTime,
+          );
+    if (!mounted) return;
+
+    // Sin guardar no se cierra: lo escrito se queda para reintentarlo.
+    if (!saved) {
+      AppToast.show(context, AppToast.saveFailed);
+      return;
     }
-    if (mounted) context.pop();
+    context.pop();
   }
 
   Future<void> _delete() async {

@@ -73,26 +73,30 @@ class TodoListsNotifier extends Notifier<TodoListsState> {
 
   String get _uid => (ref.read(authProvider) as Authenticated).user.uid;
 
-  Future<void> create({required String name, required String iconKey}) async {
+  /// Crea una lista. Devuelve si se pudo; si no, las listas cargadas se quedan
+  /// como están y quien llama decide cómo avisar.
+  Future<bool> create({required String name, required String iconKey}) async {
     final res = await ref.read(todoListsRepositoryProvider).createList(
           uid: _uid,
           name: name,
           iconKey: iconKey,
         );
-    res.fold(onOk: (_) {}, onErr: (f) => state = TodoListsError(f));
+    return res.isOk;
   }
 
-  Future<void> updateFields({
+  /// Guarda los cambios de una lista. Devuelve si se pudo guardar.
+  Future<bool> updateFields({
     required String id,
     String? name,
     String? iconKey,
   }) async {
-    await ref.read(todoListsRepositoryProvider).updateList(
+    final res = await ref.read(todoListsRepositoryProvider).updateList(
           uid: _uid,
           id: id,
           name: name,
           iconKey: iconKey,
         );
+    return res.isOk;
   }
 
   List<TodoList> _visible() => [

@@ -287,4 +287,81 @@ void main() {
     // El borrado sigue en la papelera: se puede reintentar.
     expect(trash.entries, hasLength(1));
   });
+
+  group('mutaciones', () {
+    late ProviderContainer container;
+
+    setUp(() async {
+      final controller = StreamController<List<Appointment>>();
+      when(() => repo.watchAppointments('u1'))
+          .thenAnswer((_) => controller.stream);
+      container = createTestContainer(
+        authedUser: buildAuthUser(),
+        repositoryOverrides: {AppointmentsRepository: repo},
+      );
+      addTearDown(controller.close);
+      expect(container.read(appointmentsProvider), isA<AppointmentsLoading>());
+      controller.add([buildAppointment(id: 'a1')]);
+      await pumpEventQueue();
+    });
+
+    AppointmentsNotifier notifier() =>
+        container.read(appointmentsProvider.notifier);
+
+    test('create devuelve true si sale bien', () async {
+      when(() => repo.createAppointment(
+            uid: 'u1',
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            location: any(named: 'location'),
+            dateTime: any(named: 'dateTime'),
+          )).thenAnswer((_) async => Ok(buildAppointment(id: 'a2')));
+
+      final ok = await notifier().create(
+        title: 'Dentista',
+        dateTime: DateTime.utc(2026, 6, 1, 9),
+      );
+
+      expect(ok, isTrue);
+    });
+
+    test('create devuelve false si falla y no vacía la lista', () async {
+      when(() => repo.createAppointment(
+            uid: 'u1',
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            location: any(named: 'location'),
+            dateTime: any(named: 'dateTime'),
+          )).thenAnswer(
+        (_) async => const Err<Appointment>(ServerFailure('Error 500')),
+      );
+
+      final ok = await notifier().create(
+        title: 'Dentista',
+        dateTime: DateTime.utc(2026, 6, 1, 9),
+      );
+
+      expect(ok, isFalse);
+      final state = container.read(appointmentsProvider);
+      expect(state, isA<AppointmentsData>());
+      expect((state as AppointmentsData).items.map((a) => a.id), ['a1']);
+    });
+
+    test('toggleDone y updateFields devuelven false si fallan', () async {
+      when(() => repo.updateAppointment(
+            uid: 'u1',
+            id: 'a1',
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            clearDescription: any(named: 'clearDescription'),
+            location: any(named: 'location'),
+            clearLocation: any(named: 'clearLocation'),
+            dateTime: any(named: 'dateTime'),
+            isDone: any(named: 'isDone'),
+          )).thenAnswer((_) async => const Err<Appointment>(NetworkFailure()));
+
+      expect(await notifier().toggleDone('a1', true), isFalse);
+      expect(await notifier().updateFields(id: 'a1', title: 'Nuevo'), isFalse);
+    });
+  });
 }

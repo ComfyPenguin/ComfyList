@@ -73,16 +73,21 @@ class _TodoListEditScreenState extends ConsumerState<TodoListEditScreen> {
 
     final notifier = ref.read(todoListsProvider.notifier);
 
-    if (_isEditing) {
-      await notifier.updateFields(
-        id: widget.id!,
-        name: name,
-        iconKey: _iconKey,
-      );
-    } else {
-      await notifier.create(name: name, iconKey: _iconKey);
+    final saved = _isEditing
+        ? await notifier.updateFields(
+            id: widget.id!,
+            name: name,
+            iconKey: _iconKey,
+          )
+        : await notifier.create(name: name, iconKey: _iconKey);
+    if (!mounted) return;
+
+    // Sin guardar no se cierra: lo escrito se queda para reintentarlo.
+    if (!saved) {
+      AppToast.show(context, AppToast.saveFailed);
+      return;
     }
-    if (mounted) context.pop();
+    context.pop();
   }
 
   Future<void> _delete() async {

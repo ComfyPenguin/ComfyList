@@ -72,20 +72,25 @@ class _TodoEditScreenState extends ConsumerState<TodoEditScreen> {
     final notifier = ref.read(todosProvider(widget.listId).notifier);
     final desc = _descCtrl.text.trim();
 
-    if (_isEditing) {
-      await notifier.updateFields(
-        id: widget.id!,
-        title: title,
-        description: desc.isEmpty ? null : desc,
-        clearDescription: desc.isEmpty,
-      );
-    } else {
-      await notifier.create(
-        title: title,
-        description: desc.isEmpty ? null : desc,
-      );
+    final saved = _isEditing
+        ? await notifier.updateFields(
+            id: widget.id!,
+            title: title,
+            description: desc.isEmpty ? null : desc,
+            clearDescription: desc.isEmpty,
+          )
+        : await notifier.create(
+            title: title,
+            description: desc.isEmpty ? null : desc,
+          );
+    if (!mounted) return;
+
+    // Sin guardar no se cierra: lo escrito se queda para reintentarlo.
+    if (!saved) {
+      AppToast.show(context, AppToast.saveFailed);
+      return;
     }
-    if (mounted) context.pop();
+    context.pop();
   }
 
   Future<void> _delete() async {

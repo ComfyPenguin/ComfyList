@@ -66,32 +66,37 @@ class TodosNotifier extends Notifier<TodosState> {
 
   String get _uid => (ref.read(authProvider) as Authenticated).user.uid;
 
-  Future<void> create({required String title, String? description}) async {
+  /// Crea una tarea. Devuelve si se pudo; si no, la lista cargada se queda como
+  /// está y quien llama decide cómo avisar.
+  Future<bool> create({required String title, String? description}) async {
     final res = await ref.read(todosRepositoryProvider).createTodo(
           uid: _uid,
           listId: _listId,
           title: title,
           description: description,
         );
-    res.fold(onOk: (_) {}, onErr: (f) => state = TodosError(f));
+    return res.isOk;
   }
 
-  Future<void> toggleDone(String id, bool isDone) async {
-    await ref.read(todosRepositoryProvider).updateTodo(
+  /// Marca o desmarca una tarea. Devuelve si se pudo guardar.
+  Future<bool> toggleDone(String id, bool isDone) async {
+    final res = await ref.read(todosRepositoryProvider).updateTodo(
           uid: _uid,
           listId: _listId,
           id: id,
           isDone: isDone,
         );
+    return res.isOk;
   }
 
-  Future<void> updateFields({
+  /// Guarda los cambios de una tarea. Devuelve si se pudo guardar.
+  Future<bool> updateFields({
     required String id,
     String? title,
     String? description,
     bool clearDescription = false,
   }) async {
-    await ref.read(todosRepositoryProvider).updateTodo(
+    final res = await ref.read(todosRepositoryProvider).updateTodo(
           uid: _uid,
           listId: _listId,
           id: id,
@@ -99,6 +104,7 @@ class TodosNotifier extends Notifier<TodosState> {
           description: description,
           clearDescription: clearDescription,
         );
+    return res.isOk;
   }
 
   /// Borra la tarea con copia en la papelera. Devuelve el borrado, que es lo
