@@ -1,16 +1,12 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../features/appointments/presentation/providers/appointments_provider.dart';
-import '../../../features/todos/presentation/providers/todos_provider.dart';
-import '../../../features/todo_lists/presentation/providers/todo_lists_provider.dart';
-import '../../../features/trash/presentation/providers/trash_provider.dart';
 import '../../data/notifications/notifications_provider.dart';
 import 'polling_registry.dart';
 
-/// Pausa y reanuda el polling de los repositorios de datos cuando la app
-/// pasa a background / vuelve a foreground, evitando errores transitorios
-/// de red y auth en el primer tick tras resume.
+/// Pausa y reanuda el [PollingRegistry] cuando la app pasa a background /
+/// vuelve a foreground, evitando errores transitorios de red y auth en el
+/// primer tick tras resume.
 class AppLifecycleController {
   AppLifecycleController(this._ref) {
     _listener = AppLifecycleListener(onStateChange: _onStateChange);
@@ -52,14 +48,6 @@ class AppLifecycleController {
 }
 
 final appLifecycleControllerProvider = Provider<AppLifecycleController>((ref) {
-  // Mantenemos los repos vivos durante toda la vida de la app, incluso
-  // cuando los Notifiers que los consumen no estén siendo observados
-  // (p. ej. la familia de TodosProvider al cambiar entre listas).
-  ref.read(appointmentsRepositoryProvider);
-  ref.read(todosRepositoryProvider);
-  ref.read(todoListsRepositoryProvider);
-  ref.read(trashRepositoryProvider);
-
   final controller = AppLifecycleController(ref);
   ref.onDispose(controller.dispose);
   return controller;
