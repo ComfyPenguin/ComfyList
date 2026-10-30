@@ -186,7 +186,23 @@ void main() {
     final res = await repo.save(uid: 'u1', items: const []);
 
     expect(res.isOk, isTrue);
+    expect(valueOf(res), isEmpty);
     expect(remote.entries, isEmpty);
+  });
+
+  test('save devuelve las filas de este borrado y no las de otros', () async {
+    await repo.save(uid: 'u1', items: [item(id: 'viejo')]);
+
+    final saved =
+        valueOf(await repo.save(uid: 'u1', items: [item(), item(id: 't2')]));
+
+    expect(saved.map((e) => e.itemId), unorderedEquals(['t1', 't2']));
+    expect(saved.map((e) => e.groupId).toSet(), hasLength(1));
+    final stored = {for (final e in remote.entries) e.id: e};
+    for (final entry in saved) {
+      expect(stored[entry.id]?.groupId, entry.groupId);
+    }
+    expect(saved.any((e) => e.itemId == 'viejo'), isFalse);
   });
 
   test('list devuelve lo último borrado primero', () async {

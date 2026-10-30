@@ -10,7 +10,11 @@ abstract class TrashRepository {
   static const int maxGroupsPerUid = 100;
 
   /// Guarda un borrado: un documento por elemento, todos con el mismo grupo.
-  Future<Result<void>> save({required String uid, required List<TrashItem> items});
+  /// Devuelve las filas que acaba de escribir, para poder deshacerlo.
+  Future<Result<List<TrashEntry>>> save({
+    required String uid,
+    required List<TrashItem> items,
+  });
 
   /// El grupo borrado más recientemente de ese tipo (y de esa lista, si es una
   /// tarea), con todas sus filas. Vacío si no queda nada que deshacer.
