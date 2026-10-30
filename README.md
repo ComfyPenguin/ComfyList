@@ -32,6 +32,3 @@ App de TODOs y citas multiplataforma con sincronización vía Firebase. Tus list
 
 Android es la plataforma principal (fase 1). Web y escritorio están en camino; Google Sign-In, por ahora, solo en Android.
 
-## ¿Quieres desarrollar?
-
-Empieza por [`docs/development.md`](docs/development.md): requisitos, configuración de Firebase, comandos y flujo de releases.
