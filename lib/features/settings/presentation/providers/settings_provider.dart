@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/core/failures/failure.dart';
 import '../../../../shared/data/local/database_provider.dart';
-import '../../data/datasources/drift_settings_local.dart';
 import '../../data/repositories/settings_repository_impl.dart';
 import '../../domain/entities/app_settings.dart';
 import '../../domain/repositories/settings_repository.dart';
@@ -13,7 +12,7 @@ import 'settings_state.dart';
 
 final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
   final dao = ref.watch(settingsDaoProvider);
-  return SettingsRepositoryImpl(DriftSettingsLocal(dao));
+  return SettingsRepositoryImpl(dao);
 });
 
 /// Notifier con estado sellado [SettingsState].

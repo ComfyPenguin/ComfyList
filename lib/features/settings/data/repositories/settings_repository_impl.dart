@@ -1,127 +1,110 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 
+import '../../../../shared/data/local/app_database.dart';
+import '../../../../shared/data/local/daos/settings_dao.dart';
 import '../../domain/entities/app_settings.dart';
 import '../../domain/repositories/settings_repository.dart';
-import '../datasources/drift_settings_local.dart';
 
 class SettingsRepositoryImpl implements SettingsRepository {
-  SettingsRepositoryImpl(this._local);
+  SettingsRepositoryImpl(this._dao);
 
-  final DriftSettingsLocal _local;
-
-  @override
-  Future<AppSettings> load() async {
-    final row = await _local.getOrCreate();
-    return AppSettings(
-      themeMode: AppSettings.parseThemeMode(row.themeMode),
-      notificationsEnabled: row.notificationsEnabled,
-      appointmentsCompletionEnabled: row.appointmentsCompletionEnabled,
-      completedToBottom: row.completedToBottom,
-      appointmentsCompletedToBottom: row.appointmentsCompletedToBottom,
-      appointmentsTodayOnTop: row.appointmentsTodayOnTop,
-      invertSwipeActions: row.invertSwipeActions,
-      use24HourFormat: row.use24HourFormat,
-      appointmentReminderMinutes: AppSettings.parseReminderMinutes(
-        row.appointmentReminderMinutes,
-      ),
-      longPressHintSeen: row.longPressHintSeen,
-      trashRetentionDays: AppSettings.parseTrashRetentionDays(
-        row.trashRetentionDays,
-      ),
-      skippedUpdateBuild: row.skippedUpdateBuild,
-      lastUpdateCheckAt: row.lastUpdateCheckAt,
-    );
-  }
+  final SettingsDao _dao;
 
   @override
-  Stream<AppSettings> watch() {
-    return _local.watch().map(
-          (row) => AppSettings(
-            themeMode: AppSettings.parseThemeMode(row.themeMode),
-            notificationsEnabled: row.notificationsEnabled,
-            appointmentsCompletionEnabled: row.appointmentsCompletionEnabled,
-            completedToBottom: row.completedToBottom,
-            appointmentsCompletedToBottom: row.appointmentsCompletedToBottom,
-            appointmentsTodayOnTop: row.appointmentsTodayOnTop,
-            invertSwipeActions: row.invertSwipeActions,
-            use24HourFormat: row.use24HourFormat,
-            appointmentReminderMinutes: AppSettings.parseReminderMinutes(
-              row.appointmentReminderMinutes,
-            ),
-            longPressHintSeen: row.longPressHintSeen,
-            trashRetentionDays: AppSettings.parseTrashRetentionDays(
-              row.trashRetentionDays,
-            ),
-            skippedUpdateBuild: row.skippedUpdateBuild,
-            lastUpdateCheckAt: row.lastUpdateCheckAt,
+  Future<AppSettings> load() async => _fromRow(await _dao.getOrCreate());
+
+  @override
+  Stream<AppSettings> watch() => _dao.watch().map(_fromRow);
+
+  @override
+  Future<void> setThemeMode(ThemeMode mode) => _dao.write(
+        SettingsTableCompanion(
+          themeMode: Value(AppSettings.themeModeToString(mode)),
+        ),
+      );
+
+  @override
+  Future<void> setNotificationsEnabled(bool enabled) => _dao.write(
+        SettingsTableCompanion(notificationsEnabled: Value(enabled)),
+      );
+
+  @override
+  Future<void> setAppointmentsCompletionEnabled(bool enabled) => _dao.write(
+        SettingsTableCompanion(appointmentsCompletionEnabled: Value(enabled)),
+      );
+
+  @override
+  Future<void> setCompletedToBottom(bool enabled) => _dao.write(
+        SettingsTableCompanion(completedToBottom: Value(enabled)),
+      );
+
+  @override
+  Future<void> setAppointmentsCompletedToBottom(bool enabled) => _dao.write(
+        SettingsTableCompanion(appointmentsCompletedToBottom: Value(enabled)),
+      );
+
+  @override
+  Future<void> setAppointmentsTodayOnTop(bool enabled) => _dao.write(
+        SettingsTableCompanion(appointmentsTodayOnTop: Value(enabled)),
+      );
+
+  @override
+  Future<void> setInvertSwipeActions(bool enabled) => _dao.write(
+        SettingsTableCompanion(invertSwipeActions: Value(enabled)),
+      );
+
+  @override
+  Future<void> setUse24HourFormat(bool enabled) => _dao.write(
+        SettingsTableCompanion(use24HourFormat: Value(enabled)),
+      );
+
+  @override
+  Future<void> setAppointmentReminderMinutes(List<int> minutes) => _dao.write(
+        SettingsTableCompanion(
+          appointmentReminderMinutes: Value(
+            AppSettings.reminderMinutesToString(minutes),
           ),
-        );
-  }
+        ),
+      );
 
   @override
-  Future<void> setThemeMode(ThemeMode mode) {
-    return _local.updateThemeMode(AppSettings.themeModeToString(mode));
-  }
+  Future<void> setLongPressHintSeen(bool seen) => _dao.write(
+        SettingsTableCompanion(longPressHintSeen: Value(seen)),
+      );
 
   @override
-  Future<void> setNotificationsEnabled(bool enabled) {
-    return _local.updateNotificationsEnabled(enabled);
-  }
+  Future<void> setTrashRetentionDays(int days) => _dao.write(
+        SettingsTableCompanion(trashRetentionDays: Value(days)),
+      );
 
   @override
-  Future<void> setAppointmentsCompletionEnabled(bool enabled) {
-    return _local.updateAppointmentsCompletionEnabled(enabled);
-  }
+  Future<void> setSkippedUpdateBuild(int build) => _dao.write(
+        SettingsTableCompanion(skippedUpdateBuild: Value(build)),
+      );
 
   @override
-  Future<void> setCompletedToBottom(bool enabled) {
-    return _local.updateCompletedToBottom(enabled);
-  }
+  Future<void> setLastUpdateCheckAt(DateTime at) => _dao.write(
+        SettingsTableCompanion(lastUpdateCheckAt: Value(at.toUtc())),
+      );
 
-  @override
-  Future<void> setAppointmentsCompletedToBottom(bool enabled) {
-    return _local.updateAppointmentsCompletedToBottom(enabled);
-  }
-
-  @override
-  Future<void> setAppointmentsTodayOnTop(bool enabled) {
-    return _local.updateAppointmentsTodayOnTop(enabled);
-  }
-
-  @override
-  Future<void> setInvertSwipeActions(bool enabled) {
-    return _local.updateInvertSwipeActions(enabled);
-  }
-
-  @override
-  Future<void> setUse24HourFormat(bool enabled) {
-    return _local.updateUse24HourFormat(enabled);
-  }
-
-  @override
-  Future<void> setAppointmentReminderMinutes(List<int> minutes) {
-    return _local.updateAppointmentReminderMinutes(
-      AppSettings.reminderMinutesToString(minutes),
-    );
-  }
-
-  @override
-  Future<void> setLongPressHintSeen(bool seen) {
-    return _local.updateLongPressHintSeen(seen);
-  }
-
-  @override
-  Future<void> setTrashRetentionDays(int days) {
-    return _local.updateTrashRetentionDays(days);
-  }
-
-  @override
-  Future<void> setSkippedUpdateBuild(int build) {
-    return _local.updateSkippedUpdateBuild(build);
-  }
-
-  @override
-  Future<void> setLastUpdateCheckAt(DateTime at) {
-    return _local.updateLastUpdateCheckAt(at);
-  }
+  AppSettings _fromRow(SettingsRow row) => AppSettings(
+        themeMode: AppSettings.parseThemeMode(row.themeMode),
+        notificationsEnabled: row.notificationsEnabled,
+        appointmentsCompletionEnabled: row.appointmentsCompletionEnabled,
+        completedToBottom: row.completedToBottom,
+        appointmentsCompletedToBottom: row.appointmentsCompletedToBottom,
+        appointmentsTodayOnTop: row.appointmentsTodayOnTop,
+        invertSwipeActions: row.invertSwipeActions,
+        use24HourFormat: row.use24HourFormat,
+        appointmentReminderMinutes: AppSettings.parseReminderMinutes(
+          row.appointmentReminderMinutes,
+        ),
+        longPressHintSeen: row.longPressHintSeen,
+        trashRetentionDays: AppSettings.parseTrashRetentionDays(
+          row.trashRetentionDays,
+        ),
+        skippedUpdateBuild: row.skippedUpdateBuild,
+        lastUpdateCheckAt: row.lastUpdateCheckAt,
+      );
 }
