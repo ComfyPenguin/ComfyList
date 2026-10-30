@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:comfy_list/features/auth/presentation/providers/auth_state.dart';
 import 'package:comfy_list/features/todos/data/datasources/firestore_rest_remote.dart';
-import 'package:comfy_list/features/todos/data/repositories/todos_repository_impl.dart';
 import 'package:comfy_list/features/todos/domain/entities/todo.dart';
 import 'package:comfy_list/features/todos/domain/repositories/todos_repository.dart';
 import 'package:comfy_list/features/todos/presentation/providers/todos_provider.dart';
@@ -37,17 +36,28 @@ void main() {
     trash = FakeTrashRemote();
   });
 
-  test('el repo de la app toma la cadencia del polling del provider', () {
+  test('el repo de la app toma la cadencia del polling del provider', () async {
+    final remote = _MockRemote();
+    when(() => remote.listTodos(uid: 'u1', listId: 'L1'))
+        .thenAnswer((_) async => <Todo>[]);
     final container = createTestContainer(
-      remoteOverrides: {FirestoreRestRemote: _MockRemote()},
+      remoteOverrides: {FirestoreRestRemote: remote},
       extra: [
-        pollIntervalProvider.overrideWithValue(const Duration(seconds: 3)),
+        pollIntervalProvider.overrideWithValue(
+          const Duration(milliseconds: 20),
+        ),
       ],
     );
+    final sub = container
+        .read(todosRepositoryProvider)
+        .watchTodos(uid: 'u1', listId: 'L1')
+        .listen((_) {});
+    addTearDown(sub.cancel);
 
-    final repo = container.read(todosRepositoryProvider) as TodosRepositoryImpl;
+    await Future<void>.delayed(const Duration(milliseconds: 150));
 
-    expect(repo.pollInterval, const Duration(seconds: 3));
+    verify(() => remote.listTodos(uid: 'u1', listId: 'L1'))
+        .called(greaterThan(1));
   });
 
   test('build returns TodosInitial when auth is not Authenticated', () async {
