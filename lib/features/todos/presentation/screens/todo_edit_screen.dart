@@ -105,13 +105,17 @@ class _TodoEditScreenState extends ConsumerState<TodoEditScreen> {
     if (!confirmed) return;
 
     final notifier = ref.read(todosProvider(widget.listId).notifier);
-    await notifier.delete(widget.id!);
+    final deleted = await notifier.delete(widget.id!);
     if (!mounted) return;
 
+    if (deleted == null) {
+      AppToast.show(context, AppToast.todoDeleteFailed);
+      return;
+    }
     AppToast.showUndo(
       context,
       message: AppToast.todoDeleted,
-      onUndo: notifier.undoLastDelete,
+      onUndo: () => notifier.undo(deleted),
     );
     router.pop();
   }
