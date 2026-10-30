@@ -14,7 +14,7 @@ dart tool/release.dart plan          # próxima versión, sin tocar nada
 
 El SDK de Flutter se fija solo en `environment.flutter` de `pubspec.yaml`: Dependabot y el CI lo leen de ahí.
 
-`android/app/google-services.json` y `lib/firebase_options.dart` no están en el repo (los genera `flutterfire configure`). Sin el primero, el build de Android falla. Sin `flutterfire`: `firebase apps:sdkconfig ANDROID <appId> --project comfy-list > android/app/google-services.json`.
+`android/app/google-services.json` no está en el repo y sin él el build de Android falla. Se genera con `flutterfire configure` o, sin él, con `firebase apps:sdkconfig ANDROID <appId> --project comfy-list > android/app/google-services.json` (el `appId` sale de `firebase apps:list`). En Windows el CLI termina con código 127 aunque el archivo salga completo: valida el JSON, no el código de salida.
 
 ## Arquitectura
 
@@ -50,7 +50,7 @@ Feature-first, tres capas por feature (`data`, `domain`, `presentation`); lo tra
 - Correo sin verificar → `AuthUnverifiedEmail`, y el router solo deja pasar a `/verify-email`. Sin red rige el estado guardado en `SecureSessionStore`.
 - Cerrar sesión revoca los tokens en el servidor con `validSince` (el refreshToken no caduca solo). Es best-effort y `validSince` sale del reloj del dispositivo.
 - `PasswordPolicy` se comprueba en local porque Firebase solo impone 6 caracteres.
-- Google Sign-In: solo Android. La SHA-1 del keystore de firma tiene que estar registrada en el cliente Android de Firebase; un keystore nuevo rompe el login con `DEVELOPER_ERROR`.
+- Google Sign-In: solo Android. La SHA-1 del keystore de firma tiene que estar registrada en el cliente Android de Firebase; un keystore nuevo rompe el login con `DEVELOPER_ERROR`. Las del debug keystore y de `upload-keystore.jks` ya lo están; se comprueba comparando `firebase apps:android:sha:list <appId> --project comfy-list` con `keytool -list -v -keystore <jks>`.
 
 ### Privacidad
 
