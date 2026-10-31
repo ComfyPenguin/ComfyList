@@ -71,10 +71,7 @@ class TodoDetailSheet extends ConsumerWidget {
     List<Todo> items,
     AppColors colors,
   ) {
-    final todo = items.cast<Todo?>().firstWhere(
-      (t) => t?.id == todoId,
-      orElse: () => null,
-    );
+    final todo = items.where((t) => t.id == todoId).firstOrNull;
 
     // Si la tarea fue eliminada mientras el sheet estaba abierto.
     if (todo == null) {

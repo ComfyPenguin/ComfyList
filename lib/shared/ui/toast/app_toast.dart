@@ -8,12 +8,12 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/app_typography.dart';
 
-/// Aviso breve en la parte superior, justo bajo la barra del shell.
+/// Aviso breve en la parte superior, por encima de la barra del shell.
 ///
 /// Sustituye a los `SnackBar`: al ser flotantes caían sobre la BottomBar y el
 /// FAB, pegados al borde inferior, y tapaban también el campo de añadido
 /// rápido de las tareas. Un overlay propio en la parte de arriba deja libre
-/// toda esa zona.
+/// toda esa zona, y encima de la barra no tapa la primera fila de la lista.
 class AppToast {
   AppToast._();
 
@@ -28,15 +28,19 @@ class AppToast {
       'No se ha podido restaurar. Inténtalo de nuevo.';
   static const String listDeleteFailed =
       'No se ha podido eliminar la lista. Inténtalo de nuevo.';
+  static const String todoDeleteFailed =
+      'No se ha podido eliminar la tarea. Inténtalo de nuevo.';
+  static const String appointmentDeleteFailed =
+      'No se ha podido eliminar la cita. Inténtalo de nuevo.';
+  static const String saveFailed =
+      'No se ha podido guardar. Inténtalo de nuevo.';
+  static const String updateFailed =
+      'No se ha podido actualizar. Inténtalo de nuevo.';
   static const String trashEmptied = 'Papelera vaciada.';
   static const String longPressHint =
       'Mantén pulsada una tarjeta para editarla.';
   static const String notificationsStillBlocked =
       'Sigue bloqueado: actívalos en los ajustes del sistema.';
-
-  /// Alto de la barra superior del shell por debajo del área segura: el
-  /// IconButton (48) más su padding inferior (8), ver `app_shell.dart`.
-  static const double _shellTopBarHeight = 56;
 
   static OverlayEntry? _entry;
 
@@ -110,7 +114,8 @@ class AppToast {
 
 /// Card del aviso: entra deslizándose desde arriba, se queda unos segundos y
 /// se va sola. Con acción se puede tocar en cualquier punto de la tarjeta para
-/// ejecutarla; sin acción, tocarla la descarta antes de tiempo.
+/// ejecutarla; sin acción, tocarla la descarta antes de tiempo. Tocar en
+/// cualquier otro sitio también la descarta, y ese toque sigue su camino.
 class _ToastCard extends StatefulWidget {
   const _ToastCard({
     required this.message,
@@ -138,6 +143,7 @@ class _ToastCardState extends State<_ToastCard>
   late final AnimationController _controller;
   late final CurvedAnimation _curved;
   Timer? _hideTimer;
+  bool _hiding = false;
 
   @override
   void initState() {
@@ -160,7 +166,9 @@ class _ToastCardState extends State<_ToastCard>
   }
 
   void _hide() {
-    if (!mounted) return;
+    if (!mounted || _hiding) return;
+    _hiding = true;
+    _hideTimer?.cancel();
     _controller.reverse().then((_) {
       if (mounted) widget.onDismissed();
     });
@@ -186,84 +194,96 @@ class _ToastCardState extends State<_ToastCard>
   Widget build(BuildContext context) {
     final colors = context.colors;
     final actionLabel = widget.actionLabel;
-    final top =
-        MediaQuery.paddingOf(context).top +
-        AppToast._shellTopBarHeight +
-        AppSpacing.sm;
+    final top = MediaQuery.paddingOf(context).top + AppSpacing.sm;
 
-    return Positioned(
-      top: top,
-      left: AppSpacing.lg,
-      right: AppSpacing.lg,
-      child: FadeTransition(
-        opacity: _curved,
-        child: SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0, -0.6),
-            end: Offset.zero,
-          ).animate(_curved),
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: GestureDetector(
-              onTap: _handleCardTap,
-              // Que el hueco entre el mensaje y el botón también cuente: sin
-              // esto, el toque en el relleno del aviso no llega a nada.
-              behavior: HitTestBehavior.opaque,
-              // El overlay raíz cuelga por encima del Navigator: sin un Material
-              // por medio, el texto hereda el estilo de error de Flutter y sale
-              // subrayado en amarillo.
-              child: Material(
-                type: MaterialType.transparency,
-                child: DecoratedBox(
-                  // Primario de la app: oscuro en claro y claro en oscuro, el
-                  // contraste inverso al canvas. Con su halo de elemento primario.
-                  decoration: BoxDecoration(
-                    color: colors.primary,
-                    borderRadius: AppRadius.brPill,
-                    boxShadow: AppShadow.primaryGlow(colors),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.xl,
-                      vertical: AppSpacing.sm,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            widget.message,
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.bodySm.copyWith(
-                              color: colors.onPrimary,
-                            ),
+    return Positioned.fill(
+      child: Stack(
+        children: [
+          // Translúcido: avisa del toque pero lo deja pasar a lo de debajo.
+          Positioned.fill(
+            child: Listener(
+              behavior: HitTestBehavior.translucent,
+              onPointerDown: (_) => _hide(),
+            ),
+          ),
+          Positioned(
+            top: top,
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            child: FadeTransition(
+              opacity: _curved,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, -0.6),
+                  end: Offset.zero,
+                ).animate(_curved),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: GestureDetector(
+                    onTap: _handleCardTap,
+                    // Que el hueco entre el mensaje y el botón también cuente: sin
+                    // esto, el toque en el relleno del aviso no llega a nada.
+                    behavior: HitTestBehavior.opaque,
+                    // El overlay raíz cuelga por encima del Navigator: sin un Material
+                    // por medio, el texto hereda el estilo de error de Flutter y sale
+                    // subrayado en amarillo.
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: DecoratedBox(
+                        // Primario de la app: oscuro en claro y claro en oscuro, el
+                        // contraste inverso al canvas. Con su halo de elemento primario.
+                        decoration: BoxDecoration(
+                          color: colors.primary,
+                          borderRadius: AppRadius.brPill,
+                          boxShadow: AppShadow.primaryGlow(colors),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.xl,
+                            vertical: AppSpacing.sm,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  widget.message,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTypography.bodySm.copyWith(
+                                    color: colors.onPrimary,
+                                  ),
+                                ),
+                              ),
+                              if (actionLabel != null) ...[
+                                const SizedBox(width: AppSpacing.md),
+                                // Línea al alto de la línea de texto: separa los dos
+                                // bloques sin partir el aviso en dos.
+                                Container(
+                                  width: 1,
+                                  height: AppSpacing.xl,
+                                  color: colors.onPrimary.withValues(
+                                    alpha: 0.24,
+                                  ),
+                                ),
+                                const SizedBox(width: AppSpacing.md),
+                                _ToastAction(
+                                  label: actionLabel,
+                                  onTap: _runAction,
+                                ),
+                              ],
+                            ],
                           ),
                         ),
-                        if (actionLabel != null) ...[
-                          const SizedBox(width: AppSpacing.md),
-                          // Línea al alto de la línea de texto: separa los dos
-                          // bloques sin partir el aviso en dos.
-                          Container(
-                            width: 1,
-                            height: AppSpacing.xl,
-                            color: colors.onPrimary.withValues(alpha: 0.24),
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          _ToastAction(
-                            label: actionLabel,
-                            onTap: _runAction,
-                          ),
-                        ],
-                      ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -301,11 +321,7 @@ class _ToastAction extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.undo_rounded,
-                  size: 16,
-                  color: colors.onPrimary,
-                ),
+                Icon(Icons.undo_rounded, size: 16, color: colors.onPrimary),
                 const SizedBox(width: AppSpacing.xs),
                 Text(
                   label,

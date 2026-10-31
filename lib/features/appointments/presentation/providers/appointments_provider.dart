@@ -3,11 +3,12 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/core/failures/failure.dart';
+import '../../../../shared/core/lifecycle/polling_registry.dart';
 import '../../../../shared/core/time/clock.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/providers/auth_state.dart';
-import '../../../trash/domain/entities/trash_entry.dart';
-import '../../../trash/presentation/providers/trash_provider.dart';
+import '../../../trash/domain/entities/trash_group.dart';
+import '../../../trash/presentation/providers/deletions_provider.dart';
 import '../../data/datasources/firestore_appointments_remote.dart';
 import '../../data/repositories/appointments_repository_impl.dart';
 import '../../domain/entities/appointment.dart';
@@ -16,13 +17,17 @@ import 'appointments_state.dart';
 
 final firestoreAppointmentsRemoteProvider =
     Provider<FirestoreAppointmentsRemote>((ref) {
-  return FirestoreAppointmentsRemote(ref.watch(dioClientProvider).instance);
+  return FirestoreAppointmentsRemote(
+    ref.watch(dioClientProvider).instance,
+    now: ref.watch(clockProvider),
+  );
 });
 
 final appointmentsRepositoryProvider = Provider<AppointmentsRepository>((ref) {
   final repo = AppointmentsRepositoryImpl(
     ref.watch(firestoreAppointmentsRemoteProvider),
     pollInterval: ref.watch(pollIntervalProvider),
+    registry: ref.watch(pollingRegistryProvider),
   );
   ref.onDispose(repo.dispose);
   return repo;
@@ -59,33 +64,36 @@ class AppointmentsNotifier extends Notifier<AppointmentsState> {
     return const AppointmentsLoading();
   }
 
-  String get _uid => (ref.read(authProvider) as Authenticated).user.uid;
-
-  Future<void> create({
+  /// Crea una cita. Devuelve si se pudo; si no, la lista cargada se queda como
+  /// está y quien llama decide cómo avisar.
+  Future<bool> create({
     required String title,
     String? description,
     String? location,
     required DateTime dateTime,
   }) async {
     final res = await ref.read(appointmentsRepositoryProvider).createAppointment(
-          uid: _uid,
+          uid: ref.signedInUid,
           title: title,
           description: description,
           location: location,
           dateTime: dateTime,
         );
-    res.fold(onOk: (_) {}, onErr: (f) => state = AppointmentsError(f));
+    return res.isOk;
   }
 
-  Future<void> toggleDone(String id, bool isDone) async {
-    await ref.read(appointmentsRepositoryProvider).updateAppointment(
-          uid: _uid,
+  /// Marca o desmarca una cita. Devuelve si se pudo guardar.
+  Future<bool> toggleDone(String id, bool isDone) async {
+    final res = await ref.read(appointmentsRepositoryProvider).updateAppointment(
+          uid: ref.signedInUid,
           id: id,
           isDone: isDone,
         );
+    return res.isOk;
   }
 
-  Future<void> updateFields({
+  /// Guarda los cambios de una cita. Devuelve si se pudo guardar.
+  Future<bool> updateFields({
     required String id,
     String? title,
     String? description,
@@ -94,8 +102,8 @@ class AppointmentsNotifier extends Notifier<AppointmentsState> {
     bool clearLocation = false,
     DateTime? dateTime,
   }) async {
-    await ref.read(appointmentsRepositoryProvider).updateAppointment(
-          uid: _uid,
+    final res = await ref.read(appointmentsRepositoryProvider).updateAppointment(
+          uid: ref.signedInUid,
           id: id,
           title: title,
           description: description,
@@ -104,67 +112,31 @@ class AppointmentsNotifier extends Notifier<AppointmentsState> {
           clearLocation: clearLocation,
           dateTime: dateTime,
         );
+    return res.isOk;
   }
 
-  Future<void> delete(String id) async {
+  /// Borra la cita con copia en la papelera. Devuelve el borrado, que es lo que
+  /// hay que pasar a [undo], o `null` si no se pudo: sin copia no se borra.
+  Future<TrashGroup?> delete(String id) async {
     final appointment = _findById(id);
-    if (appointment != null) {
-      await ref.read(trashRepositoryProvider).save(
-            uid: _uid,
-            items: [
-              TrashItem(
-                kind: TrashKind.appointment,
-                itemId: appointment.id,
-                label: appointment.title,
-                payload: appointment.toJson(),
-              ),
-            ],
-          );
-    }
+    if (appointment == null) return null;
 
-    await ref.read(appointmentsRepositoryProvider).deleteAppointment(
-          uid: _uid,
-          id: id,
+    final res = await ref.read(deletionsProvider).deleteAppointment(
+          uid: ref.signedInUid,
+          appointment: appointment,
         );
+    return res.fold(onOk: (group) => group, onErr: (_) => null);
   }
 
-  /// Devuelve la última cita borrada. Devuelve si se pudo.
-  Future<bool> undoLastDelete() async {
-    final trash = ref.read(trashRepositoryProvider);
-    final found = await trash.latestGroup(
-      uid: _uid,
-      kind: TrashKind.appointment,
-    );
-    final entries = found.fold(
-      onOk: (entries) => entries,
-      onErr: (_) => const <TrashEntry>[],
-    );
-    if (entries.isEmpty) return false;
+  /// Devuelve [group], el borrado que acaba de hacer [delete]. Devuelve si se
+  /// pudo.
+  Future<bool> undo(TrashGroup group) =>
+      ref.read(deletionsProvider).restore(group);
 
-    final repo = ref.read(appointmentsRepositoryProvider);
-    for (final entry in entries) {
-      final res = await repo.restoreAppointment(
-        uid: _uid,
-        appointment: Appointment.fromJson(entry.payload),
-      );
-      if (res.isErr) return false;
-    }
-
-    await trash.remove(
-      uid: _uid,
-      ids: entries.map((entry) => entry.id).toList(growable: false),
-    );
-    return true;
-  }
-
-  Appointment? _findById(String id) {
-    final current = state;
-    if (current is! AppointmentsData) return null;
-    for (final appointment in current.items) {
-      if (appointment.id == id) return appointment;
-    }
-    return null;
-  }
+  Appointment? _findById(String id) => switch (state) {
+        AppointmentsData(:final items) => items.where((e) => e.id == id).firstOrNull,
+        _ => null,
+      };
 }
 
 final appointmentsProvider =

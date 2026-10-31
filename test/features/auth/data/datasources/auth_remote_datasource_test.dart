@@ -85,29 +85,6 @@ void main() {
       );
     });
 
-    test('refresh posts to the token endpoint and decodes id_token / refresh_token',
-        () async {
-      final body = <String, dynamic>{
-        'id_token': 'NEW_ID',
-        'refresh_token': 'NEW_REF',
-        'expires_in': '3600',
-        'token_type': 'Bearer',
-      };
-      stubDioPost(dio, body: body);
-
-      final res = await remote.refresh('OLD_REF');
-
-      expect(res.idToken, 'NEW_ID');
-      expect(res.refreshToken, 'NEW_REF');
-
-      verify(() => dio.post<Map<String, dynamic>>(
-            '${FirebaseEndpoints.tokenBase}?key=${FirebaseEndpoints.apiKey}',
-            data: any(named: 'data'),
-            options: any(named: 'options'),
-            cancelToken: any(named: 'cancelToken'),
-          )).called(1);
-    });
-
     test('revokeRefreshTokens manda el idToken y un validSince de ahora',
         () async {
       stubDioPost(dio, body: const <String, dynamic>{});

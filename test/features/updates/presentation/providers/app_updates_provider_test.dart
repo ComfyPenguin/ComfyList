@@ -39,6 +39,12 @@ void main() {
     repository = _MockAppUpdatesRepository();
     installer = _MockApkInstaller();
     when(() => installer.install(any())).thenAnswer((_) async => const Ok<void>(null));
+    when(
+      () => repository.verifyApk(
+        release: any(named: 'release'),
+        path: any(named: 'path'),
+      ),
+    ).thenAnswer((_) async => const Ok<void>(null));
   });
 
   /// Contenedor con el comprobador como si corriera en Android, con la build
@@ -239,6 +245,35 @@ void main() {
       await notifier.install();
 
       verify(() => installer.install('/tmp/comfylist.apk')).called(1);
+    });
+
+    test('si el APK ya no cuadra, no se instala y se puede reintentar', () async {
+      stubDownload(path: '/tmp/comfylist.apk');
+      when(
+        () => repository.verifyApk(
+          release: any(named: 'release'),
+          path: any(named: 'path'),
+        ),
+      ).thenAnswer((_) async => const Err(IntegrityFailure()));
+      final container = buildContainer(saved: buildAppSettings(lastUpdateCheckAt: now));
+      final notifier = container.read(appUpdatesProvider.notifier);
+      final release = buildAppRelease(build: 231);
+
+      await notifier.download(release);
+      await notifier.install();
+
+      final state = container.read(appUpdatesProvider);
+      expect(state, isA<AppUpdatesFailed>());
+      expect((state as AppUpdatesFailed).failure, isA<IntegrityFailure>());
+      expect(state.release, release);
+      verify(
+        () => repository.verifyApk(release: release, path: '/tmp/comfylist.apk'),
+      ).called(1);
+      verifyNever(() => installer.install(any()));
+
+      await notifier.download(release);
+
+      expect(container.read(appUpdatesProvider), isA<AppUpdatesReady>());
     });
 
     test('si el instalador no puede, se cuenta en el estado', () async {

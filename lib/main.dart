@@ -8,6 +8,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'app.dart';
 import 'shared/core/env/firebase_endpoints.dart';
+import 'shared/core/logging/debug_log.dart';
 import 'shared/data/local/app_database.dart';
 import 'shared/data/local/database_provider.dart';
 import 'shared/data/notifications/notifications_provider.dart';
@@ -25,7 +26,7 @@ Future<void> main() async {
   try {
     await notifications.init();
   } catch (e) {
-    debugPrint('NotificationsService.init() falló: $e');
+    debugLog('NotificationsService.init() falló: $e');
   }
 
   // Google Sign-In solo en Android (fase 1). En otras plataformas el botón
@@ -36,7 +37,7 @@ Future<void> main() async {
         serverClientId: FirebaseEndpoints.googleSignInWebClientId,
       );
     } catch (e) {
-      debugPrint('GoogleSignIn.initialize() falló: $e');
+      debugLog('GoogleSignIn.initialize() falló: $e');
     }
   }
 

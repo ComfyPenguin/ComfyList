@@ -6,11 +6,11 @@ import 'package:go_router/go_router.dart';
 import 'package:marquee/marquee.dart';
 
 import '../../../features/auth/presentation/providers/auth_provider.dart';
-import '../../../features/todo_lists/domain/entities/todo_list.dart';
 import '../../../features/updates/presentation/widgets/update_available_watcher.dart';
 import '../../../features/todo_lists/presentation/providers/todo_lists_provider.dart';
 import '../../../features/todo_lists/presentation/providers/todo_lists_state.dart';
 import '../../../routing/routes.dart';
+import '../../../routing/shell_layout.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_stroke.dart';
 import '../../core/theme/app_theme.dart';
@@ -77,94 +77,37 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // `uri.path` siempre refleja la URL completa actual; `matchedLocation`
-    // dentro de un ShellRoute representa solo el segmento de la propia shell,
-    // por lo que detectar `/lists/:id` requiere mirar el path real.
-    final location = routerState.uri.path;
+    // dentro de un ShellRoute representa solo el segmento de la propia shell.
+    final layout = ShellLayout.forPath(routerState.uri.path);
     final colors = context.colors;
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
-    final isLists = location == Routes.todoLists || location == Routes.home;
-    final isListEdit =
-        location == Routes.todoListNew ||
-        RegExp(r'^/lists/[^/]+/edit$').hasMatch(location);
-    final isListDetail =
-        !isListEdit && RegExp(r'^/lists/[^/]+$').hasMatch(location);
-    final isAppointments = location == Routes.appointments;
-
-    // ── Pantallas de edición dentro del shell ──
-    // Conservan el TopBar con el nombre de la pantalla como título y ocultan
-    // la BottomBar.
-    final isTodoEdit =
-        RegExp(r'^/lists/[^/]+/todos/(new|[^/]+)$').hasMatch(location);
-    final isAppointmentEdit =
-        RegExp(r'^/appointments/[^/]+/edit$').hasMatch(location);
-    final editScreenTitle = switch (location) {
-      Routes.todoListNew => 'Nueva lista',
-      Routes.appointmentNew => 'Nueva cita',
-      _ when isListEdit => 'Editar lista',
-      _ when location.endsWith('/todos/new') => 'Nueva tarea',
-      _ when isTodoEdit => 'Editar tarea',
-      _ when isAppointmentEdit => 'Editar cita',
-      Routes.settings => 'Ajustes',
-      Routes.trash => 'Papelera',
-      _ => null,
-    };
-
-    // ── Rutas anidadas dentro de una lista ──
-    // Las pantallas anidadas (creación y edición de tarea) ocultan la
-    // BottomBar para dar una experiencia full-screen.
-    final isNestedRoute = RegExp(r'^/lists/[^/]+/.+').hasMatch(location);
+    final fab = layout.fab;
 
     // ── Sheet de detalle abierto: ocultar FAB y BottomBar ──
     // Evita que el FAB (80 px) y la barra de navegación se superpongan
     // al contenido del bottom sheet modal.
     final isDetailSheetOpen = ref.watch(detailSheetOpenProvider);
 
-    // ── FAB: solo en listas y tareas (integrado en la bottom bar) ──
-    VoidCallback? onFabTap;
-    String? fabTooltip;
-    if (isLists) {
-      fabTooltip = 'Nueva lista';
-      onFabTap = () => context.push(Routes.todoListNew);
-    } else if (isListDetail) {
-      final listId = location.split('/').last;
-      fabTooltip = 'Nueva tarea';
-      onFabTap = () => context.push(Routes.todoNew(listId));
-    } else if (isAppointments) {
-      fabTooltip = 'Nueva cita';
-      onFabTap = () => context.push(Routes.appointmentNew);
-    }
-
     // ── Título del AppBar ──
     // En las pantallas de edición mostramos el nombre de la pantalla, dentro
     // de una lista concreta (/lists/:id) el nombre de la lista y, en el resto,
     // el nombre de la app.
-    String appBarTitle = 'ComfyList';
-    if (editScreenTitle != null) {
-      appBarTitle = editScreenTitle;
-    } else if (isListDetail) {
-      final listId = location.split('/').last;
+    var appBarTitle = layout.editScreenTitle ?? 'ComfyList';
+    final listId = layout.listId;
+    if (listId != null) {
       final listsState = ref.watch(todoListsProvider);
       if (listsState is TodoListsData) {
-        final list = listsState.items.cast<TodoList?>().firstWhere(
-          (l) => l?.id == listId,
-          orElse: () => null,
-        );
+        final list = listsState.items.where((l) => l.id == listId).firstOrNull;
         if (list != null) {
           appBarTitle = list.name;
         }
       }
     }
 
-    // ── BottomBar: pestaña activa según la ruta ──
-    final activeTab = isAppointments
-        ? AppBottomTab.appointments
-        : AppBottomTab.tasks;
-
     // El TopBar se mantiene siempre visible dentro del shell —también sobre
     // los bottom sheets de detalle—; la BottomBar se oculta en las pantallas
     // de detalle/edición y mientras hay un sheet de detalle abierto.
-    final isEditScreen = editScreenTitle != null;
-    final hideBottomBar = isNestedRoute || isDetailSheetOpen || isEditScreen;
+    final hideBottomBar = layout.hidesBottomBar || isDetailSheetOpen;
 
     return Scaffold(
       // El shell usa overlays posicionados manualmente. Mantener el body a
@@ -215,7 +158,7 @@ class AppShell extends ConsumerWidget {
                   ),
                   child: Row(
                     children: [
-                      if (isListDetail || isEditScreen)
+                      if (layout.showsBack)
                         IconButton(
                           icon: Icon(
                             Icons.arrow_back_rounded,
@@ -226,7 +169,7 @@ class AppShell extends ConsumerWidget {
                           onPressed: () {
                             // En creación/edición volvemos a la pantalla que
                             // nos abrió (la lista o el listado de listas).
-                            if (isEditScreen && context.canPop()) {
+                            if (layout.isEditScreen && context.canPop()) {
                               context.pop();
                             } else {
                               context.go(Routes.todoLists);
@@ -340,15 +283,17 @@ class AppShell extends ConsumerWidget {
               right: 0,
               bottom: 0,
               child: AppBottomBar(
-                activeTab: activeTab,
+                activeTab: layout.activeTab,
                 onTasksTap: () {
-                  if (!isLists) context.go(Routes.todoLists);
+                  if (!layout.isLists) context.go(Routes.todoLists);
                 },
                 onAppointmentsTap: () {
-                  if (!isAppointments) context.go(Routes.appointments);
+                  if (!layout.isAppointments) {
+                    context.go(Routes.appointments);
+                  }
                 },
-                onFabTap: onFabTap,
-                fabTooltip: fabTooltip,
+                onFabTap: fab == null ? null : () => context.push(fab.route),
+                fabTooltip: fab?.tooltip,
                 visible: !hideBottomBar,
               ),
             ),

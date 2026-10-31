@@ -54,16 +54,9 @@ class _FixedTrashRepository implements TrashRepository {
   }
 
   @override
-  Future<Result<void>> save({
+  Future<Result<List<TrashEntry>>> save({
     required String uid,
     required List<TrashItem> items,
-  }) async => const Ok(null);
-
-  @override
-  Future<Result<List<TrashEntry>>> latestGroup({
-    required String uid,
-    required TrashKind kind,
-    String? parentId,
   }) async => const Ok([]);
 
   @override
@@ -71,12 +64,6 @@ class _FixedTrashRepository implements TrashRepository {
     required String uid,
     required int days,
   }) async => const Ok(null);
-
-  @override
-  void pauseAll() {}
-
-  @override
-  void resumeAll() {}
 }
 
 void main() {

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/core/failures/failure.dart';
+import '../../../../shared/core/lifecycle/polling_registry.dart';
 import '../../../../shared/core/time/clock.dart';
 import '../../../../shared/data/local/database_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -25,6 +26,7 @@ final trashRepositoryProvider = Provider<TrashRepository>((ref) {
     ref.watch(firestoreTrashRemoteProvider),
     pending: DriftTrashPendingStore(ref.watch(trashPendingDaoProvider)),
     pollInterval: ref.watch(pollIntervalProvider),
+    registry: ref.watch(pollingRegistryProvider),
   );
   ref.onDispose(repo.dispose);
   return repo;
@@ -55,19 +57,9 @@ class TrashNotifier extends Notifier<TrashState> {
     return const TrashLoading();
   }
 
-  /// Saca de la papelera lo que se acaba de devolver a Firestore.
-  Future<void> remove(List<TrashEntry> entries) async {
-    await ref.read(trashRepositoryProvider).remove(
-          uid: _uid,
-          ids: entries.map((entry) => entry.id).toList(growable: false),
-        );
-  }
-
   Future<void> empty() async {
-    await ref.read(trashRepositoryProvider).empty(_uid);
+    await ref.read(trashRepositoryProvider).empty(ref.signedInUid);
   }
-
-  String get _uid => (ref.read(authProvider) as Authenticated).user.uid;
 }
 
 final trashProvider = NotifierProvider<TrashNotifier, TrashState>(

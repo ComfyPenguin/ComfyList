@@ -7,7 +7,6 @@ import '../../../../shared/core/result/result.dart';
 import '../../../../shared/core/time/clock.dart';
 import '../../../../shared/platform/apk_installer.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../settings/domain/entities/app_settings.dart';
 import '../../../settings/presentation/providers/app_version_provider.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../../settings/presentation/providers/settings_state.dart';
@@ -124,10 +123,20 @@ class AppUpdatesNotifier extends Notifier<AppUpdatesState> {
     }
   }
 
-  /// Lanza el instalador del sistema con el APK ya descargado.
+  /// Lanza el instalador del sistema con el APK ya descargado, tras volver a
+  /// comprobar su hash.
   Future<void> install() async {
     final ready = _state;
     if (ready is! AppUpdatesReady) return;
+
+    final verified = await ref
+        .read(appUpdatesRepositoryProvider)
+        .verifyApk(release: ready.release, path: ready.filePath);
+    if (!ref.mounted) return;
+    if (verified case Err(:final failure)) {
+      _set(AppUpdatesFailed(failure, release: ready.release));
+      return;
+    }
 
     final result = await ref.read(apkInstallerProvider).install(ready.filePath);
     if (!ref.mounted) return;
@@ -190,10 +199,9 @@ class UpdatePromptNotifier extends Notifier<AppRelease?> {
     };
     if (release == null) return null;
 
-    final skipped = switch (ref.watch(settingsProvider)) {
-      SettingsData(:final settings) => settings.skippedUpdateBuild,
-      _ => noSkippedUpdateBuild,
-    };
+    final skipped = ref.watch(
+      settingsOrDefaultsProvider.select((s) => s.skippedUpdateBuild),
+    );
     if (release.build == skipped || release.build == _promptedBuild) return null;
 
     _promptedBuild = release.build;

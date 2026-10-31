@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../secure/secure_session_store.dart';
 import 'auth_interceptor.dart';
+import 'token_refresher.dart';
 
 /// Singleton de Dio compartido por todas las features.
 ///
@@ -31,7 +32,11 @@ class DioClient {
     );
 
     _dio.interceptors.add(
-      AuthInterceptor(session: _session, refreshClient: _refreshClient),
+      AuthInterceptor(
+        session: _session,
+        refreshClient: _refreshClient,
+        refresher: refresher,
+      ),
     );
   }
 
@@ -43,4 +48,9 @@ class DioClient {
 
   Dio get instance => _dio;
   Dio get authClient => _refreshClient;
+
+  /// Único punto que renueva el idToken: lo usan el interceptor y el arranque
+  /// de la sesión, y por eso comparten el refresco en curso.
+  late final TokenRefresher refresher =
+      TokenRefresher(session: _session, client: _refreshClient);
 }

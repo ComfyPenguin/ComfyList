@@ -6,6 +6,7 @@ import '../../../../routing/routes.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
+import '../../../../shared/ui/lists/reveal_progress.dart';
 import '../../../../shared/ui/toast/app_toast.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../../settings/presentation/providers/settings_state.dart';
@@ -68,49 +69,13 @@ class _Lists extends ConsumerStatefulWidget {
 class _ListsState extends ConsumerState<_Lists> {
   static const double _joinedGap = 2;
 
-  final _tileRevealProgress = <String, double>{};
+  final _reveal = RevealProgress();
 
   /// Evita programar la pista más de una vez mientras el aviso se muestra.
   bool _hintScheduled = false;
 
-  ({double top, double bottom}) _effectiveSeparationFor(
-    int tileIndex,
-    List<TodoList> lists,
-  ) {
-    if (_tileRevealProgress.isEmpty) {
-      return (top: 0.0, bottom: 0.0);
-    }
-
-    final currentId = lists[tileIndex].id;
-    final currentProgress = _tileRevealProgress[currentId] ?? 0.0;
-    final previousProgress = tileIndex > 0
-        ? (_tileRevealProgress[lists[tileIndex - 1].id] ?? 0.0)
-        : 0.0;
-    final nextProgress = tileIndex < lists.length - 1
-        ? (_tileRevealProgress[lists[tileIndex + 1].id] ?? 0.0)
-        : 0.0;
-
-    return (
-      top: currentProgress > previousProgress
-          ? currentProgress
-          : previousProgress,
-      bottom: currentProgress > nextProgress ? currentProgress : nextProgress,
-    );
-  }
-
   void _setTileRevealProgress(String listId, double progress) {
-    final value = progress.clamp(0.0, 1.0).toDouble();
-    if (value <= 0.001) {
-      _tileRevealProgress.remove(listId);
-    } else {
-      _tileRevealProgress[listId] = value;
-    }
-    setState(() {});
-  }
-
-  void _removeStaleRevealProgress(List<TodoList> lists) {
-    final visibleIds = lists.map((list) => list.id).toSet();
-    _tileRevealProgress.removeWhere((id, _) => !visibleIds.contains(id));
+    setState(() => _reveal.set(listId, progress));
   }
 
   /// Muestra una única vez la pista del gesto: mantener pulsada una tarjeta
@@ -137,7 +102,7 @@ class _ListsState extends ConsumerState<_Lists> {
     _maybeShowLongPressHint();
     final sorted = [...widget.items]
       ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-    _removeStaleRevealProgress(sorted);
+    _reveal.retainOnly([for (final list in sorted) list.id]);
 
     return ListView.separated(
       padding: EdgeInsets.fromLTRB(
@@ -150,7 +115,11 @@ class _ListsState extends ConsumerState<_Lists> {
       separatorBuilder: (_, _) => const SizedBox(height: _joinedGap),
       itemBuilder: (context, i) {
         final list = sorted[i];
-        final separation = _effectiveSeparationFor(i, sorted);
+        final separation = _reveal.separationFor(
+          list.id,
+          previousId: i > 0 ? sorted[i - 1].id : null,
+          nextId: i < sorted.length - 1 ? sorted[i + 1].id : null,
+        );
         return TodoListTile(
           key: ValueKey(list.id),
           list: list,
@@ -166,14 +135,14 @@ class _ListsState extends ConsumerState<_Lists> {
             final deleted = await notifier.delete(list.id);
             if (!context.mounted) return;
 
-            if (!deleted) {
+            if (deleted == null) {
               AppToast.show(context, AppToast.listDeleteFailed);
               return;
             }
             AppToast.showUndo(
               context,
               message: AppToast.listDeleted,
-              onUndo: notifier.undoLastDelete,
+              onUndo: () => notifier.undo(deleted),
             );
           },
         );

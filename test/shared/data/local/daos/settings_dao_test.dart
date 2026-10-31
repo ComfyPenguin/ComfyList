@@ -1,4 +1,5 @@
 import 'package:comfy_list/shared/data/local/app_database.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -46,57 +47,57 @@ void main() {
     });
   });
 
-  group('SettingsDao.updateAppointmentReminderMinutes', () {
-    test('persiste la lista de márgenes y watch emite el valor nuevo', () async {
+  group('SettingsDao.write', () {
+    test('guarda las columnas indicadas y watch emite el valor nuevo', () async {
       final dao = db.settingsDao;
       await dao.getOrCreate();
 
-      await dao.updateAppointmentReminderMinutes('0,30,1440');
+      await dao.write(
+        const SettingsTableCompanion(
+          appointmentReminderMinutes: Value('0,30,1440'),
+          trashRetentionDays: Value(15),
+        ),
+      );
 
       final streamed = await dao.watch().first;
       expect(streamed.appointmentReminderMinutes, '0,30,1440');
-    });
-  });
-
-  group('SettingsDao.updateLongPressHintSeen', () {
-    test('persiste la marca y watch emite el valor nuevo', () async {
-      final dao = db.settingsDao;
-      await dao.getOrCreate();
-
-      await dao.updateLongPressHintSeen(true);
-
-      final streamed = await dao.watch().first;
-      expect(streamed.longPressHintSeen, isTrue);
-    });
-  });
-
-  group('SettingsDao.updateTrashRetentionDays', () {
-    test('persiste el plazo y watch emite el valor nuevo', () async {
-      final dao = db.settingsDao;
-      await dao.getOrCreate();
-
-      await dao.updateTrashRetentionDays(15);
-
-      final streamed = await dao.watch().first;
       expect(streamed.trashRetentionDays, 15);
     });
-  });
 
-  group('SettingsDao.updateThemeMode', () {
-    test('persiste el cambio y watch emite con updatedAt mayor', () async {
+    test('crea la fila si todavía no existe', () async {
       final dao = db.settingsDao;
-      final initial = await dao.getOrCreate();
 
-      await dao.updateThemeMode('dark');
+      await dao.write(const SettingsTableCompanion(longPressHintSeen: Value(true)));
+
+      final row = await dao.getOrCreate();
+      expect(row.longPressHintSeen, isTrue);
+      expect(await db.managers.settingsTable.count(), 1);
+    });
+
+    test('deja intactas las columnas que no se tocan', () async {
+      final dao = db.settingsDao;
+      await dao.getOrCreate();
+
+      await dao.write(const SettingsTableCompanion(themeMode: Value('dark')));
+
+      final row = await dao.getOrCreate();
+      expect(row.themeMode, 'dark');
+      expect(row.use24HourFormat, isTrue);
+      expect(row.trashRetentionDays, 30);
+    });
+
+    test('pone updatedAt al escribir', () async {
+      final dao = db.settingsDao;
+      // Drift guarda las fechas con precisión de segundo: se parte de una
+      // fila antigua para que el avance se vea.
+      await db.into(db.settingsTable).insert(
+            SettingsTableCompanion.insert(updatedAt: DateTime.utc(2020)),
+          );
+
+      await dao.write(const SettingsTableCompanion(themeMode: Value('dark')));
 
       final streamed = await dao.watch().first;
-      expect(streamed.themeMode, 'dark');
-      expect(
-        streamed.updatedAt.isAfter(initial.updatedAt) ||
-            streamed.updatedAt.isAtSameMomentAs(initial.updatedAt),
-        isTrue,
-        reason: 'updatedAt debe avanzar o mantenerse al persistir.',
-      );
+      expect(streamed.updatedAt.isAfter(DateTime.utc(2020)), isTrue);
     });
   });
 }

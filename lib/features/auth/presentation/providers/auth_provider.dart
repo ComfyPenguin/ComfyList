@@ -1,10 +1,10 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/core/logging/debug_log.dart';
 import '../../../../shared/core/result/result.dart';
 import '../../../../shared/data/local/database_provider.dart';
 import '../../../../shared/data/remote/dio_client.dart';
+import '../../../../shared/data/remote/token_refresher.dart';
 import '../../../../shared/data/secure/secure_session_store.dart';
 import '../../data/datasources/identity_toolkit_remote.dart';
 import '../../data/datasources/login_preferences_store.dart';
@@ -27,6 +27,10 @@ final dioClientProvider = Provider<DioClient>((ref) {
 
 // ───────── Auth feature ─────────
 
+final tokenRefresherProvider = Provider<TokenRefresher>(
+  (ref) => ref.watch(dioClientProvider).refresher,
+);
+
 final identityToolkitRemoteProvider = Provider<IdentityToolkitRemote>((ref) {
   return IdentityToolkitRemote(ref.watch(dioClientProvider).authClient);
 });
@@ -34,6 +38,7 @@ final identityToolkitRemoteProvider = Provider<IdentityToolkitRemote>((ref) {
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepositoryImpl(
     remote: ref.watch(identityToolkitRemoteProvider),
+    refresher: ref.watch(tokenRefresherProvider),
     session: ref.watch(secureSessionStoreProvider),
     accountCache: ref.watch(accountCacheDaoProvider),
   );
@@ -59,8 +64,9 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 
   /// Con el correo sin verificar no se entra: la única pantalla posible es la
-  /// de verificación. `emailVerified` nulo (arranque sin red) sí pasa, porque
-  /// no hay nada que comprobar y el corte de datos lo hace Firestore.
+  /// de verificación. `emailVerified` nulo (sin red y sin estado guardado) sí
+  /// pasa, porque no hay nada que comprobar y el corte de datos lo hace
+  /// Firestore.
   AuthState _stateFor(AuthUser user) => user.emailVerified == false
       ? AuthUnverifiedEmail(user)
       : Authenticated(user);
@@ -95,10 +101,7 @@ class AuthNotifier extends Notifier<AuthState> {
         debugLog('[AuthNotifier] Google sign-in OK → uid=${user.uid}');
         return Authenticated(user);
       },
-      onErr: (f) {
-        debugPrint('[AuthNotifier] Google sign-in ERROR → ${f.message}');
-        return AuthError(f);
-      },
+      onErr: (f) => AuthError(f),
     );
   }
 
@@ -139,3 +142,9 @@ class AuthNotifier extends Notifier<AuthState> {
 
 final authProvider =
     NotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);
+
+/// Uid de la sesión abierta. Solo vale en quien ya comprobó que hay sesión: los
+/// notifiers de datos devuelven su estado inicial cuando no la hay.
+extension SignedInUid on Ref {
+  String get signedInUid => (read(authProvider) as Authenticated).user.uid;
+}

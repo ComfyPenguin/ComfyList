@@ -7,12 +7,14 @@ import '../../../../routing/routes.dart';
 import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
+import '../../../../shared/ui/lists/held_reorder.dart';
+import '../../../../shared/ui/lists/reveal_progress.dart';
 import '../../../../shared/ui/lists/slide_flow.dart';
 import '../../../../shared/ui/navigation/app_shell.dart';
 import '../../../../shared/ui/toast/app_toast.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
-import '../../../settings/presentation/providers/settings_state.dart';
 import '../../domain/entities/todo.dart';
+import '../../domain/todo_order.dart';
 import '../providers/todos_provider.dart';
 import '../providers/todos_state.dart';
 import '../widgets/empty_state.dart';
@@ -126,8 +128,14 @@ class TodosScreen extends ConsumerWidget {
             child: QuickAddBar(
               hint: 'Añadir tarea rápida...',
               showSubmitButton: keyboardVisible,
-              onSubmit: (title) =>
-                  ref.read(todosProvider(listId).notifier).create(title: title),
+              onSubmit: (title) async {
+                final saved = await ref
+                    .read(todosProvider(listId).notifier)
+                    .create(title: title);
+                if (!saved && context.mounted) {
+                  AppToast.show(context, AppToast.saveFailed);
+                }
+              },
             ),
           ),
         ),
@@ -164,163 +172,43 @@ class _TodosListState extends ConsumerState<_TodosList> {
   /// que el tachado se reproduzca en el sitio donde se hizo el gesto.
   static const Duration _reorderDelay = Duration(milliseconds: 600);
 
-  final _tileRevealProgress = <String, double>{};
+  final _reveal = RevealProgress();
 
-  // Orden visual mostrado en el último build (ids), los items previos y si
-  // se está retrasando el reordenado tras un cambio de isDone.
-  List<String>? _displayedIds;
-  List<Todo>? _lastItems;
-  bool _holdingReorder = false;
-  Timer? _reorderTimer;
+  late final _held = HeldReorder<Todo>(
+    idOf: (todo) => todo.id,
+    flagOf: (todo) => todo.isDone,
+    onRelease: () {
+      if (mounted) setState(() {});
+    },
+    delay: _reorderDelay,
+  );
 
-  ({double top, double bottom}) _effectiveSeparationFor(
-    int tileIndex,
-    List<Todo> todos,
-  ) {
-    if (_tileRevealProgress.isEmpty) {
-      return (top: 0.0, bottom: 0.0);
-    }
-
-    final currentId = todos[tileIndex].id;
-    final currentProgress = _tileRevealProgress[currentId] ?? 0.0;
-    final previousProgress = tileIndex > 0
-        ? (_tileRevealProgress[todos[tileIndex - 1].id] ?? 0.0)
-        : 0.0;
-    final nextProgress = tileIndex < todos.length - 1
-        ? (_tileRevealProgress[todos[tileIndex + 1].id] ?? 0.0)
-        : 0.0;
-
-    return (
-      top: currentProgress > previousProgress
-          ? currentProgress
-          : previousProgress,
-      bottom: currentProgress > nextProgress ? currentProgress : nextProgress,
-    );
-  }
 
   void _setTileRevealProgress(String todoId, double progress) {
-    final value = progress.clamp(0.0, 1.0).toDouble();
-    if (value <= 0.001) {
-      _tileRevealProgress.remove(todoId);
-    } else {
-      _tileRevealProgress[todoId] = value;
-    }
-    setState(() {});
-  }
-
-  void _removeStaleRevealProgress(List<Todo> todos) {
-    final visibleIds = todos.map((todo) => todo.id).toSet();
-    _tileRevealProgress.removeWhere((id, _) => !visibleIds.contains(id));
+    setState(() => _reveal.set(todoId, progress));
   }
 
   @override
   void dispose() {
-    _reorderTimer?.cancel();
+    _held.dispose();
     super.dispose();
-  }
-
-  bool _sameIds(List<String> a, List<String> b) {
-    if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
-  }
-
-  /// Compara como conjunto (sin importar el orden del provider): solo nos
-  /// importa que no haya altas/borrados para poder reordenar manteniendo
-  /// los ids mostrados.
-  bool _sameIdSet(List<String> a, List<String> b) {
-    if (a.length != b.length) return false;
-    final bSet = b.toSet();
-    for (final id in a) {
-      if (!bSet.contains(id)) return false;
-    }
-    return true;
-  }
-
-  /// Devuelve el orden a mostrar: si un único item acaba de cambiar de
-  /// [Todo.isDone] y eso reordenaría la lista, mantiene el orden anterior
-  /// durante [_reorderDelay] para no cortar la animación del tachado.
-  List<Todo> _resolveDisplayItems(List<Todo> desired) {
-    final items = widget.items;
-    final currentIds = [for (final t in items) t.id];
-    final previous = _lastItems;
-    _lastItems = items;
-
-    // Detectar si exactamente un item cambió de isDone desde el último build.
-    String? toggledId;
-    if (previous != null) {
-      final prevById = {for (final t in previous) t.id: t};
-      var flips = 0;
-      for (final t in items) {
-        final p = prevById[t.id];
-        if (p != null && p.isDone != t.isDone) {
-          toggledId = t.id;
-          flips++;
-        }
-      }
-      if (flips != 1) toggledId = null;
-    }
-
-    final canKeepLayout =
-        _displayedIds != null && _sameIdSet(_displayedIds!, currentIds);
-    final desiredIds = [for (final t in desired) t.id];
-    final wouldReorder =
-        toggledId != null &&
-        canKeepLayout &&
-        !_sameIds(_displayedIds!, desiredIds);
-
-    if (wouldReorder && !_holdingReorder) {
-      _holdingReorder = true;
-      _reorderTimer?.cancel();
-      _reorderTimer = Timer(_reorderDelay, () {
-        if (!mounted) return;
-        setState(() => _holdingReorder = false);
-      });
-    }
-
-    if (_holdingReorder) {
-      if (canKeepLayout) {
-        final byId = {for (final t in items) t.id: t};
-        return [for (final id in _displayedIds!) byId[id]!];
-      }
-      // El conjunto de ids cambió (alta/borrado): reordenar ya.
-      _holdingReorder = false;
-      _reorderTimer?.cancel();
-      _reorderTimer = null;
-    }
-
-    _displayedIds = desiredIds;
-    return desired;
   }
 
   @override
   Widget build(BuildContext context) {
     final notifier = ref.read(todosProvider(widget.listId).notifier);
-    final completedToBottom = switch (ref.watch(settingsProvider)) {
-      SettingsData(:final settings) => settings.completedToBottom,
-      _ => true,
-    };
+    final completedToBottom = ref.watch(
+      settingsOrDefaultsProvider.select((s) => s.completedToBottom),
+    );
 
-    // Ordenar según el ajuste:
-    // - Activado: pendientes primero por fecha de actualización asc (lo
-    //   recién desmarcado cae al final, junto a las completadas); completadas
-    //   después por fecha de actualización desc.
-    // - Desactivado: por fecha de creación asc (mantiene la posición siempre).
-    final sorted = [...widget.items]
-      ..sort((a, b) {
-        if (completedToBottom) {
-          if (a.isDone != b.isDone) return a.isDone ? 1 : -1;
-          if (a.isDone) return b.updatedAt.compareTo(a.updatedAt);
-          return a.updatedAt.compareTo(b.updatedAt);
-        }
-        return a.createdAt.compareTo(b.createdAt);
-      });
-    _removeStaleRevealProgress(widget.items);
+    final sorted = sortTodos(
+      widget.items,
+      completedToBottom: completedToBottom,
+    );
+    _reveal.retainOnly([for (final todo in widget.items) todo.id]);
 
     // Mantener el orden previo mientras se anima el tachado de un toggle.
-    final displayItems = _resolveDisplayItems(sorted);
+    final displayItems = _held.resolve(items: widget.items, desired: sorted);
 
     // Listas muy largas: vuelta a la lista perezosa clásica (el tachado se
     // anima, pero sin deslizamiento a la nueva posición).
@@ -369,7 +257,11 @@ class _TodosListState extends ConsumerState<_TodosList> {
     int index,
   ) {
     final todo = displayItems[index];
-    final separation = _effectiveSeparationFor(index, displayItems);
+    final separation = _reveal.separationFor(
+      todo.id,
+      previousId: index > 0 ? displayItems[index - 1].id : null,
+      nextId: index < displayItems.length - 1 ? displayItems[index + 1].id : null,
+    );
     return TodoTile(
       todo: todo,
       groupIndex: index,
@@ -380,14 +272,24 @@ class _TodosListState extends ConsumerState<_TodosList> {
           _setTileRevealProgress(todo.id, progress),
       onTap: () => _showDetailSheet(context, ref, todo.id),
       onLongPress: () => context.push(Routes.todoEdit(widget.listId, todo.id)),
-      onComplete: () => notifier.toggleDone(todo.id, !todo.isDone),
+      onComplete: () async {
+        final saved = await notifier.toggleDone(todo.id, !todo.isDone);
+        if (!saved && context.mounted) {
+          AppToast.show(context, AppToast.updateFailed);
+        }
+      },
       onDelete: () async {
-        await notifier.delete(todo.id);
+        final deleted = await notifier.delete(todo.id);
         if (!context.mounted) return;
+
+        if (deleted == null) {
+          AppToast.show(context, AppToast.todoDeleteFailed);
+          return;
+        }
         AppToast.showUndo(
           context,
           message: AppToast.todoDeleted,
-          onUndo: notifier.undoLastDelete,
+          onUndo: () => notifier.undo(deleted),
         );
       },
     );

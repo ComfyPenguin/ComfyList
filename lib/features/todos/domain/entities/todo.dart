@@ -18,14 +18,15 @@ class Todo {
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  /// Serialización para guardarla en local (papelera).
+  /// Serialización para la papelera, que vive en la cuenta. Las fechas van en
+  /// UTC: se pueden restaurar desde un dispositivo en otra zona horaria.
   Map<String, dynamic> toJson() => {
         'id': id,
         'title': title,
         'description': description,
         'isDone': isDone,
-        'createdAt': createdAt.toIso8601String(),
-        'updatedAt': updatedAt.toIso8601String(),
+        'createdAt': createdAt.toUtc().toIso8601String(),
+        'updatedAt': updatedAt.toUtc().toIso8601String(),
       };
 
   factory Todo.fromJson(Map<String, dynamic> json) => Todo(
@@ -33,8 +34,8 @@ class Todo {
         title: json['title'] as String,
         description: json['description'] as String?,
         isDone: json['isDone'] as bool,
-        createdAt: DateTime.parse(json['createdAt'] as String),
-        updatedAt: DateTime.parse(json['updatedAt'] as String),
+        createdAt: DateTime.parse(json['createdAt'] as String).toLocal(),
+        updatedAt: DateTime.parse(json['updatedAt'] as String).toLocal(),
       );
 
   Todo copyWith({

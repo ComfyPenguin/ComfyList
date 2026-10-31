@@ -1,73 +1,46 @@
-import 'dart:async';
-
-import 'package:dio/dio.dart';
-
-import '../../../../shared/core/failures/failure.dart';
+import '../../../../shared/core/lifecycle/polling_registry.dart';
 import '../../../../shared/core/result/result.dart';
 import '../../../../shared/core/time/clock.dart';
+import '../../../../shared/data/remote/polled_collection.dart';
 import '../../../todos/domain/entities/todo.dart';
 import '../../domain/entities/todo_list.dart';
 import '../../domain/repositories/todo_lists_repository.dart';
 import '../datasources/firestore_lists_remote.dart';
 
-/// Implementación REST con polling 15s + refresh inmediato tras mutación.
-/// Mismo patrón que TodosRepositoryImpl.
+/// Implementación REST con polling 15s + refresh inmediato tras mutación,
+/// que lleva la [PolledCollection] de listas de cada usuario.
 class TodoListsRepositoryImpl implements TodoListsRepository {
   TodoListsRepositoryImpl(
     this._remote, {
-    this.pollInterval = defaultPollInterval,
-  });
+    Duration pollInterval = defaultPollInterval,
+    PollingRegistry? registry,
+  }) : _lists = PolledCollection<String, TodoList>(
+          fetch: _remote.listLists,
+          interval: pollInterval,
+          registry: registry,
+        );
 
   final FirestoreListsRemote _remote;
 
-  /// Cada cuánto vuelve a pedir la lista cada watcher activo. En la app lo fija
-  /// [pollIntervalProvider]; los tests lo acortan para no esperar al tick real.
-  final Duration pollInterval;
-
-  final Map<String, _Watcher> _watchers = {};
+  final PolledCollection<String, TodoList> _lists;
 
   @override
-  Stream<List<TodoList>> watchLists(String uid) {
-    final w = _watchers.putIfAbsent(
-      uid,
-      () => _Watcher(uid, _remote, pollInterval),
-    );
-    return w.stream;
-  }
-
-  Future<void> _refresh(String uid) async {
-    final w = _watchers[uid];
-    if (w != null) await w.refreshNow();
-  }
+  Stream<List<TodoList>> watchLists(String uid) => _lists.watch(uid);
 
   @override
-  Future<Result<List<TodoList>>> fetchLists(String uid) async {
-    try {
-      final list = await _remote.listLists(uid);
-      return Ok(list);
-    } on DioException catch (e) {
-      return Err(_mapDioError(e));
-    }
-  }
+  Future<Result<List<TodoList>>> fetchLists(String uid) =>
+      _lists.read(() => _remote.listLists(uid));
 
   @override
   Future<Result<TodoList>> createList({
     required String uid,
     required String name,
     required String iconKey,
-  }) async {
-    try {
-      final created = await _remote.createList(
-        uid: uid,
-        name: name,
-        iconKey: iconKey,
+  }) =>
+      _lists.guard(
+        uid,
+        () => _remote.createList(uid: uid, name: name, iconKey: iconKey),
       );
-      await _refresh(uid);
-      return Ok(created);
-    } on DioException catch (e) {
-      return Err(_mapDioError(e));
-    }
-  }
 
   @override
   Future<Result<TodoList>> updateList({
@@ -75,150 +48,38 @@ class TodoListsRepositoryImpl implements TodoListsRepository {
     required String id,
     String? name,
     String? iconKey,
-  }) async {
-    try {
-      final updated = await _remote.updateList(
-        uid: uid,
-        id: id,
-        name: name,
-        iconKey: iconKey,
+  }) =>
+      _lists.guard(
+        uid,
+        () => _remote.updateList(
+          uid: uid,
+          id: id,
+          name: name,
+          iconKey: iconKey,
+        ),
       );
-      await _refresh(uid);
-      return Ok(updated);
-    } on DioException catch (e) {
-      return Err(_mapDioError(e));
-    }
-  }
 
   @override
   Future<Result<void>> deleteList({
     required String uid,
     required String id,
     required List<String> todoIds,
-  }) async {
-    try {
-      await _remote.deleteListWithTodos(uid: uid, id: id, todoIds: todoIds);
-      await _refresh(uid);
-      return const Ok(null);
-    } on DioException catch (e) {
-      return Err(_mapDioError(e));
-    }
-  }
+  }) =>
+      _lists.guard(
+        uid,
+        () => _remote.deleteListWithTodos(uid: uid, id: id, todoIds: todoIds),
+      );
 
   @override
   Future<Result<void>> restoreList({
     required String uid,
     required TodoList list,
     required List<Todo> todos,
-  }) async {
-    try {
-      await _remote.restoreListWithTodos(uid: uid, list: list, todos: todos);
-      await _refresh(uid);
-      return const Ok(null);
-    } on DioException catch (e) {
-      return Err(_mapDioError(e));
-    }
-  }
+  }) =>
+      _lists.guard(
+        uid,
+        () => _remote.restoreListWithTodos(uid: uid, list: list, todos: todos),
+      );
 
-  @override
-  void pauseAll() {
-    for (final w in _watchers.values) {
-      w.pause();
-    }
-  }
-
-  @override
-  void resumeAll() {
-    for (final w in _watchers.values) {
-      w.resume();
-    }
-  }
-
-  void dispose() {
-    for (final w in _watchers.values) {
-      w.dispose();
-    }
-    _watchers.clear();
-  }
-
-  Failure _mapDioError(DioException e) {
-    if (e.type == DioExceptionType.connectionTimeout ||
-        e.type == DioExceptionType.receiveTimeout ||
-        e.type == DioExceptionType.sendTimeout) {
-      return const TimeoutFailure();
-    }
-    if (e.type == DioExceptionType.connectionError) {
-      return const NetworkFailure();
-    }
-    if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
-      return const AuthFailure();
-    }
-    if (e.response?.statusCode == 404) {
-      return const NotFoundFailure();
-    }
-    return ServerFailure('Error ${e.response?.statusCode ?? "?"}');
-  }
-}
-
-class _Watcher {
-  _Watcher(this.uid, this._remote, this._interval) {
-    _controller = StreamController<List<TodoList>>.broadcast(
-      onListen: _start,
-      onCancel: _stop,
-    );
-  }
-
-  final String uid;
-  final FirestoreListsRemote _remote;
-  final Duration _interval;
-
-  late final StreamController<List<TodoList>> _controller;
-  Timer? _timer;
-  bool _running = false;
-
-  Stream<List<TodoList>> get stream => _controller.stream;
-
-  void _start() {
-    if (_running) return;
-    _running = true;
-    refreshNow();
-    _timer = Timer.periodic(_interval, (_) => refreshNow());
-  }
-
-  void _stop() {
-    if (_controller.hasListener) return;
-    _timer?.cancel();
-    _timer = null;
-    _running = false;
-  }
-
-  // Pausa el polling en background: el OS mata los sockets y el primer tick
-  // tras resume lanzaría errores de red/auth contra token/conexión caducados.
-  void pause() {
-    _timer?.cancel();
-    _timer = null;
-  }
-
-  // Reanuda el polling al volver a foreground; refreshNow fuerza un fetch
-  // inmediato para no esperar al siguiente tick del Timer.periodic.
-  void resume() {
-    if (_running && _timer == null && _controller.hasListener) {
-      refreshNow();
-      _timer = Timer.periodic(_interval, (_) => refreshNow());
-    }
-  }
-
-  Future<void> refreshNow() async {
-    try {
-      final list = await _remote.listLists(uid);
-      if (!_controller.isClosed) _controller.add(list);
-    } catch (e, st) {
-      if (!_controller.isClosed) _controller.addError(e, st);
-    }
-  }
-
-  void dispose() {
-    _timer?.cancel();
-    _controller.close();
-  }
+  void dispose() => _lists.dispose();
 }

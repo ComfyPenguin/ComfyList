@@ -3,11 +3,12 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/core/failures/failure.dart';
+import '../../../../shared/core/lifecycle/polling_registry.dart';
 import '../../../../shared/core/time/clock.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/providers/auth_state.dart';
-import '../../../trash/domain/entities/trash_entry.dart';
-import '../../../trash/presentation/providers/trash_provider.dart';
+import '../../../trash/domain/entities/trash_group.dart';
+import '../../../trash/presentation/providers/deletions_provider.dart';
 import '../../data/datasources/firestore_rest_remote.dart';
 import '../../data/repositories/todos_repository_impl.dart';
 import '../../domain/entities/todo.dart';
@@ -15,13 +16,17 @@ import '../../domain/repositories/todos_repository.dart';
 import 'todos_state.dart';
 
 final firestoreRestRemoteProvider = Provider<FirestoreRestRemote>((ref) {
-  return FirestoreRestRemote(ref.watch(dioClientProvider).instance);
+  return FirestoreRestRemote(
+    ref.watch(dioClientProvider).instance,
+    now: ref.watch(clockProvider),
+  );
 });
 
 final todosRepositoryProvider = Provider<TodosRepository>((ref) {
   final repo = TodosRepositoryImpl(
     ref.watch(firestoreRestRemoteProvider),
     pollInterval: ref.watch(pollIntervalProvider),
+    registry: ref.watch(pollingRegistryProvider),
   );
   ref.onDispose(repo.dispose);
   return repo;
@@ -62,111 +67,70 @@ class TodosNotifier extends Notifier<TodosState> {
     return const TodosLoading();
   }
 
-  String get _uid => (ref.read(authProvider) as Authenticated).user.uid;
-
-  Future<void> create({required String title, String? description}) async {
+  /// Crea una tarea. Devuelve si se pudo; si no, la lista cargada se queda como
+  /// está y quien llama decide cómo avisar.
+  Future<bool> create({required String title, String? description}) async {
     final res = await ref.read(todosRepositoryProvider).createTodo(
-          uid: _uid,
+          uid: ref.signedInUid,
           listId: _listId,
           title: title,
           description: description,
         );
-    res.fold(onOk: (_) {}, onErr: (f) => state = TodosError(f));
+    return res.isOk;
   }
 
-  Future<void> toggleDone(String id, bool isDone) async {
-    await ref.read(todosRepositoryProvider).updateTodo(
-          uid: _uid,
+  /// Marca o desmarca una tarea. Devuelve si se pudo guardar.
+  Future<bool> toggleDone(String id, bool isDone) async {
+    final res = await ref.read(todosRepositoryProvider).updateTodo(
+          uid: ref.signedInUid,
           listId: _listId,
           id: id,
           isDone: isDone,
         );
+    return res.isOk;
   }
 
-  Future<void> updateFields({
+  /// Guarda los cambios de una tarea. Devuelve si se pudo guardar.
+  Future<bool> updateFields({
     required String id,
     String? title,
     String? description,
     bool clearDescription = false,
   }) async {
-    await ref.read(todosRepositoryProvider).updateTodo(
-          uid: _uid,
+    final res = await ref.read(todosRepositoryProvider).updateTodo(
+          uid: ref.signedInUid,
           listId: _listId,
           id: id,
           title: title,
           description: description,
           clearDescription: clearDescription,
         );
+    return res.isOk;
   }
 
-  Future<void> delete(String id) async {
+  /// Borra la tarea con copia en la papelera. Devuelve el borrado, que es lo
+  /// que hay que pasar a [undo], o `null` si no se pudo: sin copia no se borra.
+  Future<TrashGroup?> delete(String id) async {
     final todo = _findById(id);
-    if (todo != null) {
-      await ref.read(trashRepositoryProvider).save(
-            uid: _uid,
-            items: [
-              TrashItem(
-                kind: TrashKind.todo,
-                itemId: todo.id,
-                parentId: _listId,
-                label: todo.title,
-                payload: todo.toJson(),
-              ),
-            ],
-          );
-    }
+    if (todo == null) return null;
 
-    await ref.read(todosRepositoryProvider).deleteTodo(
-          uid: _uid,
+    final res = await ref.read(deletionsProvider).deleteTodo(
+          uid: ref.signedInUid,
           listId: _listId,
-          id: id,
+          todo: todo,
         );
+    return res.fold(onOk: (group) => group, onErr: (_) => null);
   }
 
-  /// Devuelve el último todo borrado de esta lista. Devuelve si se pudo.
-  Future<bool> undoLastDelete() async {
-    final trash = ref.read(trashRepositoryProvider);
-    final found = await trash.latestGroup(
-      uid: _uid,
-      kind: TrashKind.todo,
-      parentId: _listId,
-    );
-    final entries = found.fold(
-      onOk: (entries) => entries,
-      onErr: (_) => const <TrashEntry>[],
-    );
-    // El grupo puede traer la lista delante si se borró con sus tareas: aquí
-    // solo vuelven las tareas, que la lista se queda en la papelera.
-    final todos = entries
-        .where((entry) => entry.kind == TrashKind.todo)
-        .toList(growable: false);
-    if (todos.isEmpty) return false;
+  /// Devuelve [group], el borrado que acaba de hacer [delete]. Devuelve si se
+  /// pudo.
+  Future<bool> undo(TrashGroup group) =>
+      ref.read(deletionsProvider).restore(group);
 
-    final repo = ref.read(todosRepositoryProvider);
-    for (final entry in todos) {
-      final res = await repo.restoreTodo(
-        uid: _uid,
-        listId: entry.parentId ?? _listId,
-        todo: Todo.fromJson(entry.payload),
-      );
-      if (res.isErr) return false;
-    }
-
-    await trash.remove(
-      uid: _uid,
-      ids: todos.map((entry) => entry.id).toList(growable: false),
-    );
-    return true;
-  }
-
-  Todo? _findById(String id) {
-    final current = state;
-    if (current is! TodosData) return null;
-    for (final todo in current.items) {
-      if (todo.id == id) return todo;
-    }
-    return null;
-  }
+  Todo? _findById(String id) => switch (state) {
+        TodosData(:final items) => items.where((e) => e.id == id).firstOrNull,
+        _ => null,
+      };
 }
 
 final todosProvider =

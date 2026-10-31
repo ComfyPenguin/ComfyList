@@ -14,10 +14,12 @@ import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/core/time/clock.dart';
+import '../../../../shared/ui/lists/held_reorder.dart';
+import '../../../../shared/ui/lists/reveal_progress.dart';
 import '../../../../shared/ui/lists/slide_flow.dart';
 import '../../../../shared/ui/toast/app_toast.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
-import '../../../settings/presentation/providers/settings_state.dart';
+import '../../domain/appointment_agenda.dart';
 import '../../domain/entities/appointment.dart';
 import '../providers/appointments_provider.dart';
 import '../providers/appointments_state.dart';
@@ -89,160 +91,26 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
   /// que el tachado se reproduzca en el sitio donde se hizo el gesto.
   static const Duration _reorderDelay = Duration(milliseconds: 600);
 
-  final _tileRevealProgressByDate = <DateTime, Map<String, double>>{};
+  final _reveal = RevealProgress();
 
-  // Orden visual mostrado en el último build (ids), los items previos y si
-  // se está retrasando el reordenado tras un cambio de isDone.
-  List<String>? _displayedIds;
-  List<Appointment>? _lastItems;
-  bool _holdingReorder = false;
-  Timer? _reorderTimer;
+  late final _held = HeldReorder<Appointment>(
+    idOf: (appointment) => appointment.id,
+    flagOf: (appointment) => appointment.isDone,
+    onRelease: () {
+      if (mounted) setState(() {});
+    },
+    delay: _reorderDelay,
+  );
 
-  ({double top, double bottom}) _effectiveSeparationFor({
-    required DateTime date,
-    required int tileIndex,
-    required List<Appointment> appointments,
-  }) {
-    final tileProgress = _tileRevealProgressByDate[date];
-    if (tileProgress == null || tileProgress.isEmpty) {
-      return (top: 0.0, bottom: 0.0);
-    }
 
-    final myId = appointments[tileIndex].id;
-    final myProgress = tileProgress[myId] ?? 0.0;
-
-    final prevId = tileIndex > 0 ? appointments[tileIndex - 1].id : null;
-    final nextId = tileIndex < appointments.length - 1
-        ? appointments[tileIndex + 1].id
-        : null;
-    final prevProgress = prevId != null ? (tileProgress[prevId] ?? 0.0) : 0.0;
-    final nextProgress = nextId != null ? (tileProgress[nextId] ?? 0.0) : 0.0;
-
-    final top = myProgress > prevProgress ? myProgress : prevProgress;
-    final bottom = myProgress > nextProgress ? myProgress : nextProgress;
-
-    return (top: top, bottom: bottom);
-  }
-
-  void _setTileRevealProgress({
-    required DateTime date,
-    required String appointmentId,
-    required double progress,
-  }) {
-    final nextTileProgress = progress.clamp(0.0, 1.0).toDouble();
-    final tileProgress = _tileRevealProgressByDate.putIfAbsent(
-      date,
-      () => <String, double>{},
-    );
-
-    if (nextTileProgress <= 0.001) {
-      tileProgress.remove(appointmentId);
-      if (tileProgress.isEmpty) {
-        _tileRevealProgressByDate.remove(date);
-      }
-    } else {
-      tileProgress[appointmentId] = nextTileProgress;
-    }
-
-    setState(() {});
-  }
-
-  void _removeStaleRevealProgress(
-    DateTime date,
-    List<Appointment> appointments,
-  ) {
-    final tileProgress = _tileRevealProgressByDate[date];
-    if (tileProgress == null) return;
-
-    final visibleIds = appointments
-        .map((appointment) => appointment.id)
-        .toSet();
-    tileProgress.removeWhere((id, _) => !visibleIds.contains(id));
-    if (tileProgress.isEmpty) {
-      _tileRevealProgressByDate.remove(date);
-    }
+  void _setTileRevealProgress(String appointmentId, double progress) {
+    setState(() => _reveal.set(appointmentId, progress));
   }
 
   @override
   void dispose() {
-    _reorderTimer?.cancel();
+    _held.dispose();
     super.dispose();
-  }
-
-  bool _sameIds(List<String> a, List<String> b) {
-    if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
-  }
-
-  /// Compara como conjunto (sin importar el orden del provider): solo nos
-  /// importa que no haya altas/borrados para poder reordenar manteniendo
-  /// los ids mostrados.
-  bool _sameIdSet(List<String> a, List<String> b) {
-    if (a.length != b.length) return false;
-    final bSet = b.toSet();
-    for (final id in a) {
-      if (!bSet.contains(id)) return false;
-    }
-    return true;
-  }
-
-  /// Devuelve el orden a mostrar: si un único item acaba de cambiar de
-  /// [Appointment.isDone] y eso reordenaría la lista, mantiene el orden
-  /// anterior durante [_reorderDelay] para no cortar la animación del tachado.
-  List<Appointment> _resolveDisplaySorted(List<Appointment> desired) {
-    final items = widget.items;
-    final currentIds = [for (final t in items) t.id];
-    final previous = _lastItems;
-    _lastItems = items;
-
-    // Detectar si exactamente un item cambió de isDone desde el último build.
-    String? toggledId;
-    if (previous != null) {
-      final prevById = {for (final t in previous) t.id: t};
-      var flips = 0;
-      for (final t in items) {
-        final p = prevById[t.id];
-        if (p != null && p.isDone != t.isDone) {
-          toggledId = t.id;
-          flips++;
-        }
-      }
-      if (flips != 1) toggledId = null;
-    }
-
-    final canKeepLayout =
-        _displayedIds != null && _sameIdSet(_displayedIds!, currentIds);
-    final desiredIds = [for (final t in desired) t.id];
-    final wouldReorder =
-        toggledId != null &&
-        canKeepLayout &&
-        !_sameIds(_displayedIds!, desiredIds);
-
-    if (wouldReorder && !_holdingReorder) {
-      _holdingReorder = true;
-      _reorderTimer?.cancel();
-      _reorderTimer = Timer(_reorderDelay, () {
-        if (!mounted) return;
-        setState(() => _holdingReorder = false);
-      });
-    }
-
-    if (_holdingReorder) {
-      if (canKeepLayout) {
-        final byId = {for (final t in items) t.id: t};
-        return [for (final id in _displayedIds!) byId[id]!];
-      }
-      // El conjunto de ids cambió (alta/borrado): reordenar ya.
-      _holdingReorder = false;
-      _reorderTimer?.cancel();
-      _reorderTimer = null;
-    }
-
-    _displayedIds = desiredIds;
-    return desired;
   }
 
   @override
@@ -253,53 +121,37 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
       Color.lerp(colors.muted, colors.body, 0.4),
     );
 
-    // Leer preferencias de completado en citas.
-    final settingsState = ref.watch(settingsProvider);
-    final settings = switch (settingsState) {
-      SettingsData(:final settings) => settings,
-      _ => null,
-    };
-    final completionEnabled = settings?.appointmentsCompletionEnabled ?? false;
-    // Si el ajuste está activado, las completadas van al final de su día.
-    final completedToBottom = settings?.appointmentsCompletedToBottom ?? true;
-    // Y el día de hoy va primero, por delante de los días pasados.
-    final todayOnTop = settings?.appointmentsTodayOnTop ?? true;
+    // Preferencias de las citas: con el ajuste de completado activado, las
+    // completadas van al final de su día; y hoy va primero, por delante de los
+    // días pasados.
+    final settings = ref.watch(settingsOrDefaultsProvider);
+    final completionEnabled = settings.appointmentsCompletionEnabled;
 
-    // Ordenar por fecha ascendente (más próximas primero).
-    // Separar las completadas al final de su día solo con el ajuste activo.
-    final sorted = [...widget.items]
-      ..sort((a, b) {
-        if (completionEnabled && completedToBottom && a.isDone != b.isDone) {
-          return a.isDone ? 1 : -1;
-        }
-        return a.dateTime.compareTo(b.dateTime);
-      });
+    final sorted = sortAppointments(
+      widget.items,
+      completedToBottom:
+          completionEnabled && settings.appointmentsCompletedToBottom,
+    );
 
     // Mantener el orden previo mientras se anima el tachado de un toggle.
-    final displaySorted = _resolveDisplaySorted(sorted);
+    final displaySorted = _held.resolve(items: widget.items, desired: sorted);
 
-    // Agrupar citas por día.
-    final grouped = <DateTime, List<Appointment>>{};
-    for (final appt in displaySorted) {
-      final d = appt.dateTime;
-      final dateOnly = DateTime(d.year, d.month, d.day);
-      grouped.putIfAbsent(dateOnly, () => []).add(appt);
-    }
-
-    final sortedDates = grouped.keys.toList()..sort();
-    if (todayOnTop) _anchorNearDays(sortedDates);
-
-    final visibleDates = sortedDates.toSet();
-    _tileRevealProgressByDate.removeWhere(
-      (date, _) => !visibleDates.contains(date),
+    final days = groupByDay(
+      displaySorted,
+      todayOnTop: settings.appointmentsTodayOnTop,
+      today: _today,
     );
+
+    _reveal.retainOnly([
+      for (final day in days)
+        for (final appointment in day.appointments) appointment.id,
+    ]);
 
     // Construir grupos de fecha: cabecera + tiles con radios/gaps animados.
     final listChildren = <Widget>[];
-    for (var i = 0; i < sortedDates.length; i++) {
-      final date = sortedDates[i];
-      final appts = grouped[date]!;
-      _removeStaleRevealProgress(date, appts);
+    for (var i = 0; i < days.length; i++) {
+      final date = days[i].date;
+      final appts = days[i].appointments;
 
       if (i > 0) {
         listChildren.add(const SizedBox(height: AppSpacing.md));
@@ -315,32 +167,37 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
           dateHeaderStyle: dateHeaderStyle,
           appointments: appts,
           completionEnabled: completionEnabled,
-          separationFor: (i) => _effectiveSeparationFor(
-            date: date,
-            tileIndex: i,
-            appointments: appts,
+          separationFor: (i) => _reveal.separationFor(
+            appts[i].id,
+            previousId: i > 0 ? appts[i - 1].id : null,
+            nextId: i < appts.length - 1 ? appts[i + 1].id : null,
           ),
           onTap: (appt) =>
               showAppointmentDetailSheet(context: context, id: appt.id),
           onLongPress: (appt) =>
               context.push(Routes.appointmentEdit(appt.id)),
-          onComplete: (appt) => notifier.toggleDone(appt.id, !appt.isDone),
+          onComplete: (appt) async {
+            final saved = await notifier.toggleDone(appt.id, !appt.isDone);
+            if (!saved && context.mounted) {
+              AppToast.show(context, AppToast.updateFailed);
+            }
+          },
           onDelete: (appt) async {
-            await notifier.delete(appt.id);
+            final deleted = await notifier.delete(appt.id);
             if (!context.mounted) return;
+
+            if (deleted == null) {
+              AppToast.show(context, AppToast.appointmentDeleteFailed);
+              return;
+            }
             AppToast.showUndo(
               context,
               message: AppToast.appointmentDeleted,
-              onUndo: notifier.undoLastDelete,
+              onUndo: () => notifier.undo(deleted),
             );
           },
-          onRevealProgressChanged: (appt, progress) {
-            _setTileRevealProgress(
-              date: date,
-              appointmentId: appt.id,
-              progress: progress,
-            );
-          },
+          onRevealProgressChanged: (appt, progress) =>
+              _setTileRevealProgress(appt.id, progress),
         ),
       );
     }
@@ -362,30 +219,13 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
     return DateTime(now.year, now.month, now.day);
   }
 
-  /// Sube hoy al principio y deja mañana justo debajo. Sin esto los días
-  /// pasados se cuelan entre los dos, porque el resto va en ascendente.
-  void _anchorNearDays(List<DateTime> dates) {
-    final today = _today;
-    final todayIndex = dates.indexOf(today);
-    if (todayIndex < 0) return;
-    if (todayIndex > 0) dates.insert(0, dates.removeAt(todayIndex));
-
-    final tomorrowIndex = dates.indexOf(_dayAfter(today));
-    if (tomorrowIndex > 1) dates.insert(1, dates.removeAt(tomorrowIndex));
-  }
-
-  /// Día siguiente. Constructor en vez de sumar 24 h: en los cambios de hora el
-  /// día siguiente no cae justo a medianoche.
-  static DateTime _dayAfter(DateTime date) =>
-      DateTime(date.year, date.month, date.day + 1);
-
   /// Formato de cabecera de fecha. Muestra "HOY" o "MAÑANA" cuando
   /// corresponde, y la fecha completa en otros casos.
   String _formatDateHeader(DateTime date) {
     final today = _today;
 
     if (date == today) return 'CITAS DE HOY';
-    if (date == _dayAfter(today)) return 'MAÑANA';
+    if (date == dayAfter(today)) return 'MAÑANA';
 
     return DateFormat('EEEE, d MMM', 'es_ES').format(date).toUpperCase();
   }

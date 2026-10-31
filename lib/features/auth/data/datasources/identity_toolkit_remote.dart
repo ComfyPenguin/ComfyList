@@ -108,23 +108,4 @@ class IdentityToolkitRemote {
     if (users.isEmpty) return null;
     return IdentityLookupUser.fromJson(users.first as Map<String, dynamic>);
   }
-
-  /// Refresca el idToken con el refreshToken. Devuelve el nuevo (idToken, refreshToken).
-  Future<({String idToken, String refreshToken})> refresh(
-    String refreshToken,
-  ) async {
-    final res = await _dio.post<Map<String, dynamic>>(
-      '${FirebaseEndpoints.tokenBase}?key=${FirebaseEndpoints.apiKey}',
-      data: {
-        'grant_type': 'refresh_token',
-        'refresh_token': refreshToken,
-      },
-      options: Options(contentType: 'application/x-www-form-urlencoded'),
-    );
-    final body = res.data!;
-    return (
-      idToken: body['id_token'] as String,
-      refreshToken: body['refresh_token'] as String? ?? refreshToken,
-    );
-  }
 }

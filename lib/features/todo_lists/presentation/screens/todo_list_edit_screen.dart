@@ -13,7 +13,6 @@ import '../../../../shared/ui/dialogs/confirm_action_dialog.dart';
 import '../../../../shared/ui/inputs/app_text_field.dart';
 import '../../../../shared/ui/text/app_tag.dart';
 import '../../../../shared/ui/toast/app_toast.dart';
-import '../../domain/entities/todo_list.dart';
 import '../../domain/entities/todo_list_icons.dart';
 import '../providers/todo_lists_provider.dart';
 import '../providers/todo_lists_state.dart';
@@ -49,11 +48,7 @@ class _TodoListEditScreenState extends ConsumerState<TodoListEditScreen> {
   void _hydrateFromState(TodoListsState s) {
     if (_hydrated || !_isEditing) return;
     if (s is TodoListsData) {
-      final list =
-          s.items.where((l) => l.id == widget.id).cast<TodoList?>().firstWhere(
-                (e) => true,
-                orElse: () => null,
-              );
+      final list = s.items.where((l) => l.id == widget.id).firstOrNull;
       if (list != null) {
         _nameCtrl.text = list.name;
         _iconKey = list.iconKey;
@@ -73,16 +68,21 @@ class _TodoListEditScreenState extends ConsumerState<TodoListEditScreen> {
 
     final notifier = ref.read(todoListsProvider.notifier);
 
-    if (_isEditing) {
-      await notifier.updateFields(
-        id: widget.id!,
-        name: name,
-        iconKey: _iconKey,
-      );
-    } else {
-      await notifier.create(name: name, iconKey: _iconKey);
+    final saved = _isEditing
+        ? await notifier.updateFields(
+            id: widget.id!,
+            name: name,
+            iconKey: _iconKey,
+          )
+        : await notifier.create(name: name, iconKey: _iconKey);
+    if (!mounted) return;
+
+    // Sin guardar no se cierra: lo escrito se queda para reintentarlo.
+    if (!saved) {
+      AppToast.show(context, AppToast.saveFailed);
+      return;
     }
-    if (mounted) context.pop();
+    context.pop();
   }
 
   Future<void> _delete() async {
@@ -105,7 +105,7 @@ class _TodoListEditScreenState extends ConsumerState<TodoListEditScreen> {
     final deleted = await notifier.delete(widget.id!);
     if (!mounted) return;
 
-    if (!deleted) {
+    if (deleted == null) {
       AppToast.show(context, AppToast.listDeleteFailed);
       return;
     }
@@ -113,7 +113,7 @@ class _TodoListEditScreenState extends ConsumerState<TodoListEditScreen> {
     AppToast.showUndo(
       context,
       message: AppToast.listDeleted,
-      onUndo: notifier.undoLastDelete,
+      onUndo: () => notifier.undo(deleted),
     );
     router.pop();
   }

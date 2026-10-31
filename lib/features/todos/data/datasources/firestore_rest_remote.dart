@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 
 import '../../../../shared/core/env/firebase_endpoints.dart';
+import '../../../../shared/core/time/clock.dart';
+import '../../../../shared/data/remote/firestore_documents.dart';
 import '../../../../shared/data/remote/firestore_pages.dart';
 import '../../domain/entities/todo.dart';
 import '../models/todo_dto.dart';
@@ -9,11 +11,13 @@ import '../models/todo_dto.dart';
 ///
 /// Cada lista de tareas vive en su propia subcolección bajo el documento
 /// de la lista padre. Usa el cliente principal del [DioClient]
-/// (con [AuthInterceptor]).
+/// (con [AuthInterceptor]). [now] da el «ahora» de `createdAt` y `updatedAt`;
+/// en la app es el reloj de la app.
 class FirestoreRestRemote {
-  FirestoreRestRemote(this._dio);
+  FirestoreRestRemote(this._dio, {Now now = DateTime.now}) : _now = now;
 
   final Dio _dio;
+  final Now _now;
 
   String _collectionPath(String uid, String listId) =>
       '${FirebaseEndpoints.firestoreBase}'
@@ -35,17 +39,14 @@ class FirestoreRestRemote {
     required String title,
     String? description,
   }) async {
-    final now = DateTime.now().toUtc();
     final body = TodoDto.toCreateBody(
       title: title,
       description: description,
-      now: now,
+      now: _now().toUtc(),
     );
-    final res = await _dio.post<Map<String, dynamic>>(
-      _collectionPath(uid, listId),
-      data: body,
+    return TodoDto.fromDocument(
+      await _dio.createDocument(_collectionPath(uid, listId), body),
     );
-    return TodoDto.fromDocument(res.data!);
   }
 
   Future<Todo> updateTodo({
@@ -57,23 +58,20 @@ class FirestoreRestRemote {
     bool clearDescription = false,
     bool? isDone,
   }) async {
-    final now = DateTime.now().toUtc();
     final (body, mask) = TodoDto.toPatchBody(
       title: title,
       description: description,
       clearDescription: clearDescription,
       isDone: isDone,
-      now: now,
+      now: _now().toUtc(),
     );
-
-    final res = await _dio.patch<Map<String, dynamic>>(
-      '${_collectionPath(uid, listId)}/$id',
-      data: body,
-      queryParameters: {
-        if (mask.isNotEmpty) 'updateMask.fieldPaths': mask,
-      },
+    return TodoDto.fromDocument(
+      await _dio.patchDocument(
+        '${_collectionPath(uid, listId)}/$id',
+        body,
+        updateMask: mask,
+      ),
     );
-    return TodoDto.fromDocument(res.data!);
   }
 
   Future<void> deleteTodo({
@@ -90,10 +88,11 @@ class FirestoreRestRemote {
     required String listId,
     required Todo todo,
   }) async {
-    final res = await _dio.patch<Map<String, dynamic>>(
-      '${_collectionPath(uid, listId)}/${todo.id}',
-      data: TodoDto.toRestoreBody(todo),
+    return TodoDto.fromDocument(
+      await _dio.patchDocument(
+        '${_collectionPath(uid, listId)}/${todo.id}',
+        TodoDto.toRestoreBody(todo),
+      ),
     );
-    return TodoDto.fromDocument(res.data!);
   }
 }

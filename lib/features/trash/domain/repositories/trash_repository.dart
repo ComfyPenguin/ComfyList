@@ -10,14 +10,10 @@ abstract class TrashRepository {
   static const int maxGroupsPerUid = 100;
 
   /// Guarda un borrado: un documento por elemento, todos con el mismo grupo.
-  Future<Result<void>> save({required String uid, required List<TrashItem> items});
-
-  /// El grupo borrado más recientemente de ese tipo (y de esa lista, si es una
-  /// tarea), con todas sus filas. Vacío si no queda nada que deshacer.
-  Future<Result<List<TrashEntry>>> latestGroup({
+  /// Devuelve las filas que acaba de escribir, para poder deshacerlo.
+  Future<Result<List<TrashEntry>>> save({
     required String uid,
-    required TrashKind kind,
-    String? parentId,
+    required List<TrashItem> items,
   });
 
   /// Toda la papelera de la cuenta, lo último borrado primero.
@@ -35,8 +31,4 @@ abstract class TrashRepository {
   /// Vacía sola lo que lleve más de [days] días en la papelera. `days <= 0` es
   /// «nunca»: no toca nada.
   Future<Result<void>> purgeExpired({required String uid, required int days});
-
-  /// Pausa y reanuda el polling del watcher activo (ciclo de vida de la app).
-  void pauseAll();
-  void resumeAll();
 }

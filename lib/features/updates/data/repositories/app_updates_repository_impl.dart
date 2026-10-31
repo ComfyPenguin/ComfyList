@@ -101,6 +101,28 @@ class AppUpdatesRepositoryImpl implements AppUpdatesRepository {
     }
   }
 
+  @override
+  Future<Result<void>> verifyApk({
+    required AppRelease release,
+    required String path,
+  }) async {
+    final file = File(path);
+    if (!file.existsSync()) {
+      return const Err(
+        CacheFailure('El APK descargado ya no está disponible. Vuelve a intentarlo.'),
+      );
+    }
+    if (await _matchesPublishedHash(file, release.sha256)) {
+      return const Ok(null);
+    }
+    try {
+      await file.delete();
+    } on FileSystemException {
+      // El reintento baja otro APK y pisa este.
+    }
+    return const Err(IntegrityFailure());
+  }
+
   /// Comprueba el archivo bajado contra el hash que publica la release. Un
   /// APK que no se puede releer cuenta como no coincidente: el reintento vuelve
   /// a bajarlo con un archivo limpio.

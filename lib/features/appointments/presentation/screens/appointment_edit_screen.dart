@@ -17,8 +17,6 @@ import '../../../../shared/ui/pickers/date_time_pickers.dart';
 import '../../../../shared/ui/text/app_tag.dart';
 import '../../../../shared/ui/toast/app_toast.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
-import '../../../settings/presentation/providers/settings_state.dart';
-import '../../domain/entities/appointment.dart';
 import '../providers/appointments_provider.dart';
 import '../providers/appointments_state.dart';
 import '../widgets/reminder_warning.dart';
@@ -57,10 +55,8 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
   void _hydrateFromState(AppointmentsState s) {
     if (_hydrated || !_isEditing) return;
     if (s is AppointmentsData) {
-      final appointment = s.items
-          .where((a) => a.id == widget.id)
-          .cast<Appointment?>()
-          .firstWhere((e) => true, orElse: () => null);
+      final appointment =
+          s.items.where((a) => a.id == widget.id).firstOrNull;
       if (appointment != null) {
         _titleCtrl.text = appointment.title;
         _descCtrl.text = appointment.description ?? '';
@@ -72,12 +68,6 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
     }
   }
 
-  /// Formato de hora según el ajuste del usuario, igual que las tiles.
-  static bool _use24HourFormatFrom(SettingsState state) => switch (state) {
-    SettingsData(:final settings) => settings.use24HourFormat,
-    _ => false,
-  };
-
   Future<void> _pickDateTime() async {
     final pickedDate = await showAppDatePicker(context, initialDate: _dateTime);
     if (pickedDate == null) return;
@@ -86,7 +76,7 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
     final pickedTime = await showAppTimePicker(
       context,
       initialTime: TimeOfDay.fromDateTime(_dateTime),
-      use24HourFormat: _use24HourFormatFrom(ref.read(settingsProvider)),
+      use24HourFormat: ref.read(use24HourFormatProvider),
     );
     if (pickedTime == null) return;
 
@@ -113,25 +103,30 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
     final desc = _descCtrl.text.trim();
     final loc = _locationCtrl.text.trim();
 
-    if (_isEditing) {
-      await notifier.updateFields(
-        id: widget.id!,
-        title: title,
-        description: desc.isEmpty ? null : desc,
-        clearDescription: desc.isEmpty,
-        location: loc.isEmpty ? null : loc,
-        clearLocation: loc.isEmpty,
-        dateTime: _dateTime,
-      );
-    } else {
-      await notifier.create(
-        title: title,
-        description: desc.isEmpty ? null : desc,
-        location: loc.isEmpty ? null : loc,
-        dateTime: _dateTime,
-      );
+    final saved = _isEditing
+        ? await notifier.updateFields(
+            id: widget.id!,
+            title: title,
+            description: desc.isEmpty ? null : desc,
+            clearDescription: desc.isEmpty,
+            location: loc.isEmpty ? null : loc,
+            clearLocation: loc.isEmpty,
+            dateTime: _dateTime,
+          )
+        : await notifier.create(
+            title: title,
+            description: desc.isEmpty ? null : desc,
+            location: loc.isEmpty ? null : loc,
+            dateTime: _dateTime,
+          );
+    if (!mounted) return;
+
+    // Sin guardar no se cierra: lo escrito se queda para reintentarlo.
+    if (!saved) {
+      AppToast.show(context, AppToast.saveFailed);
+      return;
     }
-    if (mounted) context.pop();
+    context.pop();
   }
 
   Future<void> _delete() async {
@@ -151,13 +146,17 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
     if (!confirmed) return;
 
     final notifier = ref.read(appointmentsProvider.notifier);
-    await notifier.delete(widget.id!);
+    final deleted = await notifier.delete(widget.id!);
     if (!mounted) return;
 
+    if (deleted == null) {
+      AppToast.show(context, AppToast.appointmentDeleteFailed);
+      return;
+    }
     AppToast.showUndo(
       context,
       message: AppToast.appointmentDeleted,
-      onUndo: notifier.undoLastDelete,
+      onUndo: () => notifier.undo(deleted),
     );
     router.pop();
   }
@@ -169,7 +168,7 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
     _hydrateFromState(state);
 
     // El formato de hora sigue el ajuste del usuario, igual que las tiles.
-    final use24H = _use24HourFormatFrom(ref.watch(settingsProvider));
+    final use24H = ref.watch(use24HourFormatProvider);
     final dateText = formatLongDate(_dateTime);
     final timeText = formatClockTimeWithPeriod(
       _dateTime,
