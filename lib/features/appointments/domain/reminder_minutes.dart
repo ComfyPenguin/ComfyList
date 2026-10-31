@@ -10,6 +10,7 @@ const List<int> defaultReminderMinutes = [30];
 ///
 /// Lo que no salga de aquí se elige a mano en la rueda del personalizado.
 enum AppointmentReminderPreset {
+  atTime(0),
   fiveMinutes(5),
   tenMinutes(10),
   fifteenMinutes(15),

@@ -22,7 +22,7 @@ void main() {
       expect(formatReminderLead(90), '90 min');
     });
 
-    test('el cero es el aviso a la hora de la cita, de antes', () {
+    test('el cero es el aviso a la hora de la cita', () {
       expect(formatReminderLead(0), 'A la hora');
     });
   });
@@ -35,6 +35,10 @@ void main() {
       expect(formatReminderLeadBefore(30), '30 minutos antes');
       expect(formatReminderLeadBefore(60), '1 hora antes');
       expect(formatReminderLeadBefore(1440), '1 día antes');
+    });
+
+    test('el cero se ofrece como «A su hora»', () {
+      expect(formatReminderLeadBefore(0), 'A su hora');
     });
 
     test('cuenta en plural cuando toca', () {

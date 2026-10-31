@@ -110,6 +110,19 @@ void main() {
     expect(current, [15, 30]);
   });
 
+  testWidgets('«A su hora» se elige desde el menú y sale la primera', (
+    tester,
+  ) async {
+    await pumpSelector(tester, minutes: const [30]);
+
+    await openMenu(tester);
+    await tester.tap(find.text('A su hora'));
+    await tester.pumpAndSettle();
+
+    expect(chips(tester), ['A la hora', '30 min']);
+    expect(current, [0, 30]);
+  });
+
   testWidgets('el personalizado se elige desde el menú', (tester) async {
     await pumpSelector(tester, minutes: const [30]);
 
@@ -189,7 +202,7 @@ void main() {
     expect(midway, lessThan(expanded));
   });
 
-  testWidgets('el aviso a la hora que quedara guardado sigue leyéndose', (
+  testWidgets('un aviso a la hora se lee «A la hora»', (
     tester,
   ) async {
     await pumpSelector(tester, minutes: const [0]);
