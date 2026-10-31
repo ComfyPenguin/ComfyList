@@ -143,9 +143,7 @@ void main() {
     await settleToastAway(tester);
   });
 
-  testWidgets('con «Deshacer» aguanta más tiempo en pantalla', (
-    tester,
-  ) async {
+  testWidgets('con «Deshacer» aguanta más tiempo en pantalla', (tester) async {
     final context = await pumpHost(tester);
     var undone = false;
 
@@ -267,6 +265,61 @@ void main() {
     await tester.pump();
 
     expect(undone, isTrue);
+  });
+
+  testWidgets('tocar fuera lo descarta y el toque llega a lo de debajo', (
+    tester,
+  ) async {
+    var taps = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: Align(
+            alignment: Alignment.bottomCenter,
+            child: GestureDetector(
+              onTap: () => taps++,
+              child: const SizedBox(
+                width: 200,
+                height: 200,
+                child: Text('Fila'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    final context = tester.element(find.byType(Scaffold));
+
+    AppToast.showUndo(
+      context,
+      message: AppToast.todoDeleted,
+      onUndo: () async => true,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(find.text(AppToast.todoDeleted), findsOneWidget);
+
+    await tester.tap(find.text('Fila'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+
+    expect(find.text(AppToast.todoDeleted), findsNothing);
+    expect(taps, 1);
+  });
+
+  testWidgets('sale en la franja de la barra, no debajo', (tester) async {
+    final context = await pumpHost(tester);
+
+    AppToast.show(context, 'Tarea eliminada.');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+
+    // La barra del shell ocupa los primeros 56 px bajo el área segura.
+    expect(tester.getTopLeft(find.byType(DecoratedBox).last).dy, lessThan(56));
+
+    await settleToastAway(tester);
   });
 
   testWidgets('tocarlo lo descarta antes de tiempo', (tester) async {
