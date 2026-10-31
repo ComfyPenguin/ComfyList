@@ -34,10 +34,6 @@ void main() {
       expect(result.appointmentsTodayOnTop, defaults.appointmentsTodayOnTop);
       expect(result.invertSwipeActions, defaults.invertSwipeActions);
       expect(result.use24HourFormat, defaults.use24HourFormat);
-      expect(
-        result.appointmentReminderMinutes,
-        defaults.appointmentReminderMinutes,
-      );
       expect(result.longPressHintSeen, defaults.longPressHintSeen);
       expect(result.trashRetentionDays, defaults.trashRetentionDays);
       expect(result.skippedUpdateBuild, noSkippedUpdateBuild);
@@ -53,21 +49,6 @@ void main() {
       expect((await repo.load()).trashRetentionDays, defaultTrashRetentionDays);
     });
 
-    test('un valor guardado sin márgenes deja la cita sin avisos', () async {
-      await db.settingsDao.write(
-        const SettingsTableCompanion(appointmentReminderMinutes: Value('')),
-      );
-
-      expect((await repo.load()).appointmentReminderMinutes, isEmpty);
-    });
-
-    test('lee la lista de márgenes guardada', () async {
-      await db.settingsDao.write(
-        const SettingsTableCompanion(appointmentReminderMinutes: Value('0,60')),
-      );
-
-      expect((await repo.load()).appointmentReminderMinutes, [0, 60]);
-    });
   });
 
   group('cada ajuste se guarda y se lee de vuelta', () {
@@ -101,10 +82,6 @@ void main() {
       'use24HourFormat': (
         () => repo.setUse24HourFormat(false),
         (s) => !s.use24HourFormat,
-      ),
-      'appointmentReminderMinutes': (
-        () => repo.setAppointmentReminderMinutes(const [60, 0]),
-        (s) => s.appointmentReminderMinutes.join(',') == '0,60',
       ),
       'longPressHintSeen': (
         () => repo.setLongPressHintSeen(true),
@@ -141,12 +118,6 @@ void main() {
       expect(result.themeMode, ThemeMode.dark);
       expect(result.trashRetentionDays, 7);
       expect(result.notificationsEnabled, AppSettings.defaults.notificationsEnabled);
-    });
-
-    test('los márgenes se guardan en su forma canónica', () async {
-      await repo.setAppointmentReminderMinutes(const [1440, 30, 30]);
-
-      expect((await repo.load()).appointmentReminderMinutes, [30, 1440]);
     });
   });
 

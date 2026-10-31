@@ -85,13 +85,7 @@ void main() {
 
   test('al cambiar el margen sale el aviso viejo y entra el nuevo', () async {
     await sync(items: [item]);
-    await sync(
-      items: [item],
-      settings: buildAppSettings(
-        notificationsEnabled: true,
-        appointmentReminderMinutes: const [60],
-      ),
-    );
+    await sync(items: [item.copyWith(reminderMinutes: const [60])]);
 
     // Cada margen lleva su id, así que el aviso de 30 minutos no se transforma
     // en el de una hora: se quita uno y se programa el otro.
@@ -105,13 +99,7 @@ void main() {
 
   test('añadir un margen deja el que ya estaba y programa el nuevo', () async {
     await sync(items: [item]);
-    await sync(
-      items: [item],
-      settings: buildAppSettings(
-        notificationsEnabled: true,
-        appointmentReminderMinutes: const [0, 30],
-      ),
-    );
+    await sync(items: [item.copyWith(reminderMinutes: const [0, 30])]);
 
     expect(notifications.cancelled, isEmpty);
     expect(notifications.scheduled, hasLength(2));
@@ -137,18 +125,14 @@ void main() {
     final inminente = buildAppointment(
       id: 'a1',
       dateTime: now.add(const Duration(minutes: 1)),
-    );
-    final settings = buildAppSettings(
-      notificationsEnabled: true,
-      appointmentReminderMinutes: const [0],
+      reminderMinutes: const [0],
     );
 
-    await sync(items: [inminente], settings: settings);
+    await sync(items: [inminente]);
     expect(notifications.scheduled, hasLength(1));
 
     await sync(
       items: [inminente],
-      settings: settings,
       at: now.add(const Duration(minutes: 2)),
     );
 

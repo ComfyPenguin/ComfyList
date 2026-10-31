@@ -37,6 +37,7 @@ class FirestoreAppointmentsRemote {
     String? description,
     String? location,
     RepeatRule? repeatRule,
+    required List<int> reminderMinutes,
     required DateTime dateTime,
   }) async {
     final body = AppointmentDto.toCreateBody(
@@ -44,6 +45,7 @@ class FirestoreAppointmentsRemote {
       description: description,
       location: location,
       repeatRule: repeatRule,
+      reminderMinutes: reminderMinutes,
       dateTime: dateTime,
       now: _now().toUtc(),
     );
@@ -62,6 +64,7 @@ class FirestoreAppointmentsRemote {
     bool clearLocation = false,
     RepeatRule? repeatRule,
     bool clearRepeatRule = false,
+    List<int>? reminderMinutes,
     DateTime? dateTime,
     bool? isDone,
   }) async {
@@ -73,6 +76,7 @@ class FirestoreAppointmentsRemote {
       clearLocation: clearLocation,
       repeatRule: repeatRule,
       clearRepeatRule: clearRepeatRule,
+      reminderMinutes: reminderMinutes,
       dateTime: dateTime,
       isDone: isDone,
       now: _now().toUtc(),

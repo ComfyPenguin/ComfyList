@@ -2,6 +2,7 @@
 
 import 'package:comfy_list/features/appointments/domain/entities/appointment.dart';
 import 'package:comfy_list/features/appointments/domain/entities/repeat_rule.dart';
+import 'package:comfy_list/features/appointments/domain/reminder_minutes.dart';
 import 'package:comfy_list/features/auth/domain/entities/auth_user.dart';
 import 'package:comfy_list/features/settings/domain/entities/app_settings.dart';
 import 'package:comfy_list/features/todo_lists/domain/entities/todo_list.dart';
@@ -74,6 +75,7 @@ Appointment buildAppointment({
   String? description,
   String? location,
   RepeatRule? repeatRule,
+  List<int> reminderMinutes = defaultReminderMinutes,
   DateTime? dateTime,
   bool isDone = false,
   DateTime? createdAt,
@@ -86,6 +88,7 @@ Appointment buildAppointment({
     description: description,
     location: location,
     repeatRule: repeatRule,
+    reminderMinutes: reminderMinutes,
     dateTime: dateTime ?? now.add(const Duration(hours: 1)),
     isDone: isDone,
     createdAt: createdAt ?? now,
@@ -125,7 +128,6 @@ AppSettings buildAppSettings({
   bool? appointmentsTodayOnTop,
   bool? invertSwipeActions,
   bool? use24HourFormat,
-  List<int>? appointmentReminderMinutes,
   bool? longPressHintSeen,
   int? trashRetentionDays,
   int? skippedUpdateBuild,
@@ -145,9 +147,6 @@ AppSettings buildAppSettings({
     invertSwipeActions:
         invertSwipeActions ?? AppSettings.defaults.invertSwipeActions,
     use24HourFormat: use24HourFormat ?? AppSettings.defaults.use24HourFormat,
-    appointmentReminderMinutes:
-        appointmentReminderMinutes ??
-        AppSettings.defaults.appointmentReminderMinutes,
     longPressHintSeen:
         longPressHintSeen ?? AppSettings.defaults.longPressHintSeen,
     trashRetentionDays:
@@ -169,7 +168,6 @@ SettingsRow buildSettingsRow({
   bool appointmentsTodayOnTop = true,
   bool invertSwipeActions = false,
   bool use24HourFormat = true,
-  String appointmentReminderMinutes = '30',
   bool longPressHintSeen = false,
   int trashRetentionDays = defaultTrashRetentionDays,
   int skippedUpdateBuild = noSkippedUpdateBuild,
@@ -185,7 +183,6 @@ SettingsRow buildSettingsRow({
     appointmentsTodayOnTop: appointmentsTodayOnTop,
     invertSwipeActions: invertSwipeActions,
     use24HourFormat: use24HourFormat,
-    appointmentReminderMinutes: appointmentReminderMinutes,
     longPressHintSeen: longPressHintSeen,
     trashRetentionDays: trashRetentionDays,
     skippedUpdateBuild: skippedUpdateBuild,

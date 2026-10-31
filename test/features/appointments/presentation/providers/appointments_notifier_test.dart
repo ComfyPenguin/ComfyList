@@ -215,6 +215,37 @@ void main() {
       expect(update.isDone, isNull);
     });
 
+    test('completar una recurrente no toca sus recordatorios', () async {
+      final (container, _) = await loaded(
+        [
+          buildAppointment(
+            id: 'a1',
+            dateTime: DateTime(2026, 9, 7, 10),
+            repeatRule: weekly,
+            reminderMinutes: const [60, 1440],
+          ),
+        ],
+        now: DateTime(2026, 9, 24, 12),
+      );
+
+      await container.read(appointmentsProvider.notifier).toggleDone('a1', true);
+
+      final captured = verify(() => repo.updateAppointment(
+            uid: 'u1',
+            id: 'a1',
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            clearDescription: any(named: 'clearDescription'),
+            location: any(named: 'location'),
+            clearLocation: any(named: 'clearLocation'),
+            reminderMinutes: captureAny(named: 'reminderMinutes'),
+            dateTime: any(named: 'dateTime'),
+            isDone: any(named: 'isDone'),
+          )).captured;
+      // Sin el campo, el parche no lo escribe y la cita conserva los suyos.
+      expect(captured.single, isNull);
+    });
+
     test('desmarcar una recurrente que estaba hecha no mueve su fecha',
         () async {
       final (container, _) = await loaded(
@@ -431,15 +462,61 @@ void main() {
             title: any(named: 'title'),
             description: any(named: 'description'),
             location: any(named: 'location'),
+            reminderMinutes: any(named: 'reminderMinutes'),
             dateTime: any(named: 'dateTime'),
           )).thenAnswer((_) async => Ok(buildAppointment(id: 'a2')));
 
       final ok = await notifier().create(
         title: 'Dentista',
+        reminderMinutes: const [30],
         dateTime: DateTime.utc(2026, 6, 1, 9),
       );
 
       expect(ok, isTrue);
+    });
+
+    test('create guarda los márgenes que se le piden', () async {
+      when(() => repo.createAppointment(
+            uid: 'u1',
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            location: any(named: 'location'),
+            reminderMinutes: any(named: 'reminderMinutes'),
+            dateTime: any(named: 'dateTime'),
+          )).thenAnswer((_) async => Ok(buildAppointment(id: 'a2')));
+
+      await notifier().create(
+        title: 'Reunión',
+        reminderMinutes: const [60, 1440],
+        dateTime: DateTime.utc(2026, 6, 1, 9),
+      );
+
+      final captured = verify(() => repo.createAppointment(
+            uid: 'u1',
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            location: any(named: 'location'),
+            reminderMinutes: captureAny(named: 'reminderMinutes'),
+            dateTime: any(named: 'dateTime'),
+          )).captured;
+      expect(captured.single, [60, 1440]);
+    });
+
+    test('updateFields manda los márgenes, también vaciados', () async {
+      when(() => repo.updateAppointment(
+            uid: 'u1',
+            id: 'a1',
+            reminderMinutes: any(named: 'reminderMinutes'),
+          )).thenAnswer((_) async => Ok(buildAppointment(id: 'a1')));
+
+      await notifier().updateFields(id: 'a1', reminderMinutes: const []);
+
+      final captured = verify(() => repo.updateAppointment(
+            uid: 'u1',
+            id: 'a1',
+            reminderMinutes: captureAny(named: 'reminderMinutes'),
+          )).captured;
+      expect(captured.single, isEmpty);
     });
 
     test('create devuelve false si falla y no vacía la lista', () async {
@@ -448,6 +525,7 @@ void main() {
             title: any(named: 'title'),
             description: any(named: 'description'),
             location: any(named: 'location'),
+            reminderMinutes: any(named: 'reminderMinutes'),
             dateTime: any(named: 'dateTime'),
           )).thenAnswer(
         (_) async => const Err<Appointment>(ServerFailure('Error 500')),
@@ -455,6 +533,7 @@ void main() {
 
       final ok = await notifier().create(
         title: 'Dentista',
+        reminderMinutes: const [30],
         dateTime: DateTime.utc(2026, 6, 1, 9),
       );
 

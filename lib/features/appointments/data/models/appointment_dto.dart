@@ -2,6 +2,7 @@ import '../../../../shared/data/remote/firestore_patch.dart';
 import '../../../../shared/data/remote/firestore_value_codec.dart';
 import '../../domain/entities/appointment.dart';
 import '../../domain/entities/repeat_rule.dart';
+import '../../domain/reminder_minutes.dart';
 
 /// DTO entre el formato de documento Firestore REST y la entidad de dominio.
 class AppointmentDto {
@@ -19,6 +20,11 @@ class AppointmentDto {
         interval: fields['repeatInterval'],
         unit: fields['repeatUnit'],
       ),
+      reminderMinutes: switch (fields['reminderMinutes']) {
+        final String stored => parseReminderMinutes(stored),
+        // Sin el campo es una cita de antes de que cada una llevara los suyos.
+        _ => defaultReminderMinutes,
+      },
       dateTime:
           (fields['dateTime'] as DateTime?) ?? DateTime.now(),
       isDone: (fields['isDone'] as bool?) ?? false,
@@ -35,6 +41,7 @@ class AppointmentDto {
     String? description,
     String? location,
     RepeatRule? repeatRule,
+    required List<int> reminderMinutes,
     required DateTime dateTime,
     bool isDone = false,
     required DateTime now,
@@ -45,6 +52,7 @@ class AppointmentDto {
       'location': ?location,
       'repeatInterval': ?repeatRule?.interval,
       'repeatUnit': ?repeatRule?.unit.name,
+      'reminderMinutes': reminderMinutesToString(reminderMinutes),
       'dateTime': dateTime,
       'isDone': isDone,
       'createdAt': now,
@@ -61,6 +69,7 @@ class AppointmentDto {
       'location': ?appointment.location,
       'repeatInterval': ?appointment.repeatRule?.interval,
       'repeatUnit': ?appointment.repeatRule?.unit.name,
+      'reminderMinutes': reminderMinutesToString(appointment.reminderMinutes),
       'dateTime': appointment.dateTime,
       'isDone': appointment.isDone,
       'createdAt': appointment.createdAt,
@@ -77,6 +86,7 @@ class AppointmentDto {
     bool clearLocation = false,
     RepeatRule? repeatRule,
     bool clearRepeatRule = false,
+    List<int>? reminderMinutes,
     DateTime? dateTime,
     bool? isDone,
     required DateTime now,
@@ -94,6 +104,14 @@ class AppointmentDto {
             'repeatUnit',
             repeatRule?.unit.name,
             clear: clearRepeatRule,
+          )
+          // Vaciar los márgenes escribe el texto vacío en vez de borrar el campo:
+          // un campo ausente es una cita antigua y volvería a avisar a los 30.
+          ..setIfNotNull(
+            'reminderMinutes',
+            reminderMinutes == null
+                ? null
+                : reminderMinutesToString(reminderMinutes),
           )
           ..setIfNotNull('dateTime', dateTime)
           ..setIfNotNull('isDone', isDone))

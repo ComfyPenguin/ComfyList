@@ -1,4 +1,4 @@
-import 'package:comfy_list/features/settings/presentation/widgets/reminder_lead_menu.dart';
+import 'package:comfy_list/features/appointments/presentation/widgets/reminder_lead_menu.dart';
 import 'package:comfy_list/shared/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

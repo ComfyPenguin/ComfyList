@@ -21,7 +21,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -58,17 +58,12 @@ class AppDatabase extends _$AppDatabase {
               settingsTable.appointmentsTodayOnTop,
             );
           }
-          if (from < 8) {
-            await migrator.addColumn(
-              settingsTable,
-              settingsTable.appointmentReminderMinutes,
-            );
-          }
+          // La v8 añadía `appointment_reminder_minutes`, que la v16 elimina: lo
+          // que se guarda de ese ajuste ya no se lee, así que no se migra.
           if (from < 9) {
-            // El recordatorio pasa de uno a tres, así que la columna deja de ser
-            // un entero y guarda la lista separada por comas. Cambiar el tipo
-            // obliga a recrear la tabla, y el margen que hubiera se conserva
-            // como el único de la lista.
+            // La v9 recreaba la tabla para cambiar el tipo de esa columna. Ahora
+            // la recreación (que usa el esquema actual) ya la deja fuera; se
+            // mantiene porque es la que trae las columnas posteriores.
             //
             // La recreación usa el esquema actual, así que las columnas que
             // llegaron después de la v9 no existen en la tabla antigua: hay
@@ -77,10 +72,6 @@ class AppDatabase extends _$AppDatabase {
             await migrator.alterTable(
               TableMigration(
                 settingsTable,
-                columnTransformer: {
-                  settingsTable.appointmentReminderMinutes:
-                      settingsTable.appointmentReminderMinutes.cast<String>(),
-                },
                 newColumns: [
                   settingsTable.longPressHintSeen,
                   settingsTable.trashRetentionDays,
@@ -131,11 +122,13 @@ class AppDatabase extends _$AppDatabase {
               settingsTable.lastUpdateCheckAt,
             );
           }
-          if (from < 15) {
-            // Completar citas deja de ser un ajuste: la columna sobra. Quitarla
-            // obliga a recrear la tabla con el esquema actual; todas las demás
-            // columnas existen ya en este punto (las pasadas por la recreación
-            // de la v9 y los `addColumn` de arriba), así que no hay `newColumns`.
+          if (from < 16) {
+            // Completar citas (v15) y los márgenes de recordatorio globales
+            // (v16) dejan de ser ajustes: sus columnas sobran. Quitarlas obliga
+            // a recrear la tabla con el esquema actual, y una sola recreación
+            // se lleva las dos; todas las demás columnas existen ya en este
+            // punto (las pasadas por la recreación de la v9 y los `addColumn`
+            // de arriba), así que no hay `newColumns`.
             await migrator.alterTable(TableMigration(settingsTable));
           }
         },

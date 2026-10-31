@@ -13,6 +13,7 @@ void main() {
       isDone: false,
       createdAt: DateTime.utc(2026, 1, 1),
       updatedAt: DateTime.utc(2026, 1, 1),
+      reminderMinutes: const [30],
     );
 
     test('copyWith with description sets the new value', () {
@@ -98,6 +99,35 @@ void main() {
           ..remove('repeatUnit');
 
         expect(Appointment.fromJson(json).repeatRule, isNull);
+      });
+    });
+
+    group('recordatorios', () {
+      test('copyWith cambia los márgenes y, sin pasarlos, los conserva', () {
+        final changed = base.copyWith(reminderMinutes: const [60, 1440]);
+
+        expect(changed.reminderMinutes, [60, 1440]);
+        expect(changed.copyWith(title: 'Otro').reminderMinutes, [60, 1440]);
+        expect(base.copyWith(reminderMinutes: const []).reminderMinutes, isEmpty);
+      });
+
+      test('toJson / fromJson hacen la ida y vuelta, también sin avisos', () {
+        for (final minutes in [
+          const [60, 1440],
+          const <int>[],
+        ]) {
+          final back = Appointment.fromJson(
+            base.copyWith(reminderMinutes: minutes).toJson(),
+          );
+
+          expect(back.reminderMinutes, minutes);
+        }
+      });
+
+      test('un payload de la papelera sin márgenes avisa a los 30 min', () {
+        final json = base.toJson()..remove('reminderMinutes');
+
+        expect(Appointment.fromJson(json).reminderMinutes, [30]);
       });
     });
 

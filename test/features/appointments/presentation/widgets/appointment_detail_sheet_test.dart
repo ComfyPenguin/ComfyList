@@ -100,6 +100,27 @@ void main() {
     expect(find.byIcon(Icons.repeat_rounded), findsNothing);
   });
 
+  testWidgets('dice con qué antelación avisa la cita', (tester) async {
+    await pumpSheet(
+      tester,
+      AppointmentsData([
+        buildAppointment(id: 'a1', reminderMinutes: const [60, 1440]),
+      ]),
+    );
+
+    expect(find.text('Avisa: 1 h, 1 día'), findsOneWidget);
+    expect(find.byIcon(Icons.alarm_rounded), findsOneWidget);
+  });
+
+  testWidgets('una cita sin recordatorios lo dice', (tester) async {
+    await pumpSheet(
+      tester,
+      AppointmentsData([buildAppointment(id: 'a1', reminderMinutes: const [])]),
+    );
+
+    expect(find.text('Sin recordatorios'), findsOneWidget);
+  });
+
   testWidgets('una cita completada muestra el indicador de hecha', (
     tester,
   ) async {

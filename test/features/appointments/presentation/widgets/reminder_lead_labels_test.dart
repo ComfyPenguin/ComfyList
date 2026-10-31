@@ -1,4 +1,4 @@
-import 'package:comfy_list/features/settings/presentation/widgets/reminder_lead_labels.dart';
+import 'package:comfy_list/features/appointments/presentation/widgets/reminder_lead_labels.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

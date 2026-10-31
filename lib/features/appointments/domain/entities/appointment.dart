@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../reminder_minutes.dart';
 import 'repeat_rule.dart';
 
 @immutable
@@ -11,6 +12,7 @@ class Appointment {
     required this.isDone,
     required this.createdAt,
     required this.updatedAt,
+    required this.reminderMinutes,
     this.description,
     this.location,
     this.repeatRule,
@@ -30,6 +32,11 @@ class Appointment {
   /// Si la cita es recurrente, la regla con la que avanza al completarla.
   final RepeatRule? repeatRule;
 
+  /// Márgenes con los que avisa la cita, en minutos antes de su hora (0 = a su
+  /// hora). Sin márgenes no avisa. Siempre en la forma canónica de
+  /// [normalizeReminderMinutes].
+  final List<int> reminderMinutes;
+
   /// Serialización para la papelera, que vive en la cuenta. Las fechas van en
   /// UTC: se pueden restaurar desde un dispositivo en otra zona horaria.
   Map<String, dynamic> toJson() => {
@@ -39,6 +46,7 @@ class Appointment {
         'location': location,
         'repeatInterval': repeatRule?.interval,
         'repeatUnit': repeatRule?.unit.name,
+        'reminderMinutes': reminderMinutes,
         'dateTime': dateTime.toUtc().toIso8601String(),
         'isDone': isDone,
         'createdAt': createdAt.toUtc().toIso8601String(),
@@ -54,6 +62,11 @@ class Appointment {
           interval: json['repeatInterval'],
           unit: json['repeatUnit'],
         ),
+        reminderMinutes: switch (json['reminderMinutes']) {
+          final List<dynamic> stored =>
+            normalizeReminderMinutes(stored.whereType<int>()),
+          _ => defaultReminderMinutes,
+        },
         dateTime: DateTime.parse(json['dateTime'] as String).toLocal(),
         isDone: json['isDone'] as bool,
         createdAt: DateTime.parse(json['createdAt'] as String).toLocal(),
@@ -70,6 +83,7 @@ class Appointment {
     DateTime? updatedAt,
     String? location,
     RepeatRule? repeatRule,
+    List<int>? reminderMinutes,
     bool clearDescription = false,
     bool clearLocation = false,
     bool clearRepeatRule = false,
@@ -85,6 +99,7 @@ class Appointment {
       updatedAt: updatedAt ?? this.updatedAt,
       location: clearLocation ? null : (location ?? this.location),
       repeatRule: clearRepeatRule ? null : (repeatRule ?? this.repeatRule),
+      reminderMinutes: reminderMinutes ?? this.reminderMinutes,
     );
   }
 }

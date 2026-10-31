@@ -74,6 +74,7 @@ void main() {
         isDone: true,
         createdAt: DateTime.utc(2026, 1, 1),
         updatedAt: DateTime.utc(2026, 1, 2),
+        reminderMinutes: const [30],
       );
 
       final decoded = FirestoreValueCodec.decodeFields(
@@ -138,6 +139,7 @@ void main() {
         final withRule = FirestoreValueCodec.decodeFields(
           AppointmentDto.toCreateBody(
             title: 'Dentista',
+            reminderMinutes: const [30],
             dateTime: DateTime.utc(2026, 6, 1, 9),
             repeatRule: rule,
             now: DateTime.utc(2026),
@@ -146,6 +148,7 @@ void main() {
         final without = FirestoreValueCodec.decodeFields(
           AppointmentDto.toCreateBody(
             title: 'Dentista',
+            reminderMinutes: const [30],
             dateTime: DateTime.utc(2026, 6, 1, 9),
             now: DateTime.utc(2026),
           ),
@@ -165,6 +168,7 @@ void main() {
           isDone: false,
           createdAt: DateTime.utc(2026, 1, 1),
           updatedAt: DateTime.utc(2026, 1, 1),
+          reminderMinutes: const [30],
           repeatRule: rule,
         );
 
@@ -208,6 +212,103 @@ void main() {
 
         expect(mask, isNot(contains('repeatInterval')));
         expect(mask, isNot(contains('repeatUnit')));
+      });
+    });
+
+    group('recordatorios', () {
+      Map<String, dynamic> document(Map<String, dynamic> extra) => {
+            'name':
+                'projects/p/databases/(default)/documents/users/u1/appointments/a1',
+            'fields': FirestoreValueCodec.encodeFields(<String, dynamic>{
+              'title': 'Dentista',
+              'isDone': false,
+              ...extra,
+            })['fields'],
+          };
+
+      test('fromDocument lee los márgenes guardados', () {
+        final appointment = AppointmentDto.fromDocument(
+          document({'reminderMinutes': '1440,60'}),
+        );
+
+        expect(appointment.reminderMinutes, [60, 1440]);
+      });
+
+      test('un documento anterior a los márgenes por cita avisa a los 30 min',
+          () {
+        expect(
+          AppointmentDto.fromDocument(document({})).reminderMinutes,
+          [30],
+        );
+      });
+
+      test('el texto vacío es una cita sin avisos, no una antigua', () {
+        expect(
+          AppointmentDto.fromDocument(
+            document({'reminderMinutes': ''}),
+          ).reminderMinutes,
+          isEmpty,
+        );
+      });
+
+      test('toCreateBody guarda los márgenes y sin ninguno escribe el vacío',
+          () {
+        Map<String, dynamic> create(List<int> minutes) =>
+            FirestoreValueCodec.decodeFields(
+              AppointmentDto.toCreateBody(
+                title: 'Dentista',
+                dateTime: DateTime.utc(2026, 6, 1, 9),
+                reminderMinutes: minutes,
+                now: DateTime.utc(2026),
+              ),
+            );
+
+        expect(create([60, 1440])['reminderMinutes'], '60,1440');
+        expect(create(const []), containsPair('reminderMinutes', ''));
+      });
+
+      test('toRestoreBody devuelve los márgenes de la cita, también vacíos', () {
+        Map<String, dynamic> restore(List<int> minutes) =>
+            FirestoreValueCodec.decodeFields(
+              AppointmentDto.toRestoreBody(
+                Appointment(
+                  id: 'a1',
+                  title: 'Dentista',
+                  dateTime: DateTime.utc(2026, 6, 1, 9),
+                  isDone: false,
+                  createdAt: DateTime.utc(2026),
+                  updatedAt: DateTime.utc(2026),
+                  reminderMinutes: minutes,
+                ),
+              ),
+            );
+
+        expect(restore([0, 30])['reminderMinutes'], '0,30');
+        expect(restore(const []), containsPair('reminderMinutes', ''));
+      });
+
+      test('toPatchBody escribe los márgenes y vaciarlos no borra el campo',
+          () {
+        final (body, mask) = AppointmentDto.toPatchBody(
+          reminderMinutes: const [],
+          now: DateTime.utc(2026),
+        );
+
+        // Un campo borrado se leería como cita antigua y volvería a los 30 min.
+        expect(mask, contains('reminderMinutes'));
+        expect(
+          FirestoreValueCodec.decodeFields(body),
+          containsPair('reminderMinutes', ''),
+        );
+      });
+
+      test('toPatchBody sin márgenes no los toca', () {
+        final (_, mask) = AppointmentDto.toPatchBody(
+          isDone: true,
+          now: DateTime.utc(2026),
+        );
+
+        expect(mask, isNot(contains('reminderMinutes')));
       });
     });
 

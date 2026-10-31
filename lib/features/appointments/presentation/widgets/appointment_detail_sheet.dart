@@ -16,6 +16,7 @@ import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../domain/entities/appointment.dart';
 import '../providers/appointments_provider.dart';
 import '../providers/appointments_state.dart';
+import 'reminder_lead_labels.dart';
 import 'repeat_rule_label.dart';
 
 /// Muestra el bottom sheet de detalle de una cita (solo lectura).
@@ -213,6 +214,22 @@ class AppointmentDetailSheet extends ConsumerWidget {
                     Expanded(
                       child: Text(
                         timeText,
+                        style: AppTypography.bodyLg.copyWith(color: colors.ink),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                // Recordatorios.
+                Row(
+                  children: [
+                    Icon(Icons.alarm_rounded, size: 20, color: colors.muted),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        appointment.reminderMinutes.isEmpty
+                            ? 'Sin recordatorios'
+                            : 'Avisa: ${appointment.reminderMinutes.map(formatReminderLead).join(', ')}',
                         style: AppTypography.bodyLg.copyWith(color: colors.ink),
                       ),
                     ),

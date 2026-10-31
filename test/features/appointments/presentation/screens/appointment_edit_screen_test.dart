@@ -8,8 +8,10 @@ import 'package:comfy_list/features/appointments/presentation/screens/appointmen
 import 'package:comfy_list/features/settings/presentation/providers/settings_provider.dart';
 import 'package:comfy_list/shared/core/theme/app_theme.dart';
 import 'package:comfy_list/shared/data/notifications/notifications_provider.dart';
+import 'package:comfy_list/shared/ui/inputs/app_chip.dart';
 import 'package:comfy_list/shared/ui/inputs/app_text_field.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -33,8 +35,9 @@ class _RecordingAppointmentsNotifier extends AppointmentsNotifier {
   _RecordingAppointmentsNotifier([this.items = const []]);
 
   final List<Appointment> items;
-  ({RepeatRule? repeatRule})? created;
-  ({RepeatRule? repeatRule, bool clearRepeatRule})? updated;
+  ({RepeatRule? repeatRule, List<int> reminderMinutes})? created;
+  ({RepeatRule? repeatRule, bool clearRepeatRule, List<int>? reminderMinutes})?
+  updated;
 
   @override
   AppointmentsState build() => AppointmentsData(items);
@@ -45,9 +48,10 @@ class _RecordingAppointmentsNotifier extends AppointmentsNotifier {
     String? description,
     String? location,
     RepeatRule? repeatRule,
+    required List<int> reminderMinutes,
     required DateTime dateTime,
   }) async {
-    created = (repeatRule: repeatRule);
+    created = (repeatRule: repeatRule, reminderMinutes: reminderMinutes);
     return true;
   }
 
@@ -61,9 +65,14 @@ class _RecordingAppointmentsNotifier extends AppointmentsNotifier {
     bool clearLocation = false,
     RepeatRule? repeatRule,
     bool clearRepeatRule = false,
+    List<int>? reminderMinutes,
     DateTime? dateTime,
   }) async {
-    updated = (repeatRule: repeatRule, clearRepeatRule: clearRepeatRule);
+    updated = (
+      repeatRule: repeatRule,
+      clearRepeatRule: clearRepeatRule,
+      reminderMinutes: reminderMinutes,
+    );
     return true;
   }
 }
@@ -72,6 +81,13 @@ void main() {
   setUpAll(() async {
     // La pantalla formatea la fecha en es_ES, como el resto de la app.
     await initializeDateFormatting('es_ES');
+    // Con la fuente de verdad el botón de añadir recordatorio mide lo que mide
+    // de verdad: con la de los tests se pasaría de ancho en un móvil estrecho.
+    final loader = FontLoader('PlusJakartaSans')
+      ..addFont(
+        rootBundle.load('assets/fonts/PlusJakartaSans-VariableFont.ttf'),
+      );
+    await loader.load();
   });
 
   Future<void> pumpEditScreen(
@@ -124,7 +140,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  group('repetición', () {
+  group('opciones de la cita', () {
     /// Abre la pantalla de crear (`id` nulo) o de editar encima de una ruta
     /// de inicio, para que guardar tenga a dónde volver.
     Future<void> pumpRouted(
@@ -262,6 +278,81 @@ void main() {
         const RepeatRule(interval: 2, unit: RepeatUnit.week),
       );
       expect(notifier.updated?.clearRepeatRule, isFalse);
+    });
+
+    List<String> chips(WidgetTester tester) => tester
+        .widgetList<AppChip>(find.byType(AppChip))
+        .map((chip) => chip.label)
+        .toList();
+
+    testWidgets('una cita nueva empieza con el aviso de 30 minutos', (
+      tester,
+    ) async {
+      final notifier = _RecordingAppointmentsNotifier();
+      await pumpRouted(tester, notifier);
+      await tester.enterText(find.byType(EditableText).first, 'Dentista');
+
+      expect(chips(tester), ['30 min']);
+
+      await tester.tap(find.text('CREAR'));
+      await tester.pumpAndSettle();
+
+      expect(notifier.created?.reminderMinutes, [30]);
+    });
+
+    testWidgets('los recordatorios se cambian por cita al crearla', (
+      tester,
+    ) async {
+      final notifier = _RecordingAppointmentsNotifier();
+      await pumpRouted(tester, notifier);
+      await tester.enterText(find.byType(EditableText).first, 'Reunión');
+
+      await tester.tap(find.text('30 min'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('AÑADIR RECORDATORIO'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('1 día antes'));
+      await tester.pumpAndSettle();
+
+      expect(chips(tester), ['1 día']);
+
+      await tester.tap(find.text('CREAR'));
+      await tester.pumpAndSettle();
+
+      expect(notifier.created?.reminderMinutes, [1440]);
+    });
+
+    testWidgets('una cita se abre con sus recordatorios y los conserva', (
+      tester,
+    ) async {
+      final notifier = _RecordingAppointmentsNotifier([
+        buildAppointment(id: 'a1', reminderMinutes: const [60, 1440]),
+      ]);
+      await pumpRouted(tester, notifier, id: 'a1');
+
+      expect(chips(tester), ['1 h', '1 día']);
+
+      await tester.tap(find.text('GUARDAR'));
+      await tester.pumpAndSettle();
+
+      expect(notifier.updated?.reminderMinutes, [60, 1440]);
+    });
+
+    testWidgets('quitar todos se guarda como una cita sin avisos', (
+      tester,
+    ) async {
+      final notifier = _RecordingAppointmentsNotifier([
+        buildAppointment(id: 'a1', reminderMinutes: const [60]),
+      ]);
+      await pumpRouted(tester, notifier, id: 'a1');
+
+      await tester.tap(find.text('1 h'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('GUARDAR'));
+      await tester.pumpAndSettle();
+
+      // Lista vacía, no «sin cambios»: vaciarla es una orden.
+      expect(notifier.updated?.reminderMinutes, isEmpty);
     });
   });
 

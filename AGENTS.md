@@ -60,6 +60,7 @@ Feature-first, tres capas por feature (`data`, `domain`, `presentation`); lo tra
 ### Drift
 
 - Las migraciones son secuenciales: un `if (from < N)` por cambio, con `schemaVersion` a juego.
+- Quitar una columna borra también sus `addColumn` y `columnTransformer` antiguos (el getter ya no existe y no compilaría): una sola recreación de tabla en el `if (from < N)` del borrado cubre a todos los que vienen de versiones anteriores.
 - Un cambio de tipo de columna pide `migrator.alterTable(TableMigration(...))` con su `columnTransformer`, no un `addColumn`.
 - `alterTable` recrea la tabla con el esquema **actual**: las columnas añadidas después de esa versión van en su `newColumns`, y su `addColumn` se limita a las versiones que llegan sin ellas.
 - Un salto de `drift` arrastra `drift_dev` y cambia el código generado: `build_runner build` va en el mismo commit.
@@ -75,6 +76,8 @@ Feature-first, tres capas por feature (`data`, `domain`, `presentation`); lo tra
 ### Recordatorios
 
 Qué avisar lo decide una función pura (`buildAppointmentReminders`); `AppointmentRemindersScheduler` reescribe el plan entero cuando cambian citas o ajustes. Las notificaciones son best-effort: fallan en silencio donde la plataforma no las soporta (Linux).
+
+Cada cita lleva sus márgenes (`Appointment.reminderMinutes`); solo el interruptor de notificaciones es global. En Firestore van como texto separado por comas, y **campo ausente ≠ texto vacío**: ausente es una cita anterior a los márgenes por cita y se lee como `[30]`; vacío es «sin avisos». Por eso el `patch` escribe el vacío en vez de borrar el campo.
 
 ### Actualizaciones (solo Android)
 

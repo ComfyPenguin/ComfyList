@@ -37,11 +37,6 @@ class SettingsTable extends Table {
   BoolColumn get use24HourFormat =>
       boolean().withDefault(const Constant(true))();
 
-  /// Minutos de antelación de los recordatorios de una cita (0 = a su hora),
-  /// separados por comas y como mucho tres. Un valor vacío es «sin avisos».
-  TextColumn get appointmentReminderMinutes =>
-      text().withDefault(const Constant('30'))();
-
   /// Si `true`, ya se mostró la pista de mantener pulsada una tarjeta para
   /// editarla y no vuelve a aparecer.
   BoolColumn get longPressHintSeen =>

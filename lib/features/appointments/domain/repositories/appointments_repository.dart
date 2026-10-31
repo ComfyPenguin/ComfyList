@@ -15,6 +15,7 @@ abstract class AppointmentsRepository {
     String? description,
     String? location,
     RepeatRule? repeatRule,
+    required List<int> reminderMinutes,
     required DateTime dateTime,
   });
 
@@ -28,6 +29,7 @@ abstract class AppointmentsRepository {
     bool clearLocation = false,
     RepeatRule? repeatRule,
     bool clearRepeatRule = false,
+    List<int>? reminderMinutes,
     DateTime? dateTime,
     bool? isDone,
   });

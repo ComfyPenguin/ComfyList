@@ -5,10 +5,10 @@ import '../../../../shared/core/theme/app_spacing.dart';
 import '../../../../shared/core/theme/app_theme.dart';
 import '../../../../shared/core/theme/app_typography.dart';
 import '../../../../shared/ui/pickers/picker_sheet.dart';
-import '../../domain/entities/app_settings.dart';
+import '../../domain/reminder_minutes.dart';
 import 'reminder_lead_labels.dart';
 
-/// Lo que se puede añadir desde el menú: un margen de los que ofrece Ajustes o
+/// Lo que se puede añadir desde el menú: un margen de los predefinidos o
 /// una cantidad elegida a mano.
 sealed class ReminderLeadOption {
   const ReminderLeadOption();

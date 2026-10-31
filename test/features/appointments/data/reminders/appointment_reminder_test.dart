@@ -27,12 +27,13 @@ void main() {
     test('programa un aviso por cada margen guardado', () {
       final reminders = buildAppointmentReminders(
         items: [
-          buildAppointment(id: 'a1', dateTime: DateTime(2026, 9, 15, 12)),
+          buildAppointment(
+            id: 'a1',
+            dateTime: DateTime(2026, 9, 15, 12),
+            reminderMinutes: const [0, 30, 60],
+          ),
         ],
-        settings: buildAppSettings(
-          notificationsEnabled: true,
-          appointmentReminderMinutes: const [0, 30, 60],
-        ),
+        settings: buildAppSettings(notificationsEnabled: true),
         now: now,
       );
 
@@ -50,13 +51,14 @@ void main() {
     test('de los márgenes caen los que ya habrían pasado', () {
       final reminders = buildAppointmentReminders(
         items: [
-          buildAppointment(id: 'a1', dateTime: DateTime(2026, 9, 15, 12)),
+          buildAppointment(
+            id: 'a1',
+            dateTime: DateTime(2026, 9, 15, 12),
+            // El de un día antes caería ayer: la cita sigue avisando a su hora.
+            reminderMinutes: const [0, 1440],
+          ),
         ],
-        settings: buildAppSettings(
-          notificationsEnabled: true,
-          // El de un día antes caería ayer: la cita sigue avisando a su hora.
-          appointmentReminderMinutes: const [0, 1440],
-        ),
+        settings: buildAppSettings(notificationsEnabled: true),
         now: now,
       );
 
@@ -64,15 +66,41 @@ void main() {
       expect(reminders.single.when, DateTime(2026, 9, 15, 12));
     });
 
+    test('cada cita avisa con sus propios márgenes', () {
+      final reminders = buildAppointmentReminders(
+        items: [
+          buildAppointment(
+            id: 'reunion',
+            dateTime: DateTime(2026, 9, 17, 12),
+            reminderMinutes: const [1440],
+          ),
+          buildAppointment(
+            id: 'recado',
+            dateTime: DateTime(2026, 9, 15, 13),
+            reminderMinutes: const [60],
+          ),
+        ],
+        settings: buildAppSettings(notificationsEnabled: true),
+        now: now,
+      );
+
+      expect(reminders.map((reminder) => reminder.when), [
+        DateTime(2026, 9, 16, 12),
+        DateTime(2026, 9, 15, 12),
+      ]);
+      expect(reminders.map((reminder) => reminder.id).toSet(), hasLength(2));
+    });
+
     test('sin márgenes no hay ningún aviso', () {
       final reminders = buildAppointmentReminders(
         items: [
-          buildAppointment(id: 'a1', dateTime: DateTime(2026, 9, 15, 12)),
+          buildAppointment(
+            id: 'a1',
+            dateTime: DateTime(2026, 9, 15, 12),
+            reminderMinutes: const [],
+          ),
         ],
-        settings: buildAppSettings(
-          notificationsEnabled: true,
-          appointmentReminderMinutes: const [],
-        ),
+        settings: buildAppSettings(notificationsEnabled: true),
         now: now,
       );
 

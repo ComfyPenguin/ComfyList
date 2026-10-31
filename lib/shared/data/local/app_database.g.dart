@@ -123,18 +123,6 @@ class $SettingsTableTable extends SettingsTable
     ),
     defaultValue: const Constant(true),
   );
-  static const VerificationMeta _appointmentReminderMinutesMeta =
-      const VerificationMeta('appointmentReminderMinutes');
-  @override
-  late final GeneratedColumn<String> appointmentReminderMinutes =
-      GeneratedColumn<String>(
-        'appointment_reminder_minutes',
-        aliasedName,
-        false,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-        defaultValue: const Constant('30'),
-      );
   static const VerificationMeta _longPressHintSeenMeta = const VerificationMeta(
     'longPressHintSeen',
   );
@@ -205,7 +193,6 @@ class $SettingsTableTable extends SettingsTable
     appointmentsTodayOnTop,
     invertSwipeActions,
     use24HourFormat,
-    appointmentReminderMinutes,
     longPressHintSeen,
     trashRetentionDays,
     skippedUpdateBuild,
@@ -284,15 +271,6 @@ class $SettingsTableTable extends SettingsTable
         use24HourFormat.isAcceptableOrUnknown(
           data['use24_hour_format']!,
           _use24HourFormatMeta,
-        ),
-      );
-    }
-    if (data.containsKey('appointment_reminder_minutes')) {
-      context.handle(
-        _appointmentReminderMinutesMeta,
-        appointmentReminderMinutes.isAcceptableOrUnknown(
-          data['appointment_reminder_minutes']!,
-          _appointmentReminderMinutesMeta,
         ),
       );
     }
@@ -381,10 +359,6 @@ class $SettingsTableTable extends SettingsTable
         DriftSqlType.bool,
         data['${effectivePrefix}use24_hour_format'],
       )!,
-      appointmentReminderMinutes: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}appointment_reminder_minutes'],
-      )!,
       longPressHintSeen: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}long_press_hint_seen'],
@@ -442,10 +416,6 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
   /// Si `false`, se muestran en formato 12H con AM/PM.
   final bool use24HourFormat;
 
-  /// Minutos de antelación de los recordatorios de una cita (0 = a su hora),
-  /// separados por comas y como mucho tres. Un valor vacío es «sin avisos».
-  final String appointmentReminderMinutes;
-
   /// Si `true`, ya se mostró la pista de mantener pulsada una tarjeta para
   /// editarla y no vuelve a aparecer.
   final bool longPressHintSeen;
@@ -471,7 +441,6 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     required this.appointmentsTodayOnTop,
     required this.invertSwipeActions,
     required this.use24HourFormat,
-    required this.appointmentReminderMinutes,
     required this.longPressHintSeen,
     required this.trashRetentionDays,
     required this.skippedUpdateBuild,
@@ -491,9 +460,6 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     map['appointments_today_on_top'] = Variable<bool>(appointmentsTodayOnTop);
     map['invert_swipe_actions'] = Variable<bool>(invertSwipeActions);
     map['use24_hour_format'] = Variable<bool>(use24HourFormat);
-    map['appointment_reminder_minutes'] = Variable<String>(
-      appointmentReminderMinutes,
-    );
     map['long_press_hint_seen'] = Variable<bool>(longPressHintSeen);
     map['trash_retention_days'] = Variable<int>(trashRetentionDays);
     map['skipped_update_build'] = Variable<int>(skippedUpdateBuild);
@@ -514,7 +480,6 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       appointmentsTodayOnTop: Value(appointmentsTodayOnTop),
       invertSwipeActions: Value(invertSwipeActions),
       use24HourFormat: Value(use24HourFormat),
-      appointmentReminderMinutes: Value(appointmentReminderMinutes),
       longPressHintSeen: Value(longPressHintSeen),
       trashRetentionDays: Value(trashRetentionDays),
       skippedUpdateBuild: Value(skippedUpdateBuild),
@@ -545,9 +510,6 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       ),
       invertSwipeActions: serializer.fromJson<bool>(json['invertSwipeActions']),
       use24HourFormat: serializer.fromJson<bool>(json['use24HourFormat']),
-      appointmentReminderMinutes: serializer.fromJson<String>(
-        json['appointmentReminderMinutes'],
-      ),
       longPressHintSeen: serializer.fromJson<bool>(json['longPressHintSeen']),
       trashRetentionDays: serializer.fromJson<int>(json['trashRetentionDays']),
       skippedUpdateBuild: serializer.fromJson<int>(json['skippedUpdateBuild']),
@@ -571,9 +533,6 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       'appointmentsTodayOnTop': serializer.toJson<bool>(appointmentsTodayOnTop),
       'invertSwipeActions': serializer.toJson<bool>(invertSwipeActions),
       'use24HourFormat': serializer.toJson<bool>(use24HourFormat),
-      'appointmentReminderMinutes': serializer.toJson<String>(
-        appointmentReminderMinutes,
-      ),
       'longPressHintSeen': serializer.toJson<bool>(longPressHintSeen),
       'trashRetentionDays': serializer.toJson<int>(trashRetentionDays),
       'skippedUpdateBuild': serializer.toJson<int>(skippedUpdateBuild),
@@ -591,7 +550,6 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     bool? appointmentsTodayOnTop,
     bool? invertSwipeActions,
     bool? use24HourFormat,
-    String? appointmentReminderMinutes,
     bool? longPressHintSeen,
     int? trashRetentionDays,
     int? skippedUpdateBuild,
@@ -608,8 +566,6 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
         appointmentsTodayOnTop ?? this.appointmentsTodayOnTop,
     invertSwipeActions: invertSwipeActions ?? this.invertSwipeActions,
     use24HourFormat: use24HourFormat ?? this.use24HourFormat,
-    appointmentReminderMinutes:
-        appointmentReminderMinutes ?? this.appointmentReminderMinutes,
     longPressHintSeen: longPressHintSeen ?? this.longPressHintSeen,
     trashRetentionDays: trashRetentionDays ?? this.trashRetentionDays,
     skippedUpdateBuild: skippedUpdateBuild ?? this.skippedUpdateBuild,
@@ -640,9 +596,6 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       use24HourFormat: data.use24HourFormat.present
           ? data.use24HourFormat.value
           : this.use24HourFormat,
-      appointmentReminderMinutes: data.appointmentReminderMinutes.present
-          ? data.appointmentReminderMinutes.value
-          : this.appointmentReminderMinutes,
       longPressHintSeen: data.longPressHintSeen.present
           ? data.longPressHintSeen.value
           : this.longPressHintSeen,
@@ -672,7 +625,6 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
           ..write('appointmentsTodayOnTop: $appointmentsTodayOnTop, ')
           ..write('invertSwipeActions: $invertSwipeActions, ')
           ..write('use24HourFormat: $use24HourFormat, ')
-          ..write('appointmentReminderMinutes: $appointmentReminderMinutes, ')
           ..write('longPressHintSeen: $longPressHintSeen, ')
           ..write('trashRetentionDays: $trashRetentionDays, ')
           ..write('skippedUpdateBuild: $skippedUpdateBuild, ')
@@ -692,7 +644,6 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     appointmentsTodayOnTop,
     invertSwipeActions,
     use24HourFormat,
-    appointmentReminderMinutes,
     longPressHintSeen,
     trashRetentionDays,
     skippedUpdateBuild,
@@ -712,7 +663,6 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
           other.appointmentsTodayOnTop == this.appointmentsTodayOnTop &&
           other.invertSwipeActions == this.invertSwipeActions &&
           other.use24HourFormat == this.use24HourFormat &&
-          other.appointmentReminderMinutes == this.appointmentReminderMinutes &&
           other.longPressHintSeen == this.longPressHintSeen &&
           other.trashRetentionDays == this.trashRetentionDays &&
           other.skippedUpdateBuild == this.skippedUpdateBuild &&
@@ -729,7 +679,6 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
   final Value<bool> appointmentsTodayOnTop;
   final Value<bool> invertSwipeActions;
   final Value<bool> use24HourFormat;
-  final Value<String> appointmentReminderMinutes;
   final Value<bool> longPressHintSeen;
   final Value<int> trashRetentionDays;
   final Value<int> skippedUpdateBuild;
@@ -744,7 +693,6 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     this.appointmentsTodayOnTop = const Value.absent(),
     this.invertSwipeActions = const Value.absent(),
     this.use24HourFormat = const Value.absent(),
-    this.appointmentReminderMinutes = const Value.absent(),
     this.longPressHintSeen = const Value.absent(),
     this.trashRetentionDays = const Value.absent(),
     this.skippedUpdateBuild = const Value.absent(),
@@ -760,7 +708,6 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     this.appointmentsTodayOnTop = const Value.absent(),
     this.invertSwipeActions = const Value.absent(),
     this.use24HourFormat = const Value.absent(),
-    this.appointmentReminderMinutes = const Value.absent(),
     this.longPressHintSeen = const Value.absent(),
     this.trashRetentionDays = const Value.absent(),
     this.skippedUpdateBuild = const Value.absent(),
@@ -776,7 +723,6 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     Expression<bool>? appointmentsTodayOnTop,
     Expression<bool>? invertSwipeActions,
     Expression<bool>? use24HourFormat,
-    Expression<String>? appointmentReminderMinutes,
     Expression<bool>? longPressHintSeen,
     Expression<int>? trashRetentionDays,
     Expression<int>? skippedUpdateBuild,
@@ -796,8 +742,6 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
       if (invertSwipeActions != null)
         'invert_swipe_actions': invertSwipeActions,
       if (use24HourFormat != null) 'use24_hour_format': use24HourFormat,
-      if (appointmentReminderMinutes != null)
-        'appointment_reminder_minutes': appointmentReminderMinutes,
       if (longPressHintSeen != null) 'long_press_hint_seen': longPressHintSeen,
       if (trashRetentionDays != null)
         'trash_retention_days': trashRetentionDays,
@@ -817,7 +761,6 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     Value<bool>? appointmentsTodayOnTop,
     Value<bool>? invertSwipeActions,
     Value<bool>? use24HourFormat,
-    Value<String>? appointmentReminderMinutes,
     Value<bool>? longPressHintSeen,
     Value<int>? trashRetentionDays,
     Value<int>? skippedUpdateBuild,
@@ -835,8 +778,6 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
           appointmentsTodayOnTop ?? this.appointmentsTodayOnTop,
       invertSwipeActions: invertSwipeActions ?? this.invertSwipeActions,
       use24HourFormat: use24HourFormat ?? this.use24HourFormat,
-      appointmentReminderMinutes:
-          appointmentReminderMinutes ?? this.appointmentReminderMinutes,
       longPressHintSeen: longPressHintSeen ?? this.longPressHintSeen,
       trashRetentionDays: trashRetentionDays ?? this.trashRetentionDays,
       skippedUpdateBuild: skippedUpdateBuild ?? this.skippedUpdateBuild,
@@ -876,11 +817,6 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     if (use24HourFormat.present) {
       map['use24_hour_format'] = Variable<bool>(use24HourFormat.value);
     }
-    if (appointmentReminderMinutes.present) {
-      map['appointment_reminder_minutes'] = Variable<String>(
-        appointmentReminderMinutes.value,
-      );
-    }
     if (longPressHintSeen.present) {
       map['long_press_hint_seen'] = Variable<bool>(longPressHintSeen.value);
     }
@@ -912,7 +848,6 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
           ..write('appointmentsTodayOnTop: $appointmentsTodayOnTop, ')
           ..write('invertSwipeActions: $invertSwipeActions, ')
           ..write('use24HourFormat: $use24HourFormat, ')
-          ..write('appointmentReminderMinutes: $appointmentReminderMinutes, ')
           ..write('longPressHintSeen: $longPressHintSeen, ')
           ..write('trashRetentionDays: $trashRetentionDays, ')
           ..write('skippedUpdateBuild: $skippedUpdateBuild, ')
@@ -1540,7 +1475,6 @@ typedef $$SettingsTableTableCreateCompanionBuilder =
       Value<bool> appointmentsTodayOnTop,
       Value<bool> invertSwipeActions,
       Value<bool> use24HourFormat,
-      Value<String> appointmentReminderMinutes,
       Value<bool> longPressHintSeen,
       Value<int> trashRetentionDays,
       Value<int> skippedUpdateBuild,
@@ -1557,7 +1491,6 @@ typedef $$SettingsTableTableUpdateCompanionBuilder =
       Value<bool> appointmentsTodayOnTop,
       Value<bool> invertSwipeActions,
       Value<bool> use24HourFormat,
-      Value<String> appointmentReminderMinutes,
       Value<bool> longPressHintSeen,
       Value<int> trashRetentionDays,
       Value<int> skippedUpdateBuild,
@@ -1611,11 +1544,6 @@ class $$SettingsTableTableFilterComposer
 
   ColumnFilters<bool> get use24HourFormat => $composableBuilder(
     column: $table.use24HourFormat,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get appointmentReminderMinutes => $composableBuilder(
-    column: $table.appointmentReminderMinutes,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1694,11 +1622,6 @@ class $$SettingsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get appointmentReminderMinutes => $composableBuilder(
-    column: $table.appointmentReminderMinutes,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<bool> get longPressHintSeen => $composableBuilder(
     column: $table.longPressHintSeen,
     builder: (column) => ColumnOrderings(column),
@@ -1770,11 +1693,6 @@ class $$SettingsTableTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get appointmentReminderMinutes => $composableBuilder(
-    column: $table.appointmentReminderMinutes,
-    builder: (column) => column,
-  );
-
   GeneratedColumn<bool> get longPressHintSeen => $composableBuilder(
     column: $table.longPressHintSeen,
     builder: (column) => column,
@@ -1839,7 +1757,6 @@ class $$SettingsTableTableTableManager
                 Value<bool> appointmentsTodayOnTop = const Value.absent(),
                 Value<bool> invertSwipeActions = const Value.absent(),
                 Value<bool> use24HourFormat = const Value.absent(),
-                Value<String> appointmentReminderMinutes = const Value.absent(),
                 Value<bool> longPressHintSeen = const Value.absent(),
                 Value<int> trashRetentionDays = const Value.absent(),
                 Value<int> skippedUpdateBuild = const Value.absent(),
@@ -1854,7 +1771,6 @@ class $$SettingsTableTableTableManager
                 appointmentsTodayOnTop: appointmentsTodayOnTop,
                 invertSwipeActions: invertSwipeActions,
                 use24HourFormat: use24HourFormat,
-                appointmentReminderMinutes: appointmentReminderMinutes,
                 longPressHintSeen: longPressHintSeen,
                 trashRetentionDays: trashRetentionDays,
                 skippedUpdateBuild: skippedUpdateBuild,
@@ -1872,7 +1788,6 @@ class $$SettingsTableTableTableManager
                 Value<bool> appointmentsTodayOnTop = const Value.absent(),
                 Value<bool> invertSwipeActions = const Value.absent(),
                 Value<bool> use24HourFormat = const Value.absent(),
-                Value<String> appointmentReminderMinutes = const Value.absent(),
                 Value<bool> longPressHintSeen = const Value.absent(),
                 Value<int> trashRetentionDays = const Value.absent(),
                 Value<int> skippedUpdateBuild = const Value.absent(),
@@ -1887,7 +1802,6 @@ class $$SettingsTableTableTableManager
                 appointmentsTodayOnTop: appointmentsTodayOnTop,
                 invertSwipeActions: invertSwipeActions,
                 use24HourFormat: use24HourFormat,
-                appointmentReminderMinutes: appointmentReminderMinutes,
                 longPressHintSeen: longPressHintSeen,
                 trashRetentionDays: trashRetentionDays,
                 skippedUpdateBuild: skippedUpdateBuild,
