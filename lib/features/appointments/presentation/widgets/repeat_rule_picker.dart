@@ -9,14 +9,15 @@ import '../../domain/entities/repeat_rule.dart';
 /// Cantidades que ofrece la rueda: «cada 1» a «cada 99».
 const int _maxInterval = 99;
 
+/// Unidad en singular y en plural: la rueda dice «1 día» pero «2 días».
 const _unitLabels = {
-  RepeatUnit.day: 'días',
-  RepeatUnit.week: 'semanas',
-  RepeatUnit.month: 'meses',
-  RepeatUnit.year: 'años',
+  RepeatUnit.day: ('día', 'días'),
+  RepeatUnit.week: ('semana', 'semanas'),
+  RepeatUnit.month: ('mes', 'meses'),
+  RepeatUnit.year: ('año', 'años'),
 };
 
-/// Abre el selector «Cada [cantidad] [unidad]» y devuelve la regla elegida, o
+/// Abre el selector «Repetir cada [cantidad] [unidad]» y devuelve la regla elegida, o
 /// `null` si se cierra sin aceptar. Sin [initial] arranca en «cada 1 día».
 Future<RepeatRule?> showRepeatRulePicker(
   BuildContext context, {
@@ -67,7 +68,7 @@ class _RepeatRulePickerSheetState extends State<_RepeatRulePickerSheet> {
     final colors = context.colors;
 
     return PickerSheet(
-      title: 'Repetir',
+      title: 'Repetir cada',
       onConfirm: () => Navigator.of(context).pop(
         RepeatRule(
           interval: _amountIndex + 1,
@@ -97,15 +98,19 @@ class _RepeatRulePickerSheetState extends State<_RepeatRulePickerSheet> {
                     controller: _amountController,
                     itemCount: _maxInterval,
                     labelBuilder: (index) => '${index + 1}',
-                    onSelected: (index) => _amountIndex = index,
+                    // La cantidad decide si la unidad va en singular.
+                    onSelected: (index) =>
+                        setState(() => _amountIndex = index),
                   ),
                 ),
                 Expanded(
                   child: WheelPicker(
                     controller: _unitController,
                     itemCount: RepeatUnit.values.length,
-                    labelBuilder: (index) =>
-                        _unitLabels[RepeatUnit.values[index]]!,
+                    labelBuilder: (index) {
+                      final (one, many) = _unitLabels[RepeatUnit.values[index]]!;
+                      return _amountIndex == 0 ? one : many;
+                    },
                     onSelected: (index) => _unitIndex = index,
                   ),
                 ),
