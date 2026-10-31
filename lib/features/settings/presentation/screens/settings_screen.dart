@@ -14,7 +14,6 @@ import '../../../../shared/ui/animations/unfold_down.dart';
 import '../providers/app_version_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/settings_state.dart';
-import '../widgets/appointment_reminder_selector.dart';
 import '../widgets/appointments_completed_to_bottom_toggle.dart';
 import '../widgets/blocked_notifications_tile.dart';
 import '../widgets/completed_to_bottom_toggle.dart';
@@ -68,6 +67,7 @@ class SettingsScreen extends ConsumerWidget {
     final notificationsBlocked =
         notificationsEnabled == true &&
         ref.watch(systemAllowsNotificationsProvider).value == false;
+    final hasPermissionRows = notificationsBlocked || exactAlarmsMissing;
 
     return ListView(
       padding: EdgeInsets.fromLTRB(
@@ -87,9 +87,9 @@ class SettingsScreen extends ConsumerWidget {
         const SizedBox(height: AppSpacing.joined),
         NotificationsToggle(
           isFirst: false,
-          // Con el recordatorio recogido, la del switch es la fila que cierra
-          // el grupo.
-          isLast: notificationsEnabled != true,
+          // Sin filas de permisos colgando, la del switch es la que cierra el
+          // grupo.
+          isLast: !(notificationsEnabled == true && hasPermissionRows),
         ),
         if (notificationsEnabled != null)
           UnfoldDown(
@@ -102,15 +102,11 @@ class SettingsScreen extends ConsumerWidget {
                 // va antes que el resto del grupo.
                 if (notificationsBlocked) ...[
                   const SizedBox(height: AppSpacing.joined),
-                  const BlockedNotificationsTile(isFirst: false, isLast: false),
+                  BlockedNotificationsTile(
+                    isFirst: false,
+                    isLast: !exactAlarmsMissing,
+                  ),
                 ],
-                const SizedBox(height: AppSpacing.joined),
-                AppointmentReminderSelector(
-                  isFirst: false,
-                  // Con la fila de alarmas exactas debajo, el recordatorio deja
-                  // de cerrar el grupo.
-                  isLast: !exactAlarmsMissing,
-                ),
                 if (exactAlarmsMissing) ...[
                   const SizedBox(height: AppSpacing.joined),
                   const ExactAlarmsTile(isFirst: false, isLast: true),

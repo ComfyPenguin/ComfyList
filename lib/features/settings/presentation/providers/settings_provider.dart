@@ -74,9 +74,6 @@ class SettingsNotifier extends Notifier<SettingsState> {
   Future<void> setUse24HourFormat(bool enabled) =>
       ref.read(settingsRepositoryProvider).setUse24HourFormat(enabled);
 
-  Future<void> setAppointmentReminderMinutes(List<int> minutes) =>
-      ref.read(settingsRepositoryProvider).setAppointmentReminderMinutes(minutes);
-
   Future<void> setLongPressHintSeen(bool seen) =>
       ref.read(settingsRepositoryProvider).setLongPressHintSeen(seen);
 
@@ -113,13 +110,6 @@ final themeModeProvider = Provider<ThemeMode>(
 final use24HourFormatProvider = Provider<bool>(
   (ref) =>
       ref.watch(settingsOrDefaultsProvider.select((s) => s.use24HourFormat)),
-);
-
-/// Márgenes de los recordatorios de citas — los de por defecto mientras carga.
-final appointmentReminderMinutesProvider = Provider<List<int>>(
-  (ref) => ref.watch(
-    settingsOrDefaultsProvider.select((s) => s.appointmentReminderMinutes),
-  ),
 );
 
 /// Días que aguanta un borrado en la papelera (0 = nunca) — el de por defecto

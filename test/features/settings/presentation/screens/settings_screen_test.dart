@@ -162,26 +162,19 @@ void main() {
     expect(switchValue(tester, 'Citas completadas al final'), isFalse);
   });
 
-  testWidgets('las notificaciones despliegan los recordatorios de citas', (
+  testWidgets('los recordatorios ya no son un ajuste, los lleva cada cita', (
     tester,
   ) async {
     final repo = FakeSettingsRepository();
     await pumpSettings(tester, repo);
     await tester.pumpAndSettle();
 
-    // Los avisos vienen apagados de fábrica, así que los recordatorios están
-    // recogidos y no dejan hueco.
-    final row = find.text('Recordatorios');
-    final unfold = unfoldFor('Recordatorios');
-    expect(row.hitTestable(), findsNothing);
-    expect(tester.getSize(unfold).height, 0);
+    expect(find.text('Recordatorios'), findsNothing);
 
     await enableNotifications(tester);
 
-    // Al encenderlos no hay nada que programar todavía, pero la fila se
-    // despliega y responde al toque.
-    expect(row.hitTestable(), findsOneWidget);
-    expect(tester.getSize(unfold).height, greaterThan(0));
+    expect(find.text('Recordatorios'), findsNothing);
+    expect(find.text('Añadir recordatorio'), findsNothing);
   });
 
   testWidgets('el permiso del sistema se pide al encender los avisos', (
@@ -321,8 +314,7 @@ void main() {
     await tester.pumpAndSettle();
     await enableNotifications(tester);
 
-    // Sin el permiso la fila está debajo del recordatorio, que ya no cierra el
-    // grupo.
+    // Sin el permiso la fila cuelga del interruptor de notificaciones.
     expect(find.text('Alarmas exactas'), findsOneWidget);
 
     await tester.tap(find.text('Alarmas exactas'));

@@ -27,7 +27,6 @@ void main() {
       expect(row.appointmentsTodayOnTop, isTrue);
       expect(row.invertSwipeActions, isFalse);
       expect(row.use24HourFormat, isTrue);
-      expect(row.appointmentReminderMinutes, '30');
       expect(row.longPressHintSeen, isFalse);
       expect(row.trashRetentionDays, 30);
     });
@@ -53,13 +52,13 @@ void main() {
 
       await dao.write(
         const SettingsTableCompanion(
-          appointmentReminderMinutes: Value('0,30,1440'),
+          use24HourFormat: Value(false),
           trashRetentionDays: Value(15),
         ),
       );
 
       final streamed = await dao.watch().first;
-      expect(streamed.appointmentReminderMinutes, '0,30,1440');
+      expect(streamed.use24HourFormat, isFalse);
       expect(streamed.trashRetentionDays, 15);
     });
 

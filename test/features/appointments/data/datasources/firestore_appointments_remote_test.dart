@@ -79,6 +79,7 @@ void main() {
       final created = await remote.createAppointment(
         uid: 'u1',
         title: 'Médico',
+        reminderMinutes: const [30],
         description: 'Revisión',
         dateTime: DateTime.utc(2026, 6, 1, 9),
       );

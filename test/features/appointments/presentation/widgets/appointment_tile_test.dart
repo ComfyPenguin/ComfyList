@@ -29,6 +29,7 @@ void main() {
     isDone: false,
     createdAt: DateTime.utc(2026),
     updatedAt: DateTime.utc(2026),
+    reminderMinutes: const [30],
   );
 
   testWidgets('mientras cargan los ajustes pinta la hora en el formato de fábrica',

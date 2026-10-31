@@ -108,6 +108,28 @@ CREATE TABLE settings_table (
 );
 ''';
 
+/// `settings_table` tal y como quedó en la v15, ya sin el ajuste de completar
+/// citas y todavía con los márgenes de recordatorio globales.
+const _v15SettingsTable = '''
+CREATE TABLE settings_table (
+  id INTEGER NOT NULL DEFAULT 1,
+  theme_mode TEXT NOT NULL DEFAULT 'system',
+  notifications_enabled INTEGER NOT NULL DEFAULT 0,
+  completed_to_bottom INTEGER NOT NULL DEFAULT 1,
+  appointments_completed_to_bottom INTEGER NOT NULL DEFAULT 1,
+  appointments_today_on_top INTEGER NOT NULL DEFAULT 1,
+  invert_swipe_actions INTEGER NOT NULL DEFAULT 0,
+  use24_hour_format INTEGER NOT NULL DEFAULT 1,
+  appointment_reminder_minutes TEXT NOT NULL DEFAULT '30',
+  long_press_hint_seen INTEGER NOT NULL DEFAULT 0,
+  trash_retention_days INTEGER NOT NULL DEFAULT 30,
+  skipped_update_build INTEGER NOT NULL DEFAULT 0,
+  last_update_check_at INTEGER,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (id)
+);
+''';
+
 void main() {
   late AppDatabase db;
 
@@ -163,17 +185,6 @@ void main() {
     );
   }
 
-  /// Definición real de la columna en la base de datos. `PRAGMA table_info` es
-  /// lo que dice SQLite, no lo que la app cree: sin la migración el tipo sigue
-  /// siendo INTEGER aunque el código lo lea como texto.
-  Future<QueryRow> reminderColumn() async {
-    final columns = await db
-        .customSelect('PRAGMA table_info(settings_table);')
-        .get();
-    return columns.firstWhere(
-      (row) => row.read<String>('name') == 'appointment_reminder_minutes',
-    );
-  }
 
   /// Deja la base como una instalación de la v13: la tabla de ajustes sin las
   /// columnas del comprobador de actualizaciones y la fila del usuario.
@@ -199,28 +210,17 @@ void main() {
   }
 
   group('migración de la v8 a la v9', () {
-    test('la columna del recordatorio queda declarada como texto', () async {
-      await seedV8(reminderMinutes: 30);
-      final before = await reminderColumn();
-      expect(before.read<String>('type'), 'INTEGER');
-
-      await db.migration.onUpgrade(Migrator(db), 8, 9);
-
-      final after = await reminderColumn();
-      expect(after.read<String>('type'), 'TEXT');
-      expect(after.read<String?>('dflt_value'), "'30'");
-    });
-
-    test('el recordatorio guardado pasa a ser el único de la lista', () async {
+    test('el recordatorio global ya no tiene columna', () async {
       await seedV8(reminderMinutes: 1440);
+      expect(await settingsColumns(), contains('appointment_reminder_minutes'));
 
       await db.migration.onUpgrade(Migrator(db), 8, 9);
 
-      final row = await db.settingsDao.getOrCreate();
-      expect(row.appointmentReminderMinutes, '1440');
-      expect(AppSettings.parseReminderMinutes(row.appointmentReminderMinutes), [
-        1440,
-      ]);
+      // Cada cita lleva ya los suyos: el ajuste de la v8 no se traslada.
+      expect(
+        await settingsColumns(),
+        isNot(contains('appointment_reminder_minutes')),
+      );
     });
 
     test('el resto de la fila se copia tal cual', () async {
@@ -238,13 +238,13 @@ void main() {
 
       await db.migration.onUpgrade(Migrator(db), 8, 9);
       await db.settingsDao.write(
-        const SettingsTableCompanion(appointmentReminderMinutes: Value('0,30')),
+        const SettingsTableCompanion(themeMode: Value('light')),
       );
 
       final count = await db.managers.settingsTable.count();
       expect(count, 1);
       final streamed = await db.settingsDao.watch().first;
-      expect(streamed.appointmentReminderMinutes, '0,30');
+      expect(streamed.themeMode, 'light');
     });
   });
 
@@ -277,7 +277,6 @@ void main() {
 
       final row = await db.settingsDao.getOrCreate();
       expect(row.themeMode, 'light');
-      expect(row.appointmentReminderMinutes, '0,60');
       expect(row.id, 1);
     });
 
@@ -322,7 +321,6 @@ void main() {
 
       final row = await db.settingsDao.getOrCreate();
       expect(row.themeMode, 'light');
-      expect(row.appointmentReminderMinutes, '0,60');
       expect(row.id, 1);
     });
 
@@ -464,7 +462,6 @@ void main() {
       );
       final row = await db.settingsDao.getOrCreate();
       expect(row.skippedUpdateBuild, noSkippedUpdateBuild);
-      expect(row.appointmentReminderMinutes, '30');
     });
   });
 
@@ -515,7 +512,6 @@ void main() {
       expect(row.appointmentsTodayOnTop, isFalse);
       expect(row.invertSwipeActions, isTrue);
       expect(row.use24HourFormat, isFalse);
-      expect(row.appointmentReminderMinutes, '0,60');
       expect(row.longPressHintSeen, isTrue);
       expect(row.trashRetentionDays, 7);
       expect(row.skippedUpdateBuild, 231);
@@ -535,8 +531,79 @@ void main() {
         await settingsColumns(),
         isNot(contains('appointments_completion_enabled')),
       );
+      expect(await db.managers.settingsTable.count(), 1);
+    });
+  });
+
+  group('migración de la v15 a la v16', () {
+    /// Deja la base como una instalación de la v15, con el margen de recordatorio
+    /// global y varios ajustes que no son los de fábrica.
+    Future<void> seedV15() async {
+      await db.settingsDao.getOrCreate();
+      await db.customStatement('DROP TABLE settings_table');
+      await db.customStatement(_v15SettingsTable);
+      await db.customStatement(
+        'INSERT INTO settings_table (id, theme_mode, notifications_enabled, '
+        'completed_to_bottom, appointments_completed_to_bottom, '
+        'appointments_today_on_top, invert_swipe_actions, use24_hour_format, '
+        'appointment_reminder_minutes, long_press_hint_seen, '
+        'trash_retention_days, skipped_update_build, last_update_check_at, '
+        'updated_at) '
+        "VALUES (1, 'light', 1, 0, 0, 0, 1, 0, '0,60', 1, 7, 231, "
+        '1760000000, 0);',
+      );
+    }
+
+    test('quita la columna de los recordatorios globales', () async {
+      await seedV15();
+      expect(await settingsColumns(), contains('appointment_reminder_minutes'));
+
+      await db.migration.onUpgrade(Migrator(db), 15, 16);
+
+      // Cada cita lleva ya sus propios márgenes.
+      expect(
+        await settingsColumns(),
+        isNot(contains('appointment_reminder_minutes')),
+      );
+    });
+
+    test('conserva el resto de los ajustes guardados', () async {
+      await seedV15();
+
+      await db.migration.onUpgrade(Migrator(db), 15, 16);
+
       final row = await db.settingsDao.getOrCreate();
-      expect(row.appointmentReminderMinutes, '30');
+      expect(row.themeMode, 'light');
+      expect(row.notificationsEnabled, isTrue);
+      expect(row.completedToBottom, isFalse);
+      expect(row.appointmentsCompletedToBottom, isFalse);
+      expect(row.appointmentsTodayOnTop, isFalse);
+      expect(row.invertSwipeActions, isTrue);
+      expect(row.use24HourFormat, isFalse);
+      expect(row.longPressHintSeen, isTrue);
+      expect(row.trashRetentionDays, 7);
+      expect(row.skippedUpdateBuild, 231);
+      expect(
+        row.lastUpdateCheckAt,
+        DateTime.fromMillisecondsSinceEpoch(1760000000 * 1000),
+      );
+      expect(await db.managers.settingsTable.count(), 1);
+    });
+
+    test('quien venía de la v8 llega a la v16 sin la columna', () async {
+      await seedV8(reminderMinutes: 30);
+
+      await db.migration.onUpgrade(Migrator(db), 8, 16);
+
+      expect(
+        await settingsColumns(),
+        isNot(contains('appointment_reminder_minutes')),
+      );
+      expect(
+        await settingsColumns(),
+        isNot(contains('appointments_completion_enabled')),
+      );
+      expect(await db.managers.settingsTable.count(), 1);
     });
   });
 }

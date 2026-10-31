@@ -35,13 +35,13 @@ class AppointmentReminder {
   int get hashCode => Object.hash(id, title, body, when);
 }
 
-/// Avisos que corresponden a [items] con los ajustes de [settings]: una cita
-/// avisa una vez por cada uno de sus márgenes.
+/// Avisos que corresponden a [items]: una cita avisa una vez por cada uno de
+/// sus propios márgenes.
 ///
-/// Con las notificaciones apagadas no hay ninguno. De cada cita se caen las ya
-/// completadas y los avisos que ya habrían pasado (una cita dentro de 10 minutos
-/// con un margen de 30): el plugin rechaza programar en el pasado y soltar el
-/// aviso al abrir la app sería ruido.
+/// Con las notificaciones apagadas en [settings] no hay ninguno. De cada cita
+/// se caen las ya completadas y los avisos que ya habrían pasado (una cita
+/// dentro de 10 minutos con un margen de 30): el plugin rechaza programar en el
+/// pasado y soltar el aviso al abrir la app sería ruido.
 List<AppointmentReminder> buildAppointmentReminders({
   required List<Appointment> items,
   required AppSettings settings,
@@ -52,7 +52,7 @@ List<AppointmentReminder> buildAppointmentReminders({
   final reminders = <AppointmentReminder>[];
   for (final item in items) {
     if (item.isDone) continue;
-    for (final minutes in settings.appointmentReminderMinutes) {
+    for (final minutes in item.reminderMinutes) {
       final when = item.dateTime.subtract(Duration(minutes: minutes));
       if (!when.isAfter(now)) continue;
       reminders.add(

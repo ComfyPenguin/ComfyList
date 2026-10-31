@@ -1,4 +1,4 @@
-import 'package:comfy_list/features/settings/presentation/widgets/reminder_lead_menu.dart';
+import 'package:comfy_list/features/appointments/presentation/widgets/reminder_lead_menu.dart';
 import 'package:comfy_list/shared/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -70,6 +70,24 @@ void main() {
     }
     expect(find.text('5 minutos antes'), findsNothing);
     expect(find.text('1 hora antes'), findsNothing);
+  });
+
+  testWidgets('ofrece avisar a la hora de la cita y devuelve el cero', (
+    tester,
+  ) async {
+    final result = await openMenu(tester, taken: const [30]);
+
+    await tester.tap(find.text('A su hora'));
+    await tester.pumpAndSettle();
+
+    expect(result.option, isA<PresetReminderLead>());
+    expect(result.minutes, 0);
+  });
+
+  testWidgets('si ya avisa a su hora, no lo vuelve a ofrecer', (tester) async {
+    await openMenu(tester, taken: const [0]);
+
+    expect(find.text('A su hora'), findsNothing);
   });
 
   testWidgets('elegir un tiempo devuelve su margen', (tester) async {

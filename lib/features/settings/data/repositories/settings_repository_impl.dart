@@ -55,15 +55,6 @@ class SettingsRepositoryImpl implements SettingsRepository {
       );
 
   @override
-  Future<void> setAppointmentReminderMinutes(List<int> minutes) => _dao.write(
-        SettingsTableCompanion(
-          appointmentReminderMinutes: Value(
-            AppSettings.reminderMinutesToString(minutes),
-          ),
-        ),
-      );
-
-  @override
   Future<void> setLongPressHintSeen(bool seen) => _dao.write(
         SettingsTableCompanion(longPressHintSeen: Value(seen)),
       );
@@ -91,9 +82,6 @@ class SettingsRepositoryImpl implements SettingsRepository {
         appointmentsTodayOnTop: row.appointmentsTodayOnTop,
         invertSwipeActions: row.invertSwipeActions,
         use24HourFormat: row.use24HourFormat,
-        appointmentReminderMinutes: AppSettings.parseReminderMinutes(
-          row.appointmentReminderMinutes,
-        ),
         longPressHintSeen: row.longPressHintSeen,
         trashRetentionDays: AppSettings.parseTrashRetentionDays(
           row.trashRetentionDays,

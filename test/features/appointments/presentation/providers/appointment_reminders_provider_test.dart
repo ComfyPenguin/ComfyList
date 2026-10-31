@@ -31,10 +31,7 @@ void main() {
   test('programa los avisos al llegar las citas y los ajustes', () async {
     final notifications = FakeNotificationsService();
     final repo = FakeSettingsRepository(
-      settings: buildAppSettings(
-        notificationsEnabled: true,
-        appointmentReminderMinutes: const [60],
-      ),
+      settings: buildAppSettings(notificationsEnabled: true),
     );
     addTearDown(repo.close);
 
@@ -44,6 +41,7 @@ void main() {
         id: 'a1',
         title: 'Análisis',
         dateTime: DateTime.now().add(const Duration(hours: 3)),
+        reminderMinutes: const [60],
       ),
     ];
 

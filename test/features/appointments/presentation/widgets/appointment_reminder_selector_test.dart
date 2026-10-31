@@ -1,15 +1,11 @@
-import 'package:comfy_list/features/settings/presentation/providers/settings_provider.dart';
-import 'package:comfy_list/features/settings/presentation/widgets/appointment_reminder_selector.dart';
+import 'package:comfy_list/features/appointments/presentation/widgets/appointment_reminder_selector.dart';
 import 'package:comfy_list/shared/core/theme/app_theme.dart';
 import 'package:comfy_list/shared/ui/buttons/primary_button.dart';
 import 'package:comfy_list/shared/ui/inputs/app_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../../../helpers/fake_settings_repository.dart';
-import '../../../../helpers/test_helpers.dart';
 
 void main() {
   setUpAll(() async {
@@ -23,28 +19,34 @@ void main() {
     await loader.load();
   });
 
-  /// Monta el selector con los recordatorios guardados que se le pasen.
-  Future<void> pumpSelector(WidgetTester tester, {List<int>? minutes}) async {
-    final repo = FakeSettingsRepository(
-      settings: buildAppSettings(appointmentReminderMinutes: minutes),
-    );
-    addTearDown(repo.close);
+  /// Lo último que el selector pidió guardar: quien lo monta es el dueño de la
+  /// lista, y aquí hace de la pantalla que la guarda.
+  late List<int> current;
 
+  /// Monta el selector con los recordatorios que se le pasen.
+  Future<void> pumpSelector(
+    WidgetTester tester, {
+    required List<int> minutes,
+  }) async {
+    current = minutes;
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [settingsRepositoryProvider.overrideWithValue(repo)],
-        child: MaterialApp(
-          theme: AppTheme.light(),
-          home: const Scaffold(
-            body: Center(
-              child: SizedBox(width: 390, child: AppointmentReminderSelector()),
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 390,
+              child: StatefulBuilder(
+                builder: (context, setState) => AppointmentReminderSelector(
+                  selected: current,
+                  onChanged: (next) => setState(() => current = next),
+                ),
+              ),
             ),
           ),
         ),
       ),
     );
-    await tester.pump();
-    await tester.pump();
   }
 
   /// Etiquetas de las pastillas puestas, en el orden en que salen.
@@ -105,6 +107,20 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(chips(tester), ['15 min', '30 min']);
+    expect(current, [15, 30]);
+  });
+
+  testWidgets('«A su hora» se elige desde el menú y sale la primera', (
+    tester,
+  ) async {
+    await pumpSelector(tester, minutes: const [30]);
+
+    await openMenu(tester);
+    await tester.tap(find.text('A su hora'));
+    await tester.pumpAndSettle();
+
+    expect(chips(tester), ['A la hora', '30 min']);
+    expect(current, [0, 30]);
   });
 
   testWidgets('el personalizado se elige desde el menú', (tester) async {
@@ -151,6 +167,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(chips(tester), ['45 min']);
+    expect(current, [45]);
   });
 
   testWidgets('con los cinco puestos el botón se va y no deja hueco', (
@@ -185,7 +202,7 @@ void main() {
     expect(midway, lessThan(expanded));
   });
 
-  testWidgets('el aviso a la hora que quedara guardado sigue leyéndose', (
+  testWidgets('un aviso a la hora se lee «A la hora»', (
     tester,
   ) async {
     await pumpSelector(tester, minutes: const [0]);

@@ -24,8 +24,6 @@ abstract class SettingsRepository {
 
   Future<void> setUse24HourFormat(bool enabled);
 
-  Future<void> setAppointmentReminderMinutes(List<int> minutes);
-
   /// Marca que ya se mostró la pista de mantener pulsada una tarjeta para
   /// editarla, para que no vuelva a aparecer.
   Future<void> setLongPressHintSeen(bool seen);

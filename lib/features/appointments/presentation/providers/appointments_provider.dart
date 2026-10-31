@@ -72,6 +72,7 @@ class AppointmentsNotifier extends Notifier<AppointmentsState> {
     String? description,
     String? location,
     RepeatRule? repeatRule,
+    required List<int> reminderMinutes,
     required DateTime dateTime,
   }) async {
     final res = await ref.read(appointmentsRepositoryProvider).createAppointment(
@@ -80,6 +81,7 @@ class AppointmentsNotifier extends Notifier<AppointmentsState> {
           description: description,
           location: location,
           repeatRule: repeatRule,
+          reminderMinutes: reminderMinutes,
           dateTime: dateTime,
         );
     return res.isOk;
@@ -117,6 +119,7 @@ class AppointmentsNotifier extends Notifier<AppointmentsState> {
     bool clearLocation = false,
     RepeatRule? repeatRule,
     bool clearRepeatRule = false,
+    List<int>? reminderMinutes,
     DateTime? dateTime,
   }) async {
     final res = await ref.read(appointmentsRepositoryProvider).updateAppointment(
@@ -129,6 +132,7 @@ class AppointmentsNotifier extends Notifier<AppointmentsState> {
           clearLocation: clearLocation,
           repeatRule: repeatRule,
           clearRepeatRule: clearRepeatRule,
+          reminderMinutes: reminderMinutes,
           dateTime: dateTime,
         );
     return res.isOk;

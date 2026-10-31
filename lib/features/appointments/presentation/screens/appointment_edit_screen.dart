@@ -18,8 +18,10 @@ import '../../../../shared/ui/text/app_tag.dart';
 import '../../../../shared/ui/toast/app_toast.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../domain/entities/repeat_rule.dart';
+import '../../domain/reminder_minutes.dart';
 import '../providers/appointments_provider.dart';
 import '../providers/appointments_state.dart';
+import '../widgets/appointment_reminder_selector.dart';
 import '../widgets/reminder_warning.dart';
 import '../widgets/repeat_rule_label.dart';
 import '../widgets/repeat_rule_picker.dart';
@@ -42,6 +44,7 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
   final _locationCtrl = TextEditingController();
   late DateTime _dateTime = ref.read(clockProvider)();
   RepeatRule? _repeatRule;
+  List<int> _reminderMinutes = defaultReminderMinutes;
   String? _titleError;
   bool _hydrated = false;
   String _hydratedTitle = '';
@@ -67,6 +70,7 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
         _locationCtrl.text = appointment.location ?? '';
         _dateTime = appointment.dateTime;
         _repeatRule = appointment.repeatRule;
+        _reminderMinutes = appointment.reminderMinutes;
         _hydratedTitle = appointment.title;
         _hydrated = true;
       }
@@ -124,6 +128,7 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
             clearLocation: loc.isEmpty,
             repeatRule: _repeatRule,
             clearRepeatRule: _repeatRule == null,
+            reminderMinutes: _reminderMinutes,
             dateTime: _dateTime,
           )
         : await notifier.create(
@@ -131,6 +136,7 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
             description: desc.isEmpty ? null : desc,
             location: loc.isEmpty ? null : loc,
             repeatRule: _repeatRule,
+            reminderMinutes: _reminderMinutes,
             dateTime: _dateTime,
           );
     if (!mounted) return;
@@ -271,8 +277,6 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
             ),
             onTap: _pickDateTime,
           ),
-          // Justo debajo de la hora, que es lo que avisa el recordatorio.
-          const ReminderWarning(),
           const SizedBox(height: AppSpacing.md),
           _DateTimeTile(
             label: 'Repetir',
@@ -289,6 +293,13 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
                     onPressed: () => setState(() => _repeatRule = null),
                   ),
           ),
+          const SizedBox(height: AppSpacing.md),
+          AppointmentReminderSelector(
+            selected: _reminderMinutes,
+            onChanged: (minutes) => setState(() => _reminderMinutes = minutes),
+          ),
+          // Al final de los recordatorios, que es lo que el aviso deja sin sonar.
+          const ReminderWarning(),
           const SizedBox(height: AppSpacing.xxxl),
           PrimaryButton(
             label: _isEditing ? 'Guardar' : 'Crear',

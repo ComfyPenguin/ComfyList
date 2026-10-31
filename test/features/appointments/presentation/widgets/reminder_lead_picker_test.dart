@@ -1,4 +1,4 @@
-import 'package:comfy_list/features/settings/presentation/widgets/reminder_lead_picker.dart';
+import 'package:comfy_list/features/appointments/presentation/widgets/reminder_lead_picker.dart';
 import 'package:comfy_list/shared/core/theme/app_theme.dart';
 import 'package:comfy_list/shared/ui/pickers/wheel_picker.dart';
 import 'package:flutter/material.dart';
