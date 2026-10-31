@@ -277,13 +277,6 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
             ),
             onTap: _pickDateTime,
           ),
-          // Justo debajo de la hora, que es lo que avisa el recordatorio.
-          const ReminderWarning(),
-          const SizedBox(height: AppSpacing.md),
-          AppointmentReminderSelector(
-            selected: _reminderMinutes,
-            onChanged: (minutes) => setState(() => _reminderMinutes = minutes),
-          ),
           const SizedBox(height: AppSpacing.md),
           _DateTimeTile(
             label: 'Repetir',
@@ -300,6 +293,13 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
                     onPressed: () => setState(() => _repeatRule = null),
                   ),
           ),
+          const SizedBox(height: AppSpacing.md),
+          AppointmentReminderSelector(
+            selected: _reminderMinutes,
+            onChanged: (minutes) => setState(() => _reminderMinutes = minutes),
+          ),
+          // Al final de los recordatorios, que es lo que el aviso deja sin sonar.
+          const ReminderWarning(),
           const SizedBox(height: AppSpacing.xxxl),
           PrimaryButton(
             label: _isEditing ? 'Guardar' : 'Crear',
