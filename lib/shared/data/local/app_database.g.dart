@@ -49,21 +49,6 @@ class $SettingsTableTable extends SettingsTable
     ),
     defaultValue: const Constant(false),
   );
-  static const VerificationMeta _appointmentsCompletionEnabledMeta =
-      const VerificationMeta('appointmentsCompletionEnabled');
-  @override
-  late final GeneratedColumn<bool> appointmentsCompletionEnabled =
-      GeneratedColumn<bool>(
-        'appointments_completion_enabled',
-        aliasedName,
-        false,
-        type: DriftSqlType.bool,
-        requiredDuringInsert: false,
-        defaultConstraints: GeneratedColumn.constraintIsAlways(
-          'CHECK ("appointments_completion_enabled" IN (0, 1))',
-        ),
-        defaultValue: const Constant(false),
-      );
   static const VerificationMeta _completedToBottomMeta = const VerificationMeta(
     'completedToBottom',
   );
@@ -215,7 +200,6 @@ class $SettingsTableTable extends SettingsTable
     id,
     themeMode,
     notificationsEnabled,
-    appointmentsCompletionEnabled,
     completedToBottom,
     appointmentsCompletedToBottom,
     appointmentsTodayOnTop,
@@ -255,15 +239,6 @@ class $SettingsTableTable extends SettingsTable
         notificationsEnabled.isAcceptableOrUnknown(
           data['notifications_enabled']!,
           _notificationsEnabledMeta,
-        ),
-      );
-    }
-    if (data.containsKey('appointments_completion_enabled')) {
-      context.handle(
-        _appointmentsCompletionEnabledMeta,
-        appointmentsCompletionEnabled.isAcceptableOrUnknown(
-          data['appointments_completion_enabled']!,
-          _appointmentsCompletionEnabledMeta,
         ),
       );
     }
@@ -386,10 +361,6 @@ class $SettingsTableTable extends SettingsTable
         DriftSqlType.bool,
         data['${effectivePrefix}notifications_enabled'],
       )!,
-      appointmentsCompletionEnabled: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}appointments_completion_enabled'],
-      )!,
       completedToBottom: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}completed_to_bottom'],
@@ -452,7 +423,6 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
   /// Los avisos vienen apagados de fábrica: el permiso del sistema se pide al
   /// encenderlos (ver `NotificationsService`).
   final bool notificationsEnabled;
-  final bool appointmentsCompletionEnabled;
 
   /// Si `true`, las tareas completadas van al final de la lista.
   final bool completedToBottom;
@@ -496,7 +466,6 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     required this.id,
     required this.themeMode,
     required this.notificationsEnabled,
-    required this.appointmentsCompletionEnabled,
     required this.completedToBottom,
     required this.appointmentsCompletedToBottom,
     required this.appointmentsTodayOnTop,
@@ -515,9 +484,6 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     map['id'] = Variable<int>(id);
     map['theme_mode'] = Variable<String>(themeMode);
     map['notifications_enabled'] = Variable<bool>(notificationsEnabled);
-    map['appointments_completion_enabled'] = Variable<bool>(
-      appointmentsCompletionEnabled,
-    );
     map['completed_to_bottom'] = Variable<bool>(completedToBottom);
     map['appointments_completed_to_bottom'] = Variable<bool>(
       appointmentsCompletedToBottom,
@@ -543,7 +509,6 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       id: Value(id),
       themeMode: Value(themeMode),
       notificationsEnabled: Value(notificationsEnabled),
-      appointmentsCompletionEnabled: Value(appointmentsCompletionEnabled),
       completedToBottom: Value(completedToBottom),
       appointmentsCompletedToBottom: Value(appointmentsCompletedToBottom),
       appointmentsTodayOnTop: Value(appointmentsTodayOnTop),
@@ -570,9 +535,6 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       themeMode: serializer.fromJson<String>(json['themeMode']),
       notificationsEnabled: serializer.fromJson<bool>(
         json['notificationsEnabled'],
-      ),
-      appointmentsCompletionEnabled: serializer.fromJson<bool>(
-        json['appointmentsCompletionEnabled'],
       ),
       completedToBottom: serializer.fromJson<bool>(json['completedToBottom']),
       appointmentsCompletedToBottom: serializer.fromJson<bool>(
@@ -602,9 +564,6 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       'id': serializer.toJson<int>(id),
       'themeMode': serializer.toJson<String>(themeMode),
       'notificationsEnabled': serializer.toJson<bool>(notificationsEnabled),
-      'appointmentsCompletionEnabled': serializer.toJson<bool>(
-        appointmentsCompletionEnabled,
-      ),
       'completedToBottom': serializer.toJson<bool>(completedToBottom),
       'appointmentsCompletedToBottom': serializer.toJson<bool>(
         appointmentsCompletedToBottom,
@@ -627,7 +586,6 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     int? id,
     String? themeMode,
     bool? notificationsEnabled,
-    bool? appointmentsCompletionEnabled,
     bool? completedToBottom,
     bool? appointmentsCompletedToBottom,
     bool? appointmentsTodayOnTop,
@@ -643,8 +601,6 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     id: id ?? this.id,
     themeMode: themeMode ?? this.themeMode,
     notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
-    appointmentsCompletionEnabled:
-        appointmentsCompletionEnabled ?? this.appointmentsCompletionEnabled,
     completedToBottom: completedToBottom ?? this.completedToBottom,
     appointmentsCompletedToBottom:
         appointmentsCompletedToBottom ?? this.appointmentsCompletedToBottom,
@@ -669,9 +625,6 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       notificationsEnabled: data.notificationsEnabled.present
           ? data.notificationsEnabled.value
           : this.notificationsEnabled,
-      appointmentsCompletionEnabled: data.appointmentsCompletionEnabled.present
-          ? data.appointmentsCompletionEnabled.value
-          : this.appointmentsCompletionEnabled,
       completedToBottom: data.completedToBottom.present
           ? data.completedToBottom.value
           : this.completedToBottom,
@@ -712,9 +665,6 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
           ..write('id: $id, ')
           ..write('themeMode: $themeMode, ')
           ..write('notificationsEnabled: $notificationsEnabled, ')
-          ..write(
-            'appointmentsCompletionEnabled: $appointmentsCompletionEnabled, ',
-          )
           ..write('completedToBottom: $completedToBottom, ')
           ..write(
             'appointmentsCompletedToBottom: $appointmentsCompletedToBottom, ',
@@ -737,7 +687,6 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     id,
     themeMode,
     notificationsEnabled,
-    appointmentsCompletionEnabled,
     completedToBottom,
     appointmentsCompletedToBottom,
     appointmentsTodayOnTop,
@@ -757,8 +706,6 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
           other.id == this.id &&
           other.themeMode == this.themeMode &&
           other.notificationsEnabled == this.notificationsEnabled &&
-          other.appointmentsCompletionEnabled ==
-              this.appointmentsCompletionEnabled &&
           other.completedToBottom == this.completedToBottom &&
           other.appointmentsCompletedToBottom ==
               this.appointmentsCompletedToBottom &&
@@ -777,7 +724,6 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
   final Value<int> id;
   final Value<String> themeMode;
   final Value<bool> notificationsEnabled;
-  final Value<bool> appointmentsCompletionEnabled;
   final Value<bool> completedToBottom;
   final Value<bool> appointmentsCompletedToBottom;
   final Value<bool> appointmentsTodayOnTop;
@@ -793,7 +739,6 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     this.id = const Value.absent(),
     this.themeMode = const Value.absent(),
     this.notificationsEnabled = const Value.absent(),
-    this.appointmentsCompletionEnabled = const Value.absent(),
     this.completedToBottom = const Value.absent(),
     this.appointmentsCompletedToBottom = const Value.absent(),
     this.appointmentsTodayOnTop = const Value.absent(),
@@ -810,7 +755,6 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     this.id = const Value.absent(),
     this.themeMode = const Value.absent(),
     this.notificationsEnabled = const Value.absent(),
-    this.appointmentsCompletionEnabled = const Value.absent(),
     this.completedToBottom = const Value.absent(),
     this.appointmentsCompletedToBottom = const Value.absent(),
     this.appointmentsTodayOnTop = const Value.absent(),
@@ -827,7 +771,6 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     Expression<int>? id,
     Expression<String>? themeMode,
     Expression<bool>? notificationsEnabled,
-    Expression<bool>? appointmentsCompletionEnabled,
     Expression<bool>? completedToBottom,
     Expression<bool>? appointmentsCompletedToBottom,
     Expression<bool>? appointmentsTodayOnTop,
@@ -845,8 +788,6 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
       if (themeMode != null) 'theme_mode': themeMode,
       if (notificationsEnabled != null)
         'notifications_enabled': notificationsEnabled,
-      if (appointmentsCompletionEnabled != null)
-        'appointments_completion_enabled': appointmentsCompletionEnabled,
       if (completedToBottom != null) 'completed_to_bottom': completedToBottom,
       if (appointmentsCompletedToBottom != null)
         'appointments_completed_to_bottom': appointmentsCompletedToBottom,
@@ -871,7 +812,6 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     Value<int>? id,
     Value<String>? themeMode,
     Value<bool>? notificationsEnabled,
-    Value<bool>? appointmentsCompletionEnabled,
     Value<bool>? completedToBottom,
     Value<bool>? appointmentsCompletedToBottom,
     Value<bool>? appointmentsTodayOnTop,
@@ -888,8 +828,6 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
       id: id ?? this.id,
       themeMode: themeMode ?? this.themeMode,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
-      appointmentsCompletionEnabled:
-          appointmentsCompletionEnabled ?? this.appointmentsCompletionEnabled,
       completedToBottom: completedToBottom ?? this.completedToBottom,
       appointmentsCompletedToBottom:
           appointmentsCompletedToBottom ?? this.appointmentsCompletedToBottom,
@@ -918,11 +856,6 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
     }
     if (notificationsEnabled.present) {
       map['notifications_enabled'] = Variable<bool>(notificationsEnabled.value);
-    }
-    if (appointmentsCompletionEnabled.present) {
-      map['appointments_completion_enabled'] = Variable<bool>(
-        appointmentsCompletionEnabled.value,
-      );
     }
     if (completedToBottom.present) {
       map['completed_to_bottom'] = Variable<bool>(completedToBottom.value);
@@ -972,9 +905,6 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRow> {
           ..write('id: $id, ')
           ..write('themeMode: $themeMode, ')
           ..write('notificationsEnabled: $notificationsEnabled, ')
-          ..write(
-            'appointmentsCompletionEnabled: $appointmentsCompletionEnabled, ',
-          )
           ..write('completedToBottom: $completedToBottom, ')
           ..write(
             'appointmentsCompletedToBottom: $appointmentsCompletedToBottom, ',
@@ -1605,7 +1535,6 @@ typedef $$SettingsTableTableCreateCompanionBuilder =
       Value<int> id,
       Value<String> themeMode,
       Value<bool> notificationsEnabled,
-      Value<bool> appointmentsCompletionEnabled,
       Value<bool> completedToBottom,
       Value<bool> appointmentsCompletedToBottom,
       Value<bool> appointmentsTodayOnTop,
@@ -1623,7 +1552,6 @@ typedef $$SettingsTableTableUpdateCompanionBuilder =
       Value<int> id,
       Value<String> themeMode,
       Value<bool> notificationsEnabled,
-      Value<bool> appointmentsCompletionEnabled,
       Value<bool> completedToBottom,
       Value<bool> appointmentsCompletedToBottom,
       Value<bool> appointmentsTodayOnTop,
@@ -1658,11 +1586,6 @@ class $$SettingsTableTableFilterComposer
 
   ColumnFilters<bool> get notificationsEnabled => $composableBuilder(
     column: $table.notificationsEnabled,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get appointmentsCompletionEnabled => $composableBuilder(
-    column: $table.appointmentsCompletionEnabled,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1746,11 +1669,6 @@ class $$SettingsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<bool> get appointmentsCompletionEnabled => $composableBuilder(
-    column: $table.appointmentsCompletionEnabled,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<bool> get completedToBottom => $composableBuilder(
     column: $table.completedToBottom,
     builder: (column) => ColumnOrderings(column),
@@ -1824,11 +1742,6 @@ class $$SettingsTableTableAnnotationComposer
 
   GeneratedColumn<bool> get notificationsEnabled => $composableBuilder(
     column: $table.notificationsEnabled,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<bool> get appointmentsCompletionEnabled => $composableBuilder(
-    column: $table.appointmentsCompletionEnabled,
     builder: (column) => column,
   );
 
@@ -1920,8 +1833,6 @@ class $$SettingsTableTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> themeMode = const Value.absent(),
                 Value<bool> notificationsEnabled = const Value.absent(),
-                Value<bool> appointmentsCompletionEnabled =
-                    const Value.absent(),
                 Value<bool> completedToBottom = const Value.absent(),
                 Value<bool> appointmentsCompletedToBottom =
                     const Value.absent(),
@@ -1938,7 +1849,6 @@ class $$SettingsTableTableTableManager
                 id: id,
                 themeMode: themeMode,
                 notificationsEnabled: notificationsEnabled,
-                appointmentsCompletionEnabled: appointmentsCompletionEnabled,
                 completedToBottom: completedToBottom,
                 appointmentsCompletedToBottom: appointmentsCompletedToBottom,
                 appointmentsTodayOnTop: appointmentsTodayOnTop,
@@ -1956,8 +1866,6 @@ class $$SettingsTableTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> themeMode = const Value.absent(),
                 Value<bool> notificationsEnabled = const Value.absent(),
-                Value<bool> appointmentsCompletionEnabled =
-                    const Value.absent(),
                 Value<bool> completedToBottom = const Value.absent(),
                 Value<bool> appointmentsCompletedToBottom =
                     const Value.absent(),
@@ -1974,7 +1882,6 @@ class $$SettingsTableTableTableManager
                 id: id,
                 themeMode: themeMode,
                 notificationsEnabled: notificationsEnabled,
-                appointmentsCompletionEnabled: appointmentsCompletionEnabled,
                 completedToBottom: completedToBottom,
                 appointmentsCompletedToBottom: appointmentsCompletedToBottom,
                 appointmentsTodayOnTop: appointmentsTodayOnTop,

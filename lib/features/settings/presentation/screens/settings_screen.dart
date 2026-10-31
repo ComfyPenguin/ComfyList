@@ -17,7 +17,6 @@ import '../providers/settings_state.dart';
 import '../widgets/appointment_reminder_selector.dart';
 import '../widgets/appointments_completed_to_bottom_toggle.dart';
 import '../widgets/blocked_notifications_tile.dart';
-import '../widgets/appointments_completion_toggle.dart';
 import '../widgets/completed_to_bottom_toggle.dart';
 import '../widgets/exact_alarms_tile.dart';
 import '../widgets/hour_format_selector.dart';
@@ -53,10 +52,6 @@ class SettingsScreen extends ConsumerWidget {
     // pantalla —no es una acción del usuario— y solo se despliega cuando se
     // enciende el ajuste del que cuelga ([UnfoldDown] no anima su primer
     // build).
-    final completionEnabled = switch (state) {
-      SettingsData(:final settings) => settings.appointmentsCompletionEnabled,
-      _ => null,
-    };
     final notificationsEnabled = switch (state) {
       SettingsData(:final settings) => settings.notificationsEnabled,
       _ => null,
@@ -142,22 +137,7 @@ class SettingsScreen extends ConsumerWidget {
         _SectionHeader(label: 'CITAS', style: sectionStyle),
         const HourFormatSelector(isFirst: true, isLast: false),
         const SizedBox(height: AppSpacing.joined),
-        const AppointmentsCompletionToggle(isFirst: false, isLast: false),
-        if (completionEnabled != null)
-          UnfoldDown(
-            open: completionEnabled,
-            // La junta va dentro del bloque para que también abra con él.
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SizedBox(height: AppSpacing.joined),
-                AppointmentsCompletedToBottomToggle(
-                  isFirst: false,
-                  isLast: false,
-                ),
-              ],
-            ),
-          ),
+        const AppointmentsCompletedToBottomToggle(isFirst: false, isLast: false),
         const SizedBox(height: AppSpacing.joined),
         const TodayOnTopToggle(isFirst: false, isLast: true),
         const SizedBox(height: AppSpacing.xxxl),

@@ -22,7 +22,6 @@ void main() {
       expect(row.id, 1);
       expect(row.themeMode, 'system');
       expect(row.notificationsEnabled, isFalse);
-      expect(row.appointmentsCompletionEnabled, isFalse);
       expect(row.completedToBottom, isTrue);
       expect(row.appointmentsCompletedToBottom, isTrue);
       expect(row.appointmentsTodayOnTop, isTrue);

@@ -130,6 +130,34 @@ void main() {
     );
   });
 
+  testWidgets(
+    'con los ajustes de fábrica, las citas completadas van al final de su día',
+    (tester) async {
+      await pumpScreen(
+        tester,
+        items: [
+          buildAppointment(
+            id: 'hecha',
+            title: 'Análisis',
+            dateTime: DateTime(2026, 9, 15, 8),
+            isDone: true,
+          ),
+          buildAppointment(
+            id: 'pendiente',
+            title: 'Revisión',
+            dateTime: DateTime(2026, 9, 15, 18),
+          ),
+        ],
+        todayOnTop: true,
+      );
+
+      expect(
+        tester.getTopLeft(find.text('Revisión')).dy,
+        lessThan(tester.getTopLeft(find.text('Análisis')).dy),
+      );
+    },
+  );
+
   testWidgets('el día siguiente va con la cabecera «MAÑANA»', (tester) async {
     await pumpScreen(
       tester,

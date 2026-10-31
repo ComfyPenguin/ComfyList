@@ -19,7 +19,6 @@ class AppSettings {
   const AppSettings({
     required this.themeMode,
     required this.notificationsEnabled,
-    required this.appointmentsCompletionEnabled,
     required this.completedToBottom,
     required this.appointmentsCompletedToBottom,
     required this.appointmentsTodayOnTop,
@@ -37,8 +36,6 @@ class AppSettings {
   /// Avisos de citas. Apagado de fábrica, como en `SettingsTable`: el permiso
   /// del sistema se pide al encenderlo.
   final bool notificationsEnabled;
-
-  final bool appointmentsCompletionEnabled;
 
   /// Si es `true`, las tareas completadas se mueven al final de la lista.
   final bool completedToBottom;
@@ -87,7 +84,6 @@ class AppSettings {
   static const AppSettings defaults = AppSettings(
     themeMode: ThemeMode.system,
     notificationsEnabled: false,
-    appointmentsCompletionEnabled: false,
     completedToBottom: true,
     appointmentsCompletedToBottom: true,
     appointmentsTodayOnTop: true,
@@ -103,7 +99,6 @@ class AppSettings {
   AppSettings copyWith({
     ThemeMode? themeMode,
     bool? notificationsEnabled,
-    bool? appointmentsCompletionEnabled,
     bool? completedToBottom,
     bool? appointmentsCompletedToBottom,
     bool? appointmentsTodayOnTop,
@@ -118,8 +113,6 @@ class AppSettings {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
-      appointmentsCompletionEnabled:
-          appointmentsCompletionEnabled ?? this.appointmentsCompletionEnabled,
       completedToBottom: completedToBottom ?? this.completedToBottom,
       appointmentsCompletedToBottom:
           appointmentsCompletedToBottom ?? this.appointmentsCompletedToBottom,

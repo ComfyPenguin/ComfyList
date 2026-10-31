@@ -14,9 +14,6 @@ class SettingsTable extends Table {
   BoolColumn get notificationsEnabled =>
       boolean().withDefault(const Constant(false))();
 
-  BoolColumn get appointmentsCompletionEnabled =>
-      boolean().withDefault(const Constant(false))();
-
   /// Si `true`, las tareas completadas van al final de la lista.
   BoolColumn get completedToBottom =>
       boolean().withDefault(const Constant(true))();

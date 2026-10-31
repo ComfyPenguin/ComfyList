@@ -66,9 +66,6 @@ class AppointmentDetailSheet extends ConsumerWidget {
     final state = ref.watch(appointmentsProvider);
     final colors = context.colors;
 
-    final completionEnabled = ref.watch(
-      settingsOrDefaultsProvider.select((s) => s.appointmentsCompletionEnabled),
-    );
     final use24HourFormat = ref.watch(use24HourFormatProvider);
 
     // El 85 % es un tope, no la altura de la hoja: quien la mide es el contenido,
@@ -100,7 +97,6 @@ class AppointmentDetailSheet extends ConsumerWidget {
           context,
           items,
           colors,
-          completionEnabled,
           use24HourFormat,
         ),
       },
@@ -111,7 +107,6 @@ class AppointmentDetailSheet extends ConsumerWidget {
     BuildContext context,
     List<Appointment> items,
     AppColors colors,
-    bool completionEnabled,
     bool use24HourFormat,
   ) {
     final appointment = items.where((a) => a.id == id).firstOrNull;
@@ -174,18 +169,16 @@ class AppointmentDetailSheet extends ConsumerWidget {
                         capitalize(appointment.title),
                         style: AppTypography.displayMd.copyWith(
                           color: colors.ink,
-                          decoration: completionEnabled && appointment.isDone
+                          decoration: appointment.isDone
                               ? TextDecoration.lineThrough
                               : null,
                         ),
                       ),
                     ),
-                    if (completionEnabled) ...[
-                      const SizedBox(width: AppSpacing.sm),
-                      appointment.isDone
-                          ? const CompletedStatusIndicator()
-                          : const PendingStatusIndicator(),
-                    ],
+                    const SizedBox(width: AppSpacing.sm),
+                    appointment.isDone
+                        ? const CompletedStatusIndicator()
+                        : const PendingStatusIndicator(),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.lg),

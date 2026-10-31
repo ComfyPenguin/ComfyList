@@ -117,7 +117,6 @@ AppRelease buildAppRelease({
 AppSettings buildAppSettings({
   ThemeMode? themeMode,
   bool? notificationsEnabled,
-  bool? appointmentsCompletionEnabled,
   bool? completedToBottom,
   bool? appointmentsCompletedToBottom,
   bool? appointmentsTodayOnTop,
@@ -133,9 +132,6 @@ AppSettings buildAppSettings({
     themeMode: themeMode ?? AppSettings.defaults.themeMode,
     notificationsEnabled:
         notificationsEnabled ?? AppSettings.defaults.notificationsEnabled,
-    appointmentsCompletionEnabled:
-        appointmentsCompletionEnabled ??
-        AppSettings.defaults.appointmentsCompletionEnabled,
     completedToBottom:
         completedToBottom ?? AppSettings.defaults.completedToBottom,
     appointmentsCompletedToBottom:
@@ -165,7 +161,6 @@ SettingsRow buildSettingsRow({
   int id = 1,
   String themeMode = 'system',
   bool notificationsEnabled = true,
-  bool appointmentsCompletionEnabled = false,
   bool completedToBottom = true,
   bool appointmentsCompletedToBottom = true,
   bool appointmentsTodayOnTop = true,
@@ -182,7 +177,6 @@ SettingsRow buildSettingsRow({
     id: id,
     themeMode: themeMode,
     notificationsEnabled: notificationsEnabled,
-    appointmentsCompletionEnabled: appointmentsCompletionEnabled,
     completedToBottom: completedToBottom,
     appointmentsCompletedToBottom: appointmentsCompletedToBottom,
     appointmentsTodayOnTop: appointmentsTodayOnTop,

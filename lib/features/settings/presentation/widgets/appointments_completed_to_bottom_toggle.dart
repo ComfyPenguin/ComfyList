@@ -6,8 +6,7 @@ import '../providers/settings_state.dart';
 import 'settings_tile.dart';
 
 /// Toggle para decidir si las citas completadas se mueven al final de la
-/// lista de su día. La pantalla solo monta esta fila cuando «Completar citas»
-/// está activo, que es de lo que depende.
+/// lista de su día.
 class AppointmentsCompletedToBottomToggle extends ConsumerWidget {
   const AppointmentsCompletedToBottomToggle({
     super.key,

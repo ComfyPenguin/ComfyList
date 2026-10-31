@@ -21,17 +21,13 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onUpgrade: (migrator, from, to) async {
-          if (from < 2) {
-            await migrator.addColumn(
-              settingsTable,
-              settingsTable.appointmentsCompletionEnabled,
-            );
-          }
+          // La v2 añadía `appointments_completion_enabled`, que la v15 elimina:
+          // quien viene de la v1 no necesita una columna que se borra al final.
           if (from < 3) {
             await migrator.addColumn(
               settingsTable,
@@ -134,6 +130,13 @@ class AppDatabase extends _$AppDatabase {
               settingsTable,
               settingsTable.lastUpdateCheckAt,
             );
+          }
+          if (from < 15) {
+            // Completar citas deja de ser un ajuste: la columna sobra. Quitarla
+            // obliga a recrear la tabla con el esquema actual; todas las demás
+            // columnas existen ya en este punto (las pasadas por la recreación
+            // de la v9 y los `addColumn` de arriba), así que no hay `newColumns`.
+            await migrator.alterTable(TableMigration(settingsTable));
           }
         },
       );

@@ -126,8 +126,6 @@ void main() {
 
     expect(repo.loadCalls, 1);
     expect(find.text('No se han podido leer tus ajustes.'), findsOneWidget);
-    // Sin poder leer las preferencias no se sabe si «Citas completadas al
-    // final» toca montarla, así que su switch no cuenta.
     expect(disabledSwitches(tester), 5);
 
     repo.fail = false;
@@ -139,40 +137,29 @@ void main() {
     expect(repo.loadCalls, 2);
     expect(find.text('No se han podido leer tus ajustes.'), findsNothing);
     expect(find.byType(CircularProgressIndicator), findsNothing);
-    // «Citas completadas al final» cuelga de «Completar citas», que por defecto
-    // está apagado: la fila queda recogida, sin alto y sin responder al toque.
-    expect(find.text('Citas completadas al final').hitTestable(), findsNothing);
+    expect(
+      find.text('Citas completadas al final').hitTestable(),
+      findsOneWidget,
+    );
     expect(disabledSwitches(tester), 0);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('las citas completadas al final se despliegan al activar '
-      '«Completar citas»', (tester) async {
+  testWidgets('completar citas ya no es un ajuste y «completadas al final» '
+      'se ve siempre', (tester) async {
     final repo = FakeSettingsRepository();
     await pumpSettings(tester, repo);
     await tester.pumpAndSettle();
 
-    // La fila cuelga de «Completar citas», apagado por defecto: recogida no se
-    // puede pulsar y su bloque mide cero.
+    expect(find.text('Completar citas'), findsNothing);
     final row = find.text('Citas completadas al final');
-    final rowTop = tester.getTopLeft(row);
-    final unfold = unfoldFor('Citas completadas al final');
-    expect(row.hitTestable(), findsNothing);
-    expect(tester.getSize(unfold).height, 0);
-
-    await tester.tap(switchOf('Completar citas'));
-    await tester.pump();
-
-    // A media animación el bloque ya ocupa, pero menos que la fila entera, y la
-    // fila sigue donde estaba: el despliegue la descubre, no la desplaza.
-    await tester.pump(const Duration(milliseconds: 80));
-    final revealing = tester.getSize(unfold).height;
-    expect(revealing, greaterThan(0));
-    expect(tester.getTopLeft(row), rowTop);
-
-    await tester.pumpAndSettle();
     expect(row.hitTestable(), findsOneWidget);
-    expect(tester.getSize(unfold).height, greaterThan(revealing));
+    expect(unfoldFor('Citas completadas al final'), findsNothing);
+
+    expect(switchValue(tester, 'Citas completadas al final'), isTrue);
+    await tester.tap(switchOf('Citas completadas al final'));
+    await tester.pumpAndSettle();
+    expect(switchValue(tester, 'Citas completadas al final'), isFalse);
   });
 
   testWidgets('las notificaciones despliegan los recordatorios de citas', (

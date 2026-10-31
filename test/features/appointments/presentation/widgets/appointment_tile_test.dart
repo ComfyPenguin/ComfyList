@@ -3,6 +3,7 @@ import 'package:comfy_list/features/appointments/presentation/widgets/appointmen
 import 'package:comfy_list/features/settings/presentation/providers/settings_provider.dart';
 import 'package:comfy_list/features/settings/presentation/providers/settings_state.dart';
 import 'package:comfy_list/shared/core/theme/app_theme.dart';
+import 'package:comfy_list/shared/ui/text/animated_strikethrough_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -52,5 +53,64 @@ void main() {
 
     expect(find.text('15:30'), findsOneWidget);
     expect(find.text('PM'), findsNothing);
+  });
+
+  testWidgets('deslizar hacia la derecha completa la cita sin ningún ajuste',
+      (tester) async {
+    var completed = 0;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          settingsProvider.overrideWith(_LoadingSettings.new),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light(),
+          home: Scaffold(
+            body: AppointmentTile(
+              appointment: appointment,
+              onTap: () {},
+              onComplete: () => completed++,
+              onDelete: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.fling(
+      find.byType(AppointmentTile),
+      const Offset(500, 0),
+      1000,
+    );
+    await tester.pumpAndSettle();
+
+    expect(completed, 1);
+  });
+
+  testWidgets('una cita completada se ve tachada', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          settingsProvider.overrideWith(_LoadingSettings.new),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light(),
+          home: Scaffold(
+            body: AppointmentTile(
+              appointment: appointment.copyWith(isDone: true),
+              onTap: () {},
+              onComplete: () {},
+              onDelete: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final title = tester.widget<AnimatedStrikethroughText>(
+      find.byType(AnimatedStrikethroughText),
+    );
+    expect(title.done, isTrue);
   });
 }
