@@ -3,6 +3,7 @@ import '../../../../shared/core/result/result.dart';
 import '../../../../shared/core/time/clock.dart';
 import '../../../../shared/data/remote/polled_collection.dart';
 import '../../domain/entities/appointment.dart';
+import '../../domain/entities/repeat_rule.dart';
 import '../../domain/repositories/appointments_repository.dart';
 import '../datasources/firestore_appointments_remote.dart';
 
@@ -37,6 +38,7 @@ class AppointmentsRepositoryImpl implements AppointmentsRepository {
     required String title,
     String? description,
     String? location,
+    RepeatRule? repeatRule,
     required DateTime dateTime,
   }) =>
       _appointments.guard(
@@ -46,6 +48,7 @@ class AppointmentsRepositoryImpl implements AppointmentsRepository {
           title: title,
           description: description,
           location: location,
+          repeatRule: repeatRule,
           dateTime: dateTime,
         ),
       );
@@ -59,6 +62,8 @@ class AppointmentsRepositoryImpl implements AppointmentsRepository {
     bool clearDescription = false,
     String? location,
     bool clearLocation = false,
+    RepeatRule? repeatRule,
+    bool clearRepeatRule = false,
     DateTime? dateTime,
     bool? isDone,
   }) =>
@@ -72,6 +77,8 @@ class AppointmentsRepositoryImpl implements AppointmentsRepository {
           clearDescription: clearDescription,
           location: location,
           clearLocation: clearLocation,
+          repeatRule: repeatRule,
+          clearRepeatRule: clearRepeatRule,
           dateTime: dateTime,
           isDone: isDone,
         ),

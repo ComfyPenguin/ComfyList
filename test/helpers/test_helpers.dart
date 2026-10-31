@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'package:comfy_list/features/appointments/domain/entities/appointment.dart';
+import 'package:comfy_list/features/appointments/domain/entities/repeat_rule.dart';
 import 'package:comfy_list/features/auth/domain/entities/auth_user.dart';
 import 'package:comfy_list/features/settings/domain/entities/app_settings.dart';
 import 'package:comfy_list/features/todo_lists/domain/entities/todo_list.dart';
@@ -72,6 +73,7 @@ Appointment buildAppointment({
   String title = 'Dentista',
   String? description,
   String? location,
+  RepeatRule? repeatRule,
   DateTime? dateTime,
   bool isDone = false,
   DateTime? createdAt,
@@ -83,6 +85,7 @@ Appointment buildAppointment({
     title: title,
     description: description,
     location: location,
+    repeatRule: repeatRule,
     dateTime: dateTime ?? now.add(const Duration(hours: 1)),
     isDone: isDone,
     createdAt: createdAt ?? now,
@@ -117,7 +120,6 @@ AppRelease buildAppRelease({
 AppSettings buildAppSettings({
   ThemeMode? themeMode,
   bool? notificationsEnabled,
-  bool? appointmentsCompletionEnabled,
   bool? completedToBottom,
   bool? appointmentsCompletedToBottom,
   bool? appointmentsTodayOnTop,
@@ -133,9 +135,6 @@ AppSettings buildAppSettings({
     themeMode: themeMode ?? AppSettings.defaults.themeMode,
     notificationsEnabled:
         notificationsEnabled ?? AppSettings.defaults.notificationsEnabled,
-    appointmentsCompletionEnabled:
-        appointmentsCompletionEnabled ??
-        AppSettings.defaults.appointmentsCompletionEnabled,
     completedToBottom:
         completedToBottom ?? AppSettings.defaults.completedToBottom,
     appointmentsCompletedToBottom:
@@ -165,7 +164,6 @@ SettingsRow buildSettingsRow({
   int id = 1,
   String themeMode = 'system',
   bool notificationsEnabled = true,
-  bool appointmentsCompletionEnabled = false,
   bool completedToBottom = true,
   bool appointmentsCompletedToBottom = true,
   bool appointmentsTodayOnTop = true,
@@ -182,7 +180,6 @@ SettingsRow buildSettingsRow({
     id: id,
     themeMode: themeMode,
     notificationsEnabled: notificationsEnabled,
-    appointmentsCompletionEnabled: appointmentsCompletionEnabled,
     completedToBottom: completedToBottom,
     appointmentsCompletedToBottom: appointmentsCompletedToBottom,
     appointmentsTodayOnTop: appointmentsTodayOnTop,

@@ -30,11 +30,6 @@ class SettingsRepositoryImpl implements SettingsRepository {
       );
 
   @override
-  Future<void> setAppointmentsCompletionEnabled(bool enabled) => _dao.write(
-        SettingsTableCompanion(appointmentsCompletionEnabled: Value(enabled)),
-      );
-
-  @override
   Future<void> setCompletedToBottom(bool enabled) => _dao.write(
         SettingsTableCompanion(completedToBottom: Value(enabled)),
       );
@@ -91,7 +86,6 @@ class SettingsRepositoryImpl implements SettingsRepository {
   AppSettings _fromRow(SettingsRow row) => AppSettings(
         themeMode: AppSettings.parseThemeMode(row.themeMode),
         notificationsEnabled: row.notificationsEnabled,
-        appointmentsCompletionEnabled: row.appointmentsCompletionEnabled,
         completedToBottom: row.completedToBottom,
         appointmentsCompletedToBottom: row.appointmentsCompletedToBottom,
         appointmentsTodayOnTop: row.appointmentsTodayOnTop,

@@ -47,10 +47,6 @@ class FakeSettingsRepository implements SettingsRepository {
       _save(_settings.copyWith(notificationsEnabled: enabled));
 
   @override
-  Future<void> setAppointmentsCompletionEnabled(bool enabled) async =>
-      _save(_settings.copyWith(appointmentsCompletionEnabled: enabled));
-
-  @override
   Future<void> setCompletedToBottom(bool enabled) async =>
       _save(_settings.copyWith(completedToBottom: enabled));
 

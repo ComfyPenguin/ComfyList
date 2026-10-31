@@ -26,10 +26,6 @@ void main() {
 
       expect(result.themeMode, defaults.themeMode);
       expect(result.notificationsEnabled, defaults.notificationsEnabled);
-      expect(
-        result.appointmentsCompletionEnabled,
-        defaults.appointmentsCompletionEnabled,
-      );
       expect(result.completedToBottom, defaults.completedToBottom);
       expect(
         result.appointmentsCompletedToBottom,
@@ -85,10 +81,6 @@ void main() {
       'notificationsEnabled': (
         () => repo.setNotificationsEnabled(true),
         (s) => s.notificationsEnabled,
-      ),
-      'appointmentsCompletionEnabled': (
-        () => repo.setAppointmentsCompletionEnabled(true),
-        (s) => s.appointmentsCompletionEnabled,
       ),
       'completedToBottom': (
         () => repo.setCompletedToBottom(false),

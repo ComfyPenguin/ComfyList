@@ -1,5 +1,6 @@
 import '../../../../shared/core/result/result.dart';
 import '../entities/appointment.dart';
+import '../entities/repeat_rule.dart';
 
 abstract class AppointmentsRepository {
   /// Stream que emite la lista actual de citas de un [uid] concreto.
@@ -13,6 +14,7 @@ abstract class AppointmentsRepository {
     required String title,
     String? description,
     String? location,
+    RepeatRule? repeatRule,
     required DateTime dateTime,
   });
 
@@ -24,6 +26,8 @@ abstract class AppointmentsRepository {
     bool clearDescription = false,
     String? location,
     bool clearLocation = false,
+    RepeatRule? repeatRule,
+    bool clearRepeatRule = false,
     DateTime? dateTime,
     bool? isDone,
   });

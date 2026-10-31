@@ -9,7 +9,6 @@ void main() {
 
       expect(defaults.themeMode, ThemeMode.system);
       expect(defaults.notificationsEnabled, isFalse);
-      expect(defaults.appointmentsCompletionEnabled, isFalse);
       expect(defaults.completedToBottom, isTrue);
       expect(defaults.appointmentsCompletedToBottom, isTrue);
       expect(defaults.appointmentsTodayOnTop, isTrue);
@@ -30,10 +29,6 @@ void main() {
 
       expect(updated.themeMode, ThemeMode.dark);
       expect(updated.notificationsEnabled, baseline.notificationsEnabled);
-      expect(
-        updated.appointmentsCompletionEnabled,
-        baseline.appointmentsCompletionEnabled,
-      );
       expect(updated.completedToBottom, baseline.completedToBottom);
       expect(
         updated.appointmentsCompletedToBottom,
@@ -89,10 +84,6 @@ void main() {
       expect(updated.trashRetentionDays, 30);
       expect(updated.emptiesTrashItself, isTrue);
       expect(updated.notificationsEnabled, baseline.notificationsEnabled);
-      expect(
-        updated.appointmentsCompletionEnabled,
-        baseline.appointmentsCompletionEnabled,
-      );
     });
   });
 

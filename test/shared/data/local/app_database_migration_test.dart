@@ -85,6 +85,29 @@ CREATE TABLE settings_table (
 );
 ''';
 
+/// `settings_table` tal y como quedó en la v14, la última antes de quitar el
+/// ajuste de completar citas.
+const _v14SettingsTable = '''
+CREATE TABLE settings_table (
+  id INTEGER NOT NULL DEFAULT 1,
+  theme_mode TEXT NOT NULL DEFAULT 'system',
+  notifications_enabled INTEGER NOT NULL DEFAULT 0,
+  appointments_completion_enabled INTEGER NOT NULL DEFAULT 0,
+  completed_to_bottom INTEGER NOT NULL DEFAULT 1,
+  appointments_completed_to_bottom INTEGER NOT NULL DEFAULT 1,
+  appointments_today_on_top INTEGER NOT NULL DEFAULT 1,
+  invert_swipe_actions INTEGER NOT NULL DEFAULT 0,
+  use24_hour_format INTEGER NOT NULL DEFAULT 1,
+  appointment_reminder_minutes TEXT NOT NULL DEFAULT '30',
+  long_press_hint_seen INTEGER NOT NULL DEFAULT 0,
+  trash_retention_days INTEGER NOT NULL DEFAULT 30,
+  skipped_update_build INTEGER NOT NULL DEFAULT 0,
+  last_update_check_at INTEGER,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (id)
+);
+''';
+
 void main() {
   late AppDatabase db;
 
@@ -441,6 +464,78 @@ void main() {
       );
       final row = await db.settingsDao.getOrCreate();
       expect(row.skippedUpdateBuild, noSkippedUpdateBuild);
+      expect(row.appointmentReminderMinutes, '30');
+    });
+  });
+
+  group('migración de la v14 a la v15', () {
+    /// Deja la base como una instalación de la v14, con el ajuste de completar
+    /// citas encendido y varios ajustes que no son los de fábrica.
+    Future<void> seedV14() async {
+      await db.settingsDao.getOrCreate();
+      await db.customStatement('DROP TABLE settings_table');
+      await db.customStatement(_v14SettingsTable);
+      // Todos los ajustes con un valor que no es el de fábrica: si la
+      // recreación de la tabla perdiera alguno, volvería a su valor por defecto
+      // y el test lo notaría.
+      await db.customStatement(
+        'INSERT INTO settings_table (id, theme_mode, notifications_enabled, '
+        'appointments_completion_enabled, completed_to_bottom, '
+        'appointments_completed_to_bottom, appointments_today_on_top, '
+        'invert_swipe_actions, use24_hour_format, appointment_reminder_minutes, '
+        'long_press_hint_seen, trash_retention_days, skipped_update_build, '
+        'last_update_check_at, updated_at) '
+        "VALUES (1, 'light', 1, 1, 0, 0, 0, 1, 0, '0,60', 1, 7, 231, "
+        '1760000000, 0);',
+      );
+    }
+
+    test('quita la columna del ajuste de completar citas', () async {
+      await seedV14();
+      expect(await settingsColumns(), contains('appointments_completion_enabled'));
+
+      await db.migration.onUpgrade(Migrator(db), 14, 15);
+
+      expect(
+        await settingsColumns(),
+        isNot(contains('appointments_completion_enabled')),
+      );
+    });
+
+    test('conserva el resto de los ajustes guardados', () async {
+      await seedV14();
+
+      await db.migration.onUpgrade(Migrator(db), 14, 15);
+
+      final row = await db.settingsDao.getOrCreate();
+      expect(row.themeMode, 'light');
+      expect(row.notificationsEnabled, isTrue);
+      expect(row.completedToBottom, isFalse);
+      expect(row.appointmentsCompletedToBottom, isFalse);
+      expect(row.appointmentsTodayOnTop, isFalse);
+      expect(row.invertSwipeActions, isTrue);
+      expect(row.use24HourFormat, isFalse);
+      expect(row.appointmentReminderMinutes, '0,60');
+      expect(row.longPressHintSeen, isTrue);
+      expect(row.trashRetentionDays, 7);
+      expect(row.skippedUpdateBuild, 231);
+      expect(
+        row.lastUpdateCheckAt,
+        DateTime.fromMillisecondsSinceEpoch(1760000000 * 1000),
+      );
+      expect(await db.managers.settingsTable.count(), 1);
+    });
+
+    test('quien venía de la v8 llega a la v15 sin la columna', () async {
+      await seedV8(reminderMinutes: 30);
+
+      await db.migration.onUpgrade(Migrator(db), 8, 15);
+
+      expect(
+        await settingsColumns(),
+        isNot(contains('appointments_completion_enabled')),
+      );
+      final row = await db.settingsDao.getOrCreate();
       expect(row.appointmentReminderMinutes, '30');
     });
   });

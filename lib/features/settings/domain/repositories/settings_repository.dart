@@ -14,8 +14,6 @@ abstract class SettingsRepository {
 
   Future<void> setNotificationsEnabled(bool enabled);
 
-  Future<void> setAppointmentsCompletionEnabled(bool enabled);
-
   Future<void> setCompletedToBottom(bool enabled);
 
   Future<void> setAppointmentsCompletedToBottom(bool enabled);

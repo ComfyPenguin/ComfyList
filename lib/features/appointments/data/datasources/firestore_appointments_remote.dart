@@ -5,6 +5,7 @@ import '../../../../shared/core/time/clock.dart';
 import '../../../../shared/data/remote/firestore_documents.dart';
 import '../../../../shared/data/remote/firestore_pages.dart';
 import '../../domain/entities/appointment.dart';
+import '../../domain/entities/repeat_rule.dart';
 import '../models/appointment_dto.dart';
 
 /// Datasource Firestore REST para `users/{uid}/appointments`.
@@ -35,12 +36,14 @@ class FirestoreAppointmentsRemote {
     required String title,
     String? description,
     String? location,
+    RepeatRule? repeatRule,
     required DateTime dateTime,
   }) async {
     final body = AppointmentDto.toCreateBody(
       title: title,
       description: description,
       location: location,
+      repeatRule: repeatRule,
       dateTime: dateTime,
       now: _now().toUtc(),
     );
@@ -57,6 +60,8 @@ class FirestoreAppointmentsRemote {
     bool clearDescription = false,
     String? location,
     bool clearLocation = false,
+    RepeatRule? repeatRule,
+    bool clearRepeatRule = false,
     DateTime? dateTime,
     bool? isDone,
   }) async {
@@ -66,6 +71,8 @@ class FirestoreAppointmentsRemote {
       clearDescription: clearDescription,
       location: location,
       clearLocation: clearLocation,
+      repeatRule: repeatRule,
+      clearRepeatRule: clearRepeatRule,
       dateTime: dateTime,
       isDone: isDone,
       now: _now().toUtc(),

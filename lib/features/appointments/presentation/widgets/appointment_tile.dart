@@ -19,7 +19,6 @@ class AppointmentTile extends ConsumerWidget {
     required this.onComplete,
     required this.onDelete,
     this.onLongPress,
-    this.completionEnabled = false,
     this.groupIndex = 0,
     this.groupSize = 1,
     this.topSeparationProgress = 1,
@@ -36,7 +35,6 @@ class AppointmentTile extends ConsumerWidget {
   final VoidCallback onComplete;
   final VoidCallback onDelete;
   final VoidCallback? onLongPress;
-  final bool completionEnabled;
   final int groupIndex;
   final int groupSize;
   final double topSeparationProgress;
@@ -47,7 +45,7 @@ class AppointmentTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
     final muted = colors.muted;
-    final done = completionEnabled && appointment.isDone;
+    final done = appointment.isDone;
     final titleStyle = AppTypography.bodyMdStrong;
 
     final use24H = ref.watch(use24HourFormatProvider);
@@ -76,7 +74,7 @@ class AppointmentTile extends ConsumerWidget {
       onTap: onTap,
       onLongPress: onLongPress,
       onDelete: onDelete,
-      onComplete: completionEnabled ? onComplete : null,
+      onComplete: onComplete,
       isDone: done,
       invertActions: invertActions,
       groupIndex: groupIndex,
@@ -161,6 +159,11 @@ class AppointmentTile extends ConsumerWidget {
               ],
             ),
           ),
+          if (appointment.repeatRule != null)
+            Padding(
+              padding: const EdgeInsets.only(left: AppSpacing.xs),
+              child: Icon(Icons.repeat_rounded, size: 18, color: muted),
+            ),
           if (appointment.description != null &&
               appointment.description!.isNotEmpty)
             Padding(

@@ -1,6 +1,7 @@
 import '../../../../shared/data/remote/firestore_patch.dart';
 import '../../../../shared/data/remote/firestore_value_codec.dart';
 import '../../domain/entities/appointment.dart';
+import '../../domain/entities/repeat_rule.dart';
 
 /// DTO entre el formato de documento Firestore REST y la entidad de dominio.
 class AppointmentDto {
@@ -14,6 +15,10 @@ class AppointmentDto {
       title: (fields['title'] as String?) ?? '',
       description: fields['description'] as String?,
       location: fields['location'] as String?,
+      repeatRule: RepeatRule.fromStored(
+        interval: fields['repeatInterval'],
+        unit: fields['repeatUnit'],
+      ),
       dateTime:
           (fields['dateTime'] as DateTime?) ?? DateTime.now(),
       isDone: (fields['isDone'] as bool?) ?? false,
@@ -29,6 +34,7 @@ class AppointmentDto {
     required String title,
     String? description,
     String? location,
+    RepeatRule? repeatRule,
     required DateTime dateTime,
     bool isDone = false,
     required DateTime now,
@@ -37,6 +43,8 @@ class AppointmentDto {
       'title': title,
       'description': ?description,
       'location': ?location,
+      'repeatInterval': ?repeatRule?.interval,
+      'repeatUnit': ?repeatRule?.unit.name,
       'dateTime': dateTime,
       'isDone': isDone,
       'createdAt': now,
@@ -51,6 +59,8 @@ class AppointmentDto {
       'title': appointment.title,
       'description': ?appointment.description,
       'location': ?appointment.location,
+      'repeatInterval': ?appointment.repeatRule?.interval,
+      'repeatUnit': ?appointment.repeatRule?.unit.name,
       'dateTime': appointment.dateTime,
       'isDone': appointment.isDone,
       'createdAt': appointment.createdAt,
@@ -65,6 +75,8 @@ class AppointmentDto {
     bool clearDescription = false,
     String? location,
     bool clearLocation = false,
+    RepeatRule? repeatRule,
+    bool clearRepeatRule = false,
     DateTime? dateTime,
     bool? isDone,
     required DateTime now,
@@ -73,6 +85,16 @@ class AppointmentDto {
           ..setIfNotNull('title', title)
           ..setOrClear('description', description, clear: clearDescription)
           ..setOrClear('location', location, clear: clearLocation)
+          ..setOrClear(
+            'repeatInterval',
+            repeatRule?.interval,
+            clear: clearRepeatRule,
+          )
+          ..setOrClear(
+            'repeatUnit',
+            repeatRule?.unit.name,
+            clear: clearRepeatRule,
+          )
           ..setIfNotNull('dateTime', dateTime)
           ..setIfNotNull('isDone', isDone))
         .build(updatedAt: now);

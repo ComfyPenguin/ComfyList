@@ -16,6 +16,7 @@ import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../domain/entities/appointment.dart';
 import '../providers/appointments_provider.dart';
 import '../providers/appointments_state.dart';
+import 'repeat_rule_label.dart';
 
 /// Muestra el bottom sheet de detalle de una cita (solo lectura).
 Future<void> showAppointmentDetailSheet({
@@ -66,9 +67,6 @@ class AppointmentDetailSheet extends ConsumerWidget {
     final state = ref.watch(appointmentsProvider);
     final colors = context.colors;
 
-    final completionEnabled = ref.watch(
-      settingsOrDefaultsProvider.select((s) => s.appointmentsCompletionEnabled),
-    );
     final use24HourFormat = ref.watch(use24HourFormatProvider);
 
     // El 85 % es un tope, no la altura de la hoja: quien la mide es el contenido,
@@ -100,7 +98,6 @@ class AppointmentDetailSheet extends ConsumerWidget {
           context,
           items,
           colors,
-          completionEnabled,
           use24HourFormat,
         ),
       },
@@ -111,7 +108,6 @@ class AppointmentDetailSheet extends ConsumerWidget {
     BuildContext context,
     List<Appointment> items,
     AppColors colors,
-    bool completionEnabled,
     bool use24HourFormat,
   ) {
     final appointment = items.where((a) => a.id == id).firstOrNull;
@@ -174,18 +170,16 @@ class AppointmentDetailSheet extends ConsumerWidget {
                         capitalize(appointment.title),
                         style: AppTypography.displayMd.copyWith(
                           color: colors.ink,
-                          decoration: completionEnabled && appointment.isDone
+                          decoration: appointment.isDone
                               ? TextDecoration.lineThrough
                               : null,
                         ),
                       ),
                     ),
-                    if (completionEnabled) ...[
-                      const SizedBox(width: AppSpacing.sm),
-                      appointment.isDone
-                          ? const CompletedStatusIndicator()
-                          : const PendingStatusIndicator(),
-                    ],
+                    const SizedBox(width: AppSpacing.sm),
+                    appointment.isDone
+                        ? const CompletedStatusIndicator()
+                        : const PendingStatusIndicator(),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.lg),
@@ -224,6 +218,24 @@ class AppointmentDetailSheet extends ConsumerWidget {
                     ),
                   ],
                 ),
+                if (appointment.repeatRule != null) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  // Repetición.
+                  Row(
+                    children: [
+                      Icon(Icons.repeat_rounded, size: 20, color: colors.muted),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          repeatRuleLabel(appointment.repeatRule!),
+                          style: AppTypography.bodyLg.copyWith(
+                            color: colors.ink,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 if (appointment.location != null &&
                     appointment.location!.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.sm),

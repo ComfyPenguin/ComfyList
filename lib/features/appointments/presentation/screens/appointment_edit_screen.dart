@@ -17,9 +17,12 @@ import '../../../../shared/ui/pickers/date_time_pickers.dart';
 import '../../../../shared/ui/text/app_tag.dart';
 import '../../../../shared/ui/toast/app_toast.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
+import '../../domain/entities/repeat_rule.dart';
 import '../providers/appointments_provider.dart';
 import '../providers/appointments_state.dart';
 import '../widgets/reminder_warning.dart';
+import '../widgets/repeat_rule_label.dart';
+import '../widgets/repeat_rule_picker.dart';
 
 /// Pantalla unificada de creación y edición de citas.
 /// Si [id] es null → crear; si no → editar.
@@ -38,6 +41,7 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
   final _descCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
   late DateTime _dateTime = ref.read(clockProvider)();
+  RepeatRule? _repeatRule;
   String? _titleError;
   bool _hydrated = false;
   String _hydratedTitle = '';
@@ -62,6 +66,7 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
         _descCtrl.text = appointment.description ?? '';
         _locationCtrl.text = appointment.location ?? '';
         _dateTime = appointment.dateTime;
+        _repeatRule = appointment.repeatRule;
         _hydratedTitle = appointment.title;
         _hydrated = true;
       }
@@ -91,6 +96,12 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
     });
   }
 
+  Future<void> _pickRepeatRule() async {
+    final picked = await showRepeatRulePicker(context, initial: _repeatRule);
+    if (picked == null || !mounted) return;
+    setState(() => _repeatRule = picked);
+  }
+
   Future<void> _submit() async {
     final title = _titleCtrl.text.trim();
     if (title.isEmpty) {
@@ -111,12 +122,15 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
             clearDescription: desc.isEmpty,
             location: loc.isEmpty ? null : loc,
             clearLocation: loc.isEmpty,
+            repeatRule: _repeatRule,
+            clearRepeatRule: _repeatRule == null,
             dateTime: _dateTime,
           )
         : await notifier.create(
             title: title,
             description: desc.isEmpty ? null : desc,
             location: loc.isEmpty ? null : loc,
+            repeatRule: _repeatRule,
             dateTime: _dateTime,
           );
     if (!mounted) return;
@@ -259,6 +273,22 @@ class _AppointmentEditScreenState extends ConsumerState<AppointmentEditScreen> {
           ),
           // Justo debajo de la hora, que es lo que avisa el recordatorio.
           const ReminderWarning(),
+          const SizedBox(height: AppSpacing.md),
+          _DateTimeTile(
+            label: 'Repetir',
+            value: _repeatRule == null
+                ? 'No se repite'
+                : repeatRuleLabel(_repeatRule!),
+            borderRadius: AppRadius.brTile,
+            onTap: _pickRepeatRule,
+            trailing: _repeatRule == null
+                ? null
+                : IconButton(
+                    tooltip: 'Quitar repetición',
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => setState(() => _repeatRule = null),
+                  ),
+          ),
           const SizedBox(height: AppSpacing.xxxl),
           PrimaryButton(
             label: _isEditing ? 'Guardar' : 'Crear',
@@ -291,12 +321,16 @@ class _DateTimeTile extends StatelessWidget {
     required this.value,
     required this.borderRadius,
     required this.onTap,
+    this.trailing,
   });
 
   final String label;
   final String value;
   final BorderRadius borderRadius;
   final VoidCallback onTap;
+
+  /// Acción al final de la tile (p. ej. quitar el valor), si la hay.
+  final Widget? trailing;
 
   /// Borde de la tile: mismo trazo que los campos del formulario, con el radio
   /// que le toca según su posición en el par de tiles unidas.
@@ -328,6 +362,7 @@ class _DateTimeTile extends StatelessWidget {
           filled: true,
           fillColor: colors.canvas,
           contentPadding: FieldStyle.padding,
+          suffixIcon: trailing,
           labelStyle: AppTypography.bodySm.copyWith(color: colors.body),
           floatingLabelStyle: AppTypography.fieldLabel(colors.ink),
           border: _outline(colors.cardBorder),

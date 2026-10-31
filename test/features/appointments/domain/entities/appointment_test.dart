@@ -1,4 +1,5 @@
 import 'package:comfy_list/features/appointments/domain/entities/appointment.dart';
+import 'package:comfy_list/features/appointments/domain/entities/repeat_rule.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -53,6 +54,51 @@ void main() {
       expect(updated.isDone, isTrue);
       expect(updated.title, 'Dentista');
       expect(updated.id, 'a1');
+    });
+
+    group('regla de repetición', () {
+      const rule = RepeatRule(interval: 2, unit: RepeatUnit.week);
+
+      test('una cita nace sin regla', () {
+        expect(base.repeatRule, isNull);
+      });
+
+      test('copyWith con una regla la pone', () {
+        final updated = base.copyWith(repeatRule: rule);
+
+        expect(updated.repeatRule, rule);
+        expect(updated.title, 'Dentista');
+      });
+
+      test('copyWith sin regla ni clearRepeatRule conserva la que había', () {
+        final updated = base.copyWith(repeatRule: rule).copyWith(title: 'Otra');
+
+        expect(updated.repeatRule, rule);
+      });
+
+      test('copyWith con clearRepeatRule la quita', () {
+        final updated = base
+            .copyWith(repeatRule: rule)
+            .copyWith(clearRepeatRule: true);
+
+        expect(updated.repeatRule, isNull);
+      });
+
+      test('toJson / fromJson hacen la ida y vuelta con regla', () {
+        final back = Appointment.fromJson(
+          base.copyWith(repeatRule: rule).toJson(),
+        );
+
+        expect(back.repeatRule, rule);
+      });
+
+      test('un payload de la papelera sin regla se lee como no recurrente', () {
+        final json = base.toJson()
+          ..remove('repeatInterval')
+          ..remove('repeatUnit');
+
+        expect(Appointment.fromJson(json).repeatRule, isNull);
+      });
     });
 
     group('toJson / fromJson', () {

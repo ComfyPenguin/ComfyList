@@ -121,16 +121,13 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
       Color.lerp(colors.muted, colors.body, 0.4),
     );
 
-    // Preferencias de las citas: con el ajuste de completado activado, las
-    // completadas van al final de su día; y hoy va primero, por delante de los
-    // días pasados.
+    // Preferencias de las citas: las completadas van al final de su día si el
+    // ajuste lo pide; y hoy va primero, por delante de los días pasados.
     final settings = ref.watch(settingsOrDefaultsProvider);
-    final completionEnabled = settings.appointmentsCompletionEnabled;
 
     final sorted = sortAppointments(
       widget.items,
-      completedToBottom:
-          completionEnabled && settings.appointmentsCompletedToBottom,
+      completedToBottom: settings.appointmentsCompletedToBottom,
     );
 
     // Mantener el orden previo mientras se anima el tachado de un toggle.
@@ -166,7 +163,6 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
           isToday: _isToday(date),
           dateHeaderStyle: dateHeaderStyle,
           appointments: appts,
-          completionEnabled: completionEnabled,
           separationFor: (i) => _reveal.separationFor(
             appts[i].id,
             previousId: i > 0 ? appts[i - 1].id : null,
@@ -178,8 +174,21 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
               context.push(Routes.appointmentEdit(appt.id)),
           onComplete: (appt) async {
             final saved = await notifier.toggleDone(appt.id, !appt.isDone);
-            if (!saved && context.mounted) {
+            if (!context.mounted) return;
+            if (!saved) {
               AppToast.show(context, AppToast.updateFailed);
+              return;
+            }
+            // Una recurrente no se queda hecha: salta de fecha y se avisa a
+            // cuál, porque desaparece del sitio donde se acaba de completar.
+            final rule = appt.repeatRule;
+            if (rule != null && !appt.isDone) {
+              final next = rule.nextAfter(
+                appt.dateTime,
+                now: ref.read(clockProvider)(),
+              );
+              final day = DateFormat('EEE d MMM', 'es_ES').format(next);
+              AppToast.show(context, 'Próxima: $day');
             }
           },
           onDelete: (appt) async {
@@ -241,7 +250,6 @@ class _AppointmentGroup extends StatelessWidget {
     required this.isToday,
     required this.dateHeaderStyle,
     required this.appointments,
-    required this.completionEnabled,
     required this.separationFor,
     required this.onTap,
     required this.onLongPress,
@@ -258,7 +266,6 @@ class _AppointmentGroup extends StatelessWidget {
   final bool isToday;
   final TextStyle dateHeaderStyle;
   final List<Appointment> appointments;
-  final bool completionEnabled;
 
   /// Progreso de separación por borde (top/bottom) para el tile en
   /// `appointments[i]`.
@@ -325,7 +332,6 @@ class _AppointmentGroup extends StatelessWidget {
     final edges = separationFor(index);
     return AppointmentTile(
       appointment: appt,
-      completionEnabled: completionEnabled,
       groupIndex: index,
       groupSize: appointments.length,
       topSeparationProgress: edges.top,

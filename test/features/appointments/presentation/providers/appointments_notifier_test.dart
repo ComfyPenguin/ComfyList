@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:comfy_list/features/appointments/data/datasources/firestore_appointments_remote.dart';
 import 'package:comfy_list/features/appointments/domain/entities/appointment.dart';
+import 'package:comfy_list/features/appointments/domain/entities/repeat_rule.dart';
 import 'package:comfy_list/features/appointments/domain/repositories/appointments_repository.dart';
 import 'package:comfy_list/features/appointments/presentation/providers/appointments_provider.dart';
 import 'package:comfy_list/features/appointments/presentation/providers/appointments_state.dart';
@@ -136,8 +137,9 @@ void main() {
 
   /// Un contenedor con la lista de citas ya cargada y la papelera en memoria.
   Future<(ProviderContainer, StreamController<List<Appointment>>)> loaded(
-    List<Appointment> appointments,
-  ) async {
+    List<Appointment> appointments, {
+    DateTime? now,
+  }) async {
     final controller = StreamController<List<Appointment>>();
     when(() => repo.watchAppointments('u1'))
         .thenAnswer((_) => controller.stream);
@@ -145,6 +147,7 @@ void main() {
       remoteOverrides: {FirestoreTrashRemote: trash},
       authedUser: buildAuthUser(),
       repositoryOverrides: {AppointmentsRepository: repo},
+      extra: [if (now != null) clockProvider.overrideWithValue(() => now)],
     );
     addTearDown(controller.close);
 
@@ -153,6 +156,120 @@ void main() {
     await pumpEventQueue();
     return (container, controller);
   }
+
+  group('completar una cita', () {
+    const weekly = RepeatRule(interval: 1, unit: RepeatUnit.week);
+
+    /// Lo que `toggleDone` pidió guardar de la cita `a1`: fecha e `isDone`.
+    ({DateTime? dateTime, bool? isDone}) savedUpdate() {
+      final captured = verify(() => repo.updateAppointment(
+            uid: 'u1',
+            id: 'a1',
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            clearDescription: any(named: 'clearDescription'),
+            location: any(named: 'location'),
+            clearLocation: any(named: 'clearLocation'),
+            dateTime: captureAny(named: 'dateTime'),
+            isDone: captureAny(named: 'isDone'),
+          )).captured;
+      return (
+        dateTime: captured[0] as DateTime?,
+        isDone: captured[1] as bool?,
+      );
+    }
+
+    setUp(() {
+      when(() => repo.updateAppointment(
+            uid: 'u1',
+            id: 'a1',
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            clearDescription: any(named: 'clearDescription'),
+            location: any(named: 'location'),
+            clearLocation: any(named: 'clearLocation'),
+            dateTime: any(named: 'dateTime'),
+            isDone: any(named: 'isDone'),
+          )).thenAnswer((_) async => Ok(buildAppointment(id: 'a1')));
+    });
+
+    test('una recurrente salta a su siguiente fecha y no queda hecha', () async {
+      final (container, _) = await loaded(
+        [
+          buildAppointment(
+            id: 'a1',
+            dateTime: DateTime(2026, 9, 7, 10),
+            repeatRule: weekly,
+          ),
+        ],
+        // Lunes 7 completada el jueves 24: el siguiente lunes futuro es el 28.
+        now: DateTime(2026, 9, 24, 12),
+      );
+
+      final saved =
+          await container.read(appointmentsProvider.notifier).toggleDone('a1', true);
+
+      expect(saved, isTrue);
+      final update = savedUpdate();
+      expect(update.dateTime, DateTime(2026, 9, 28, 10));
+      expect(update.isDone, isNull);
+    });
+
+    test('desmarcar una recurrente que estaba hecha no mueve su fecha',
+        () async {
+      final (container, _) = await loaded(
+        [
+          buildAppointment(
+            id: 'a1',
+            dateTime: DateTime(2026, 9, 7, 10),
+            isDone: true,
+            repeatRule: weekly,
+          ),
+        ],
+        now: DateTime(2026, 9, 24, 12),
+      );
+
+      await container.read(appointmentsProvider.notifier).toggleDone('a1', false);
+
+      final update = savedUpdate();
+      expect(update.dateTime, isNull);
+      expect(update.isDone, isFalse);
+    });
+
+    test('una cita sin regla se marca como hecha sin tocar su fecha', () async {
+      final (container, _) = await loaded([
+        buildAppointment(id: 'a1', dateTime: DateTime(2026, 9, 7, 10)),
+      ], now: DateTime(2026, 9, 24, 12));
+
+      await container.read(appointmentsProvider.notifier).toggleDone('a1', true);
+
+      final update = savedUpdate();
+      expect(update.dateTime, isNull);
+      expect(update.isDone, isTrue);
+    });
+
+    test('si no se puede guardar, una recurrente devuelve false', () async {
+      when(() => repo.updateAppointment(
+            uid: 'u1',
+            id: 'a1',
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            clearDescription: any(named: 'clearDescription'),
+            location: any(named: 'location'),
+            clearLocation: any(named: 'clearLocation'),
+            dateTime: any(named: 'dateTime'),
+            isDone: any(named: 'isDone'),
+          )).thenAnswer((_) async => const Err<Appointment>(NetworkFailure()));
+      final (container, _) = await loaded([
+        buildAppointment(id: 'a1', repeatRule: weekly),
+      ], now: DateTime(2026, 9, 24, 12));
+
+      expect(
+        await container.read(appointmentsProvider.notifier).toggleDone('a1', true),
+        isFalse,
+      );
+    });
+  });
 
   test('delete guarda la cita en la papelera y undo la devuelve', () async {
     when(() => repo.deleteAppointment(uid: 'u1', id: 'a1'))
