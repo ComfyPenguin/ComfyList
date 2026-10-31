@@ -174,8 +174,21 @@ class _AppointmentsListState extends ConsumerState<_AppointmentsList> {
               context.push(Routes.appointmentEdit(appt.id)),
           onComplete: (appt) async {
             final saved = await notifier.toggleDone(appt.id, !appt.isDone);
-            if (!saved && context.mounted) {
+            if (!context.mounted) return;
+            if (!saved) {
               AppToast.show(context, AppToast.updateFailed);
+              return;
+            }
+            // Una recurrente no se queda hecha: salta de fecha y se avisa a
+            // cuál, porque desaparece del sitio donde se acaba de completar.
+            final rule = appt.repeatRule;
+            if (rule != null && !appt.isDone) {
+              final next = rule.nextAfter(
+                appt.dateTime,
+                now: ref.read(clockProvider)(),
+              );
+              final day = DateFormat('EEE d MMM', 'es_ES').format(next);
+              AppToast.show(context, 'Próxima: $day');
             }
           },
           onDelete: (appt) async {

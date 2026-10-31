@@ -12,6 +12,7 @@ import '../../../trash/presentation/providers/deletions_provider.dart';
 import '../../data/datasources/firestore_appointments_remote.dart';
 import '../../data/repositories/appointments_repository_impl.dart';
 import '../../domain/entities/appointment.dart';
+import '../../domain/entities/repeat_rule.dart';
 import '../../domain/repositories/appointments_repository.dart';
 import 'appointments_state.dart';
 
@@ -70,6 +71,7 @@ class AppointmentsNotifier extends Notifier<AppointmentsState> {
     required String title,
     String? description,
     String? location,
+    RepeatRule? repeatRule,
     required DateTime dateTime,
   }) async {
     final res = await ref.read(appointmentsRepositoryProvider).createAppointment(
@@ -77,17 +79,30 @@ class AppointmentsNotifier extends Notifier<AppointmentsState> {
           title: title,
           description: description,
           location: location,
+          repeatRule: repeatRule,
           dateTime: dateTime,
         );
     return res.isOk;
   }
 
   /// Marca o desmarca una cita. Devuelve si se pudo guardar.
+  ///
+  /// Completar una cita recurrente no la deja hecha: salta a su siguiente fecha
+  /// y sigue pendiente.
   Future<bool> toggleDone(String id, bool isDone) async {
+    final appointment = _findById(id);
+    final rule = appointment?.repeatRule;
+    final advance = isDone && appointment != null && rule != null;
     final res = await ref.read(appointmentsRepositoryProvider).updateAppointment(
           uid: ref.signedInUid,
           id: id,
-          isDone: isDone,
+          isDone: advance ? null : isDone,
+          dateTime: advance
+              ? rule.nextAfter(
+                  appointment.dateTime,
+                  now: ref.read(clockProvider)(),
+                )
+              : null,
         );
     return res.isOk;
   }
@@ -100,6 +115,8 @@ class AppointmentsNotifier extends Notifier<AppointmentsState> {
     bool clearDescription = false,
     String? location,
     bool clearLocation = false,
+    RepeatRule? repeatRule,
+    bool clearRepeatRule = false,
     DateTime? dateTime,
   }) async {
     final res = await ref.read(appointmentsRepositoryProvider).updateAppointment(
@@ -110,6 +127,8 @@ class AppointmentsNotifier extends Notifier<AppointmentsState> {
           clearDescription: clearDescription,
           location: location,
           clearLocation: clearLocation,
+          repeatRule: repeatRule,
+          clearRepeatRule: clearRepeatRule,
           dateTime: dateTime,
         );
     return res.isOk;

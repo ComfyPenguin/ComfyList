@@ -1,4 +1,5 @@
 import 'package:comfy_list/features/appointments/domain/entities/appointment.dart';
+import 'package:comfy_list/features/appointments/domain/entities/repeat_rule.dart';
 import 'package:comfy_list/features/appointments/presentation/widgets/appointment_tile.dart';
 import 'package:comfy_list/features/settings/presentation/providers/settings_provider.dart';
 import 'package:comfy_list/features/settings/presentation/providers/settings_state.dart';
@@ -85,6 +86,37 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(completed, 1);
+  });
+
+  testWidgets('una cita recurrente lleva el icono de repetición', (
+    tester,
+  ) async {
+    Future<void> pumpTile(Appointment shown) => tester.pumpWidget(
+      ProviderScope(
+        overrides: [settingsProvider.overrideWith(_LoadingSettings.new)],
+        child: MaterialApp(
+          theme: AppTheme.light(),
+          home: Scaffold(
+            body: AppointmentTile(
+              appointment: shown,
+              onTap: () {},
+              onComplete: () {},
+              onDelete: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await pumpTile(appointment);
+    expect(find.byIcon(Icons.repeat_rounded), findsNothing);
+
+    await pumpTile(
+      appointment.copyWith(
+        repeatRule: const RepeatRule(interval: 1, unit: RepeatUnit.week),
+      ),
+    );
+    expect(find.byIcon(Icons.repeat_rounded), findsOneWidget);
   });
 
   testWidgets('una cita completada se ve tachada', (tester) async {

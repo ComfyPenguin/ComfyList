@@ -16,6 +16,7 @@ import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../domain/entities/appointment.dart';
 import '../providers/appointments_provider.dart';
 import '../providers/appointments_state.dart';
+import 'repeat_rule_label.dart';
 
 /// Muestra el bottom sheet de detalle de una cita (solo lectura).
 Future<void> showAppointmentDetailSheet({
@@ -217,6 +218,24 @@ class AppointmentDetailSheet extends ConsumerWidget {
                     ),
                   ],
                 ),
+                if (appointment.repeatRule != null) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  // Repetición.
+                  Row(
+                    children: [
+                      Icon(Icons.repeat_rounded, size: 20, color: colors.muted),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          repeatRuleLabel(appointment.repeatRule!),
+                          style: AppTypography.bodyLg.copyWith(
+                            color: colors.ink,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 if (appointment.location != null &&
                     appointment.location!.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.sm),

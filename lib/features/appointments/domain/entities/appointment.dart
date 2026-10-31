@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import 'repeat_rule.dart';
+
 @immutable
 class Appointment {
   const Appointment({
@@ -11,6 +13,7 @@ class Appointment {
     required this.updatedAt,
     this.description,
     this.location,
+    this.repeatRule,
   });
 
   final String id;
@@ -24,6 +27,9 @@ class Appointment {
   /// Ubicación opcional de la cita (p. ej. "Calle Mayor 1, Madrid").
   final String? location;
 
+  /// Si la cita es recurrente, la regla con la que avanza al completarla.
+  final RepeatRule? repeatRule;
+
   /// Serialización para la papelera, que vive en la cuenta. Las fechas van en
   /// UTC: se pueden restaurar desde un dispositivo en otra zona horaria.
   Map<String, dynamic> toJson() => {
@@ -31,6 +37,8 @@ class Appointment {
         'title': title,
         'description': description,
         'location': location,
+        'repeatInterval': repeatRule?.interval,
+        'repeatUnit': repeatRule?.unit.name,
         'dateTime': dateTime.toUtc().toIso8601String(),
         'isDone': isDone,
         'createdAt': createdAt.toUtc().toIso8601String(),
@@ -42,6 +50,10 @@ class Appointment {
         title: json['title'] as String,
         description: json['description'] as String?,
         location: json['location'] as String?,
+        repeatRule: RepeatRule.fromStored(
+          interval: json['repeatInterval'],
+          unit: json['repeatUnit'],
+        ),
         dateTime: DateTime.parse(json['dateTime'] as String).toLocal(),
         isDone: json['isDone'] as bool,
         createdAt: DateTime.parse(json['createdAt'] as String).toLocal(),
@@ -57,8 +69,10 @@ class Appointment {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? location,
+    RepeatRule? repeatRule,
     bool clearDescription = false,
     bool clearLocation = false,
+    bool clearRepeatRule = false,
   }) {
     return Appointment(
       id: id ?? this.id,
@@ -70,6 +84,7 @@ class Appointment {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       location: clearLocation ? null : (location ?? this.location),
+      repeatRule: clearRepeatRule ? null : (repeatRule ?? this.repeatRule),
     );
   }
 }

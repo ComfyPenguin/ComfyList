@@ -159,6 +159,11 @@ class AppointmentTile extends ConsumerWidget {
               ],
             ),
           ),
+          if (appointment.repeatRule != null)
+            Padding(
+              padding: const EdgeInsets.only(left: AppSpacing.xs),
+              child: Icon(Icons.repeat_rounded, size: 18, color: muted),
+            ),
           if (appointment.description != null &&
               appointment.description!.isNotEmpty)
             Padding(
